@@ -78,6 +78,7 @@ class RoleConfigService:
                 config = json_content
             else:
                 import json
+
                 config = json.loads(json_content)
             self.logger.info("Loaded role configuration from JSON content")
             return config
@@ -422,7 +423,9 @@ class RoleConfigService:
         """
         try:
             config = self.load_roles_from_json_content(json_content)
-            validation_result = self._validate_yaml_config(config)  # Same validation logic as YAML
+            validation_result = self._validate_yaml_config(
+                config
+            )  # Same validation logic as YAML
 
             # Add additional metadata
             if validation_result["valid"]:

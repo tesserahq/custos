@@ -431,6 +431,7 @@ async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
         elif request.type == "csv":
             import io
             import csv
+
             csv_reader = csv.reader(io.StringIO(request.content))
             policies = [row for row in csv_reader if row and not row[0].startswith("#")]
             role_policies = {}

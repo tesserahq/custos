@@ -171,7 +171,10 @@ class SetupRolesRequest(BaseModel):
     """Unified request model for setting up roles from various sources."""
 
     domain: str = Field(..., description="The domain/tenant for the roles")
-    type: str = Field(..., description="Type of configuration: 'yaml', 'csv', or 'json'")
+    type: str = Field(
+        ..., description="Type of configuration: 'yaml', 'csv', or 'json'"
+    )
     content: Union[str, Dict[str, Any]] = Field(
-        ..., description="Content defining roles and permissions. For 'yaml' and 'csv', provide a string. For 'json', provide a JSON object."
+        ...,
+        description="Content defining roles and permissions. For 'yaml' and 'csv', provide a string. For 'json', provide a JSON object.",
     )

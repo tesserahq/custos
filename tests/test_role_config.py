@@ -228,9 +228,9 @@ roles:
           }
         }
         """
-        
+
         config = role_config_service.load_roles_from_json_content(json_content)
-        
+
         assert "roles" in config
         assert "admin" in config["roles"]
         assert "permissions" in config["roles"]["admin"]
@@ -258,25 +258,29 @@ roles:
           }
         }
         """
-        
+
         # Define roles from JSON content
         results = role_config_service.define_roles_from_json_content(
             domain, json_content
         )
-        
+
         # Roles should be created successfully
         assert results["admin"] is True
         assert results["editor"] is True
-        
+
         # Check that roles have expected permissions
-        admin_permissions = role_definition_service.get_role_permissions("admin", domain)
-        editor_permissions = role_definition_service.get_role_permissions("editor", domain)
-        
+        admin_permissions = role_definition_service.get_role_permissions(
+            "admin", domain
+        )
+        editor_permissions = role_definition_service.get_role_permissions(
+            "editor", domain
+        )
+
         assert ("users", "read") in admin_permissions
         assert ("users", "write") in admin_permissions
         assert ("projects", "read") in admin_permissions
         assert ("projects", "create") in admin_permissions
-        
+
         assert ("users", "read") in editor_permissions
         assert ("projects", "read") in editor_permissions
         assert ("projects", "write") in editor_permissions
@@ -301,9 +305,9 @@ roles:
           }
         }
         """
-        
+
         validation = role_config_service.validate_json_content(json_content)
-        
+
         assert validation["valid"] is True
         assert "admin" in validation["available_roles"]
         assert "editor" in validation["available_roles"]
@@ -322,9 +326,9 @@ roles:
           }
         }
         """
-        
+
         validation = role_config_service.validate_json_content(invalid_json)
-        
+
         assert validation["valid"] is False
         assert len(validation["errors"]) > 0
 
@@ -562,15 +566,13 @@ roles:
                     "description": "Full system access",
                     "permissions": {
                         "users": ["read", "write", "delete", "create"],
-                        "projects": ["read", "write"]
-                    }
+                        "projects": ["read", "write"],
+                    },
                 },
                 "editor": {
                     "description": "Content editing",
-                    "permissions": {
-                        "projects": ["read", "write", "create"]
-                    }
-                }
+                    "permissions": {"projects": ["read", "write", "create"]},
+                },
             }
         }
         req = {
