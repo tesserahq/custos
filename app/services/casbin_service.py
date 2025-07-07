@@ -114,11 +114,25 @@ class CasbinService:
         """
         try:
             if domain:
+                # Check if role is already assigned
+                user_roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
+                if role in user_roles:
+                    self.logger.debug(
+                        f"Role {role} already assigned to user {user_id} in domain {domain}"
+                    )
+                    return True
+
                 # For multi-tenancy, use domain-based role assignment
                 success = self.enforcer.add_role_for_user_in_domain(
                     user_id, role, domain
                 )
             else:
+                # Check if role is already assigned
+                user_roles = self.enforcer.get_roles_for_user(user_id)
+                if role in user_roles:
+                    self.logger.debug(f"Role {role} already assigned to user {user_id}")
+                    return True
+
                 # For global roles
                 success = self.enforcer.add_role_for_user(user_id, role)
 
@@ -244,11 +258,27 @@ class CasbinService:
         """
         try:
             if domain:
+                # Check if policy already exists
+                policy_exists = self.enforcer.has_policy(subject, domain, obj, action)
+                if policy_exists:
+                    self.logger.debug(
+                        f"Policy already exists: {subject} -> {obj} -> {action} in domain {domain}"
+                    )
+                    return True
+
                 # For domain-based model, use add_named_policy to specify the policy type
                 success = self.enforcer.add_named_policy(
                     "p", [subject, domain, obj, action]
                 )
             else:
+                # Check if policy already exists
+                policy_exists = self.enforcer.has_policy(subject, obj, action)
+                if policy_exists:
+                    self.logger.debug(
+                        f"Policy already exists: {subject} -> {obj} -> {action}"
+                    )
+                    return True
+
                 success = self.enforcer.add_policy(subject, obj, action)
 
             if success:

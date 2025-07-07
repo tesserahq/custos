@@ -2,6 +2,11 @@ import pytest
 from app.models.user import User
 
 
+@pytest.fixture
+def user_id(setup_user):
+    return str(setup_user.id)
+
+
 @pytest.fixture(scope="function")
 def test_user(db, faker):
     """Create a test user for use in tests."""

@@ -6,11 +6,6 @@ from app.schemas.authorization import (
 )
 
 
-@pytest.fixture
-def user_id(setup_user):
-    return str(setup_user.id)
-
-
 def test_authorize_deny_by_default(client, user_id):
     """Should deny access if no policy or role is set."""
     payload = {

@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 
 
@@ -78,3 +78,39 @@ class PermissionResponse(BaseModel):
     domain: Optional[str] = Field(None, description="The domain/tenant")
     permissions: list[str] = Field(..., description="List of permissions the user has")
     roles: list[str] = Field(..., description="List of roles the user has")
+
+
+class RoleDefinitionRequest(BaseModel):
+    """Request model for role definition."""
+
+    role_type: str = Field(
+        ...,
+        description="Type of role to define: 'admin', 'editor', 'viewer', or 'custom'",
+    )
+    domain: str = Field(..., description="The domain/tenant for the role")
+    role_name: Optional[str] = Field(
+        None, description="Custom role name (required for custom role type)"
+    )
+    custom_permissions: Optional[List[tuple]] = Field(
+        None, description="List of (resource, action) tuples for custom roles"
+    )
+
+
+class RoleDefinitionResponse(BaseModel):
+    """Response model for role definition."""
+
+    success: bool = Field(..., description="Whether the role definition was successful")
+    role_name: str = Field(..., description="The name of the defined role")
+    domain: str = Field(..., description="The domain/tenant")
+    role_type: str = Field(..., description="The type of role that was defined")
+    message: str = Field(..., description="Success or error message")
+
+
+class RoleListResponse(BaseModel):
+    """Response model for role listing."""
+
+    domain: str = Field(..., description="The domain/tenant")
+    roles: List[str] = Field(
+        ..., description="List of role names defined in the domain"
+    )
+    count: int = Field(..., description="Number of roles found")
