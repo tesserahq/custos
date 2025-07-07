@@ -20,6 +20,7 @@ from app.services.casbin_service import casbin_service
 from app.services.role_definition_service import role_definition_service
 from app.services.role_config_service import role_config_service
 from app.core.logging_config import get_logger
+import json
 
 router = APIRouter(prefix="/authorization", tags=["authorization"])
 logger = get_logger()
@@ -371,12 +372,11 @@ async def setup_default_roles(domain: str) -> dict:
 @router.post("/setup-roles", response_model=RoleConfigResponse)
 async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
     """
-    Set up roles for a domain using YAML or CSV content.
+    Set up roles for a domain using YAML, CSV, or JSON content.
     The request body must specify the type and provide the content.
     """
     try:
         if request.type == "yaml":
-            # Validate YAML content
             validation = role_config_service.validate_yaml_content(request.content)
             if not validation["valid"]:
                 return RoleConfigResponse(
@@ -394,15 +394,45 @@ async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
             results = role_config_service.define_roles_from_yaml_content(
                 request.domain, request.content
             )
+        elif request.type == "json":
+            # Accept both dict and string for content
+            json_config = request.content
+            if isinstance(json_config, str):
+                try:
+                    json_config = json.loads(json_config)
+                except Exception as e:
+                    return RoleConfigResponse(
+                        success=False,
+                        domain=request.domain,
+                        config_name=None,
+                        results={},
+                        success_count=0,
+                        total_roles=0,
+                        message=f"Invalid JSON: {e}",
+                        validation_errors=[str(e)],
+                    )
+            validation = role_config_service.validate_json_content(json_config)
+            if not validation["valid"]:
+                return RoleConfigResponse(
+                    success=False,
+                    domain=request.domain,
+                    config_name=None,
+                    results={},
+                    success_count=0,
+                    total_roles=0,
+                    message=f"Invalid JSON configuration: {validation.get('error', 'Unknown error')}",
+                    validation_errors=validation.get(
+                        "errors", [validation.get("error", "Unknown error")]
+                    ),
+                )
+            results = role_config_service.define_roles_from_json_content(
+                request.domain, json_config
+            )
         elif request.type == "csv":
-            # Parse CSV content and define roles
             import io
             import csv
-
-            # Write the CSV content to a temporary in-memory file and parse
             csv_reader = csv.reader(io.StringIO(request.content))
             policies = [row for row in csv_reader if row and not row[0].startswith("#")]
-            # Group policies by role
             role_policies = {}
             for policy in policies:
                 if len(policy) >= 5:
@@ -426,8 +456,8 @@ async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
                 results={},
                 success_count=0,
                 total_roles=0,
-                message="Invalid type. Must be one of: yaml, csv",
-                validation_errors=["Invalid type. Must be one of: yaml, csv"],
+                message="Invalid type. Must be one of: yaml, csv, json",
+                validation_errors=["Invalid type. Must be one of: yaml, csv, json"],
             )
 
         success_count = sum(1 for success in results.values() if success)
@@ -545,4 +575,37 @@ async def validate_yaml_content(
         raise HTTPException(
             status_code=500,
             detail="Internal server error while validating YAML content",
+        )
+
+
+@router.post("/validate-json-content", response_model=RoleConfigValidationResponse)
+async def validate_json_content(
+    request: RoleConfigValidationRequest,
+) -> RoleConfigValidationResponse:
+    """
+    Validate JSON content for role configuration.
+
+    This endpoint validates JSON content without creating any roles.
+    """
+    try:
+        validation = role_config_service.validate_json_content(request.content)
+
+        response = RoleConfigValidationResponse(
+            valid=validation["valid"],
+            config_name=request.config_name,
+            errors=validation.get("errors", []),
+            warnings=validation.get("warnings", []),
+            available_roles=validation.get("available_roles", []),
+            total_permissions=validation.get("total_permissions", 0),
+        )
+
+        logger.info(f"JSON content validation: valid={validation['valid']}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to validate JSON content: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while validating JSON content",
         )

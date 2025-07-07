@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from pydantic import BaseModel, Field
 
 
@@ -171,7 +171,7 @@ class SetupRolesRequest(BaseModel):
     """Unified request model for setting up roles from various sources."""
 
     domain: str = Field(..., description="The domain/tenant for the roles")
-    type: str = Field(..., description="Type of configuration: 'yaml' or 'csv'")
-    content: str = Field(
-        ..., description="Content defining roles and permissions (YAML or CSV format)"
+    type: str = Field(..., description="Type of configuration: 'yaml', 'csv', or 'json'")
+    content: Union[str, Dict[str, Any]] = Field(
+        ..., description="Content defining roles and permissions. For 'yaml' and 'csv', provide a string. For 'json', provide a JSON object."
     )

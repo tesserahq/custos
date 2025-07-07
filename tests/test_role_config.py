@@ -1,6 +1,7 @@
 import pytest
 from app.services.role_config_service import role_config_service
 from app.services.casbin_service import casbin_service
+from app.services.role_definition_service import role_definition_service
 from app.schemas.authorization import SetupRolesRequest
 import json
 
@@ -211,6 +212,121 @@ roles:
         assert (
             validation["total_permissions"] == 9
         )  # 4 for admin users + 2 for admin projects + 3 for editor projects
+
+    def test_load_roles_from_json_content(self):
+        """Test loading role definitions from JSON content."""
+        json_content = """
+        {
+          "roles": {
+            "admin": {
+              "description": "Full access",
+              "permissions": {
+                "users": ["read", "write"],
+                "projects": ["read", "create"]
+              }
+            }
+          }
+        }
+        """
+        
+        config = role_config_service.load_roles_from_json_content(json_content)
+        
+        assert "roles" in config
+        assert "admin" in config["roles"]
+        assert "permissions" in config["roles"]["admin"]
+        assert "users" in config["roles"]["admin"]["permissions"]
+        assert "projects" in config["roles"]["admin"]["permissions"]
+
+    def test_define_roles_from_json_content(self):
+        """Test defining roles from JSON content."""
+        domain = "test-domain-json"
+        json_content = """
+        {
+          "roles": {
+            "admin": {
+              "permissions": {
+                "users": ["read", "write"],
+                "projects": ["read", "create"]
+              }
+            },
+            "editor": {
+              "permissions": {
+                "users": ["read"],
+                "projects": ["read", "write"]
+              }
+            }
+          }
+        }
+        """
+        
+        # Define roles from JSON content
+        results = role_config_service.define_roles_from_json_content(
+            domain, json_content
+        )
+        
+        # Roles should be created successfully
+        assert results["admin"] is True
+        assert results["editor"] is True
+        
+        # Check that roles have expected permissions
+        admin_permissions = role_definition_service.get_role_permissions("admin", domain)
+        editor_permissions = role_definition_service.get_role_permissions("editor", domain)
+        
+        assert ("users", "read") in admin_permissions
+        assert ("users", "write") in admin_permissions
+        assert ("projects", "read") in admin_permissions
+        assert ("projects", "create") in admin_permissions
+        
+        assert ("users", "read") in editor_permissions
+        assert ("projects", "read") in editor_permissions
+        assert ("projects", "write") in editor_permissions
+
+    def test_validate_json_content(self):
+        """Test validating JSON content."""
+        json_content = """
+        {
+          "roles": {
+            "admin": {
+              "permissions": {
+                "users": ["read", "write"],
+                "projects": ["read", "create"]
+              }
+            },
+            "editor": {
+              "permissions": {
+                "users": ["read"],
+                "projects": ["read", "write"]
+              }
+            }
+          }
+        }
+        """
+        
+        validation = role_config_service.validate_json_content(json_content)
+        
+        assert validation["valid"] is True
+        assert "admin" in validation["available_roles"]
+        assert "editor" in validation["available_roles"]
+        assert validation["total_permissions"] == 7  # 2+2 for admin + 1+2 for editor
+
+    def test_validate_invalid_json_content(self):
+        """Test validation of invalid JSON content."""
+        invalid_json = """
+        {
+          "roles": {
+            "admin": {
+              "permissions": {
+                "users": "not a list"
+              }
+            }
+          }
+        }
+        """
+        
+        validation = role_config_service.validate_json_content(invalid_json)
+        
+        assert validation["valid"] is False
+        assert len(validation["errors"]) > 0
 
     def test_validate_invalid_yaml_content(self):
         """Test validation of invalid YAML content."""
@@ -433,6 +549,40 @@ roles:
         assert resp.status_code == 200
         data = resp.json()
         assert data["success"] is True
+        assert data["results"]["admin"] is True
+        assert data["results"]["editor"] is True
+        assert data["success_count"] == 2
+        assert data["total_roles"] == 2
+
+    def test_setup_roles_json(self, client):
+        """Test setting up roles using JSON content via the unified endpoint."""
+        json_content = {
+            "roles": {
+                "admin": {
+                    "description": "Full system access",
+                    "permissions": {
+                        "users": ["read", "write", "delete", "create"],
+                        "projects": ["read", "write"]
+                    }
+                },
+                "editor": {
+                    "description": "Content editing",
+                    "permissions": {
+                        "projects": ["read", "write", "create"]
+                    }
+                }
+            }
+        }
+        req = {
+            "domain": "test-domain-unified-json",
+            "type": "json",
+            "content": json_content,
+        }
+        resp = client.post("/authorization/setup-roles", json=req)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert data["domain"] == "test-domain-unified-json"
         assert data["results"]["admin"] is True
         assert data["results"]["editor"] is True
         assert data["success_count"] == 2

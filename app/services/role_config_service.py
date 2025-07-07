@@ -63,6 +63,29 @@ class RoleConfigService:
             self.logger.error(f"Failed to load YAML configuration from content: {e}")
             raise
 
+    def load_roles_from_json_content(self, json_content: Any) -> Dict[str, Any]:
+        """
+        Load role definitions from JSON content (string or dict).
+
+        Args:
+            json_content: JSON content as a string or dict
+
+        Returns:
+            Dict containing role definitions
+        """
+        try:
+            if isinstance(json_content, dict):
+                config = json_content
+            else:
+                import json
+                config = json.loads(json_content)
+            self.logger.info("Loaded role configuration from JSON content")
+            return config
+
+        except Exception as e:
+            self.logger.error(f"Failed to load JSON configuration from content: {e}")
+            raise
+
     def load_roles_from_csv(self, config_file: str = "roles.csv") -> List[List[str]]:
         """
         Load role definitions from a CSV configuration file.
@@ -156,6 +179,38 @@ class RoleConfigService:
         except Exception as e:
             self.logger.error(
                 f"Failed to define roles from YAML content for domain {domain}: {e}"
+            )
+            return {}
+
+    def define_roles_from_json_content(
+        self, domain: str, json_content: Any
+    ) -> Dict[str, bool]:
+        """
+        Define roles for a domain using JSON content (string or dict).
+
+        Args:
+            domain: The domain/tenant for the roles
+            json_content: JSON content as a string or dict
+
+        Returns:
+            Dict[str, bool]: Results for each role setup
+        """
+        try:
+            config = self.load_roles_from_json_content(json_content)
+            results = {}
+
+            for role_name, role_config in config.get("roles", {}).items():
+                success = self._define_role_from_config(role_name, domain, role_config)
+                results[role_name] = success
+
+            self.logger.info(
+                f"Defined roles from JSON content for domain {domain}: {results}"
+            )
+            return results
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to define roles from JSON content for domain {domain}: {e}"
             )
             return {}
 
@@ -338,6 +393,36 @@ class RoleConfigService:
         try:
             config = self.load_roles_from_yaml_content(yaml_content)
             validation_result = self._validate_yaml_config(config)
+
+            # Add additional metadata
+            if validation_result["valid"]:
+                roles = list(config.get("roles", {}).keys())
+                total_permissions = sum(
+                    len(actions)
+                    for role_config in config.get("roles", {}).values()
+                    for actions in role_config.get("permissions", {}).values()
+                )
+                validation_result["available_roles"] = roles
+                validation_result["total_permissions"] = total_permissions
+
+            return validation_result
+
+        except Exception as e:
+            return {"valid": False, "error": str(e)}
+
+    def validate_json_content(self, json_content: Any) -> Dict[str, Any]:
+        """
+        Validate role configuration JSON content (string or dict).
+
+        Args:
+            json_content: JSON content as a string or dict
+
+        Returns:
+            Dict containing validation results
+        """
+        try:
+            config = self.load_roles_from_json_content(json_content)
+            validation_result = self._validate_yaml_config(config)  # Same validation logic as YAML
 
             # Add additional metadata
             if validation_result["valid"]:
