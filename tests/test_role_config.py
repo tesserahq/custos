@@ -11,13 +11,13 @@ class TestRoleConfig:
     def test_load_roles_from_yaml(self):
         """Test loading role definitions from YAML configuration."""
         config = role_config_service.load_roles_from_yaml("roles.yaml")
-        
+
         # Check that config has expected structure
         assert "roles" in config
         assert "admin" in config["roles"]
         assert "editor" in config["roles"]
         assert "viewer" in config["roles"]
-        
+
         # Check admin role permissions
         admin_permissions = config["roles"]["admin"]["permissions"]
         assert "users" in admin_permissions
@@ -50,12 +50,12 @@ roles:
         - create
 """
         config = role_config_service.load_roles_from_yaml_content(yaml_content)
-        
+
         # Check that config has expected structure
         assert "roles" in config
         assert "admin" in config["roles"]
         assert "editor" in config["roles"]
-        
+
         # Check admin role permissions
         admin_permissions = config["roles"]["admin"]["permissions"]
         assert "users" in admin_permissions
@@ -65,17 +65,24 @@ roles:
     def test_load_roles_from_csv(self):
         """Test loading role definitions from CSV configuration."""
         policies = role_config_service.load_roles_from_csv("roles.csv")
-        
+
         # Check that we have policies
         assert len(policies) > 0
-        
+
         # Check policy format (p, role, domain, resource, action)
         for policy in policies:
             assert len(policy) >= 5
             assert policy[0] == "p"  # policy type
             assert policy[1] in ["admin", "editor", "viewer", "moderator"]  # role
             assert policy[2] == "*"  # domain (wildcard)
-            assert policy[3] in ["users", "projects", "documents", "roles", "settings", "comments"]  # resource
+            assert policy[3] in [
+                "users",
+                "projects",
+                "documents",
+                "roles",
+                "settings",
+                "comments",
+            ]  # resource
             assert policy[4] in ["read", "write", "delete", "create"]  # action
 
     def test_define_roles_from_yaml(self, client):
@@ -84,7 +91,7 @@ roles:
 
         # Define roles from YAML
         results = role_config_service.define_roles_from_yaml(domain, "roles.yaml")
-        
+
         # All roles should be created successfully
         assert results["admin"] is True
         assert results["editor"] is True
@@ -92,7 +99,9 @@ roles:
         assert results["moderator"] is True
 
         # Check that roles have expected permissions
-        admin_permissions = role_config_service._define_role_permissions("admin", domain, [])
+        admin_permissions = role_config_service._define_role_permissions(
+            "admin", domain, []
+        )
         assert admin_permissions is True
 
     def test_define_roles_from_yaml_content(self, client):
@@ -124,8 +133,10 @@ roles:
 """
 
         # Define roles from YAML content
-        results = role_config_service.define_roles_from_yaml_content(domain, yaml_content)
-        
+        results = role_config_service.define_roles_from_yaml_content(
+            domain, yaml_content
+        )
+
         # Roles should be created successfully
         assert results["admin"] is True
         assert results["editor"] is True
@@ -136,7 +147,7 @@ roles:
 
         # Define roles from CSV
         results = role_config_service.define_roles_from_csv(domain, "roles.csv")
-        
+
         # All roles should be created successfully
         assert results["admin"] is True
         assert results["editor"] is True
@@ -164,7 +175,7 @@ roles:
     def test_validate_yaml_configuration(self):
         """Test YAML configuration validation."""
         validation = role_config_service.validate_configuration("roles.yaml")
-        
+
         assert validation["valid"] is True
         assert len(validation["errors"]) == 0
 
@@ -192,12 +203,14 @@ roles:
         - create
 """
         validation = role_config_service.validate_yaml_content(yaml_content)
-        
+
         assert validation["valid"] is True
         assert len(validation["errors"]) == 0
         assert "admin" in validation["available_roles"]
         assert "editor" in validation["available_roles"]
-        assert validation["total_permissions"] == 9  # 4 for admin users + 2 for admin projects + 3 for editor projects
+        assert (
+            validation["total_permissions"] == 9
+        )  # 4 for admin users + 2 for admin projects + 3 for editor projects
 
     def test_validate_invalid_yaml_content(self):
         """Test validation of invalid YAML content."""
@@ -208,14 +221,14 @@ roles:
       users: "not a list"  # Should be a list
 """
         validation = role_config_service.validate_yaml_content(invalid_yaml)
-        
+
         assert validation["valid"] is False
         assert len(validation["errors"]) > 0
 
     def test_validate_csv_configuration(self):
         """Test CSV configuration validation."""
         validation = role_config_service.validate_configuration("roles.csv")
-        
+
         assert validation["valid"] is True
         assert len(validation["errors"]) == 0
 
@@ -295,7 +308,9 @@ roles:
 """
 
         # 1. Set up roles from YAML content
-        results = role_config_service.define_roles_from_yaml_content(domain, yaml_content)
+        results = role_config_service.define_roles_from_yaml_content(
+            domain, yaml_content
+        )
         assert results["admin"] is True
         assert results["editor"] is True
 
@@ -332,26 +347,40 @@ roles:
         domain_hardcoded = "test-domain-hardcoded"
 
         # Set up roles using configuration
-        config_results = role_config_service.define_roles_from_yaml(domain_config, "roles.yaml")
-        
+        config_results = role_config_service.define_roles_from_yaml(
+            domain_config, "roles.yaml"
+        )
+
         # Set up roles using hardcoded approach
         from app.services.role_definition_service import role_definition_service
-        hardcoded_results = role_definition_service.setup_default_roles(domain_hardcoded)
+
+        hardcoded_results = role_definition_service.setup_default_roles(
+            domain_hardcoded
+        )
 
         # Both should succeed
         assert config_results["admin"] is True
         assert hardcoded_results["admin"] is True
 
         # Check that permissions are equivalent
-        config_admin_perms = role_definition_service.get_role_permissions("admin", domain_config)
-        hardcoded_admin_perms = role_definition_service.get_role_permissions("admin", domain_hardcoded)
+        config_admin_perms = role_definition_service.get_role_permissions(
+            "admin", domain_config
+        )
+        hardcoded_admin_perms = role_definition_service.get_role_permissions(
+            "admin", domain_hardcoded
+        )
 
         # Convert to sets for comparison
         config_perms_set = set(config_admin_perms)
         hardcoded_perms_set = set(hardcoded_admin_perms)
 
         # Core permissions should be the same
-        core_permissions = {("users", "read"), ("users", "write"), ("users", "delete"), ("users", "create")}
+        core_permissions = {
+            ("users", "read"),
+            ("users", "write"),
+            ("users", "delete"),
+            ("users", "create"),
+        }
         assert core_permissions.issubset(config_perms_set)
         assert core_permissions.issubset(hardcoded_perms_set)
 
@@ -381,7 +410,7 @@ roles:
         req = {
             "domain": "test-domain-unified-yaml",
             "type": "yaml",
-            "content": yaml_content
+            "content": yaml_content,
         }
         resp = client.post("/authorization/setup-roles", json=req)
         assert resp.status_code == 200
@@ -398,7 +427,7 @@ roles:
         req = {
             "domain": "test-domain-unified-csv",
             "type": "csv",
-            "content": csv_content
+            "content": csv_content,
         }
         resp = client.post("/authorization/setup-roles", json=req)
         assert resp.status_code == 200
@@ -414,11 +443,11 @@ roles:
         req = {
             "domain": "test-domain-invalid-type",
             "type": "invalid_type",
-            "content": "some content"
+            "content": "some content",
         }
         resp = client.post("/authorization/setup-roles", json=req)
         assert resp.status_code == 200
         data = resp.json()
         assert data["success"] is False
         assert data["validation_errors"]
-        assert "Invalid type" in data["validation_errors"][0] 
+        assert "Invalid type" in data["validation_errors"][0]

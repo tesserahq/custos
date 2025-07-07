@@ -387,16 +387,21 @@ async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
                     success_count=0,
                     total_roles=0,
                     message=f"Invalid YAML configuration: {validation.get('error', 'Unknown error')}",
-                    validation_errors=validation.get("errors", [validation.get("error", "Unknown error")])
+                    validation_errors=validation.get(
+                        "errors", [validation.get("error", "Unknown error")]
+                    ),
                 )
-            results = role_config_service.define_roles_from_yaml_content(request.domain, request.content)
+            results = role_config_service.define_roles_from_yaml_content(
+                request.domain, request.content
+            )
         elif request.type == "csv":
             # Parse CSV content and define roles
             import io
             import csv
+
             # Write the CSV content to a temporary in-memory file and parse
             csv_reader = csv.reader(io.StringIO(request.content))
-            policies = [row for row in csv_reader if row and not row[0].startswith('#')]
+            policies = [row for row in csv_reader if row and not row[0].startswith("#")]
             # Group policies by role
             role_policies = {}
             for policy in policies:
@@ -409,7 +414,9 @@ async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
                     role_policies[role].append((resource, action))
             results = {}
             for role_name, permissions in role_policies.items():
-                success = role_config_service._define_role_permissions(role_name, request.domain, permissions)
+                success = role_config_service._define_role_permissions(
+                    role_name, request.domain, permissions
+                )
                 results[role_name] = success
         else:
             return RoleConfigResponse(
@@ -420,7 +427,7 @@ async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
                 success_count=0,
                 total_roles=0,
                 message="Invalid type. Must be one of: yaml, csv",
-                validation_errors=["Invalid type. Must be one of: yaml, csv"]
+                validation_errors=["Invalid type. Must be one of: yaml, csv"],
             )
 
         success_count = sum(1 for success in results.values() if success)
@@ -434,9 +441,11 @@ async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
             success_count=success_count,
             total_roles=total_roles,
             message=f"Roles setup completed: {success_count}/{total_roles} roles created successfully",
-            validation_errors=None
+            validation_errors=None,
         )
-        logger.info(f"Roles setup for domain {request.domain}: {success_count}/{total_roles} successful")
+        logger.info(
+            f"Roles setup for domain {request.domain}: {success_count}/{total_roles} successful"
+        )
         return response
 
     except Exception as e:
@@ -492,7 +501,9 @@ async def validate_configuration(config_file: str = "roles.yaml") -> dict:
             "warnings": validation_result.get("warnings", []),
         }
 
-        logger.info(f"Configuration validation for {config_file}: valid={validation_result['valid']}")
+        logger.info(
+            f"Configuration validation for {config_file}: valid={validation_result['valid']}"
+        )
 
         return response
 
@@ -505,7 +516,9 @@ async def validate_configuration(config_file: str = "roles.yaml") -> dict:
 
 
 @router.post("/validate-yaml-content", response_model=RoleConfigValidationResponse)
-async def validate_yaml_content(request: RoleConfigValidationRequest) -> RoleConfigValidationResponse:
+async def validate_yaml_content(
+    request: RoleConfigValidationRequest,
+) -> RoleConfigValidationResponse:
     """
     Validate YAML content for role configuration.
 
@@ -520,7 +533,7 @@ async def validate_yaml_content(request: RoleConfigValidationRequest) -> RoleCon
             errors=validation.get("errors", []),
             warnings=validation.get("warnings", []),
             available_roles=validation.get("available_roles", []),
-            total_permissions=validation.get("total_permissions", 0)
+            total_permissions=validation.get("total_permissions", 0),
         )
 
         logger.info(f"YAML content validation: valid={validation['valid']}")

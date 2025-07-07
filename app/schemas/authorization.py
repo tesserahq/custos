@@ -120,7 +120,9 @@ class RoleConfigRequest(BaseModel):
     """Request model for role configuration from YAML content."""
 
     domain: str = Field(..., description="The domain/tenant for the roles")
-    yaml_content: str = Field(..., description="YAML content defining roles and permissions")
+    yaml_content: str = Field(
+        ..., description="YAML content defining roles and permissions"
+    )
     config_name: Optional[str] = Field(
         None, description="Optional name for this configuration (for logging/debugging)"
     )
@@ -167,6 +169,9 @@ class RoleConfigValidationResponse(BaseModel):
 
 class SetupRolesRequest(BaseModel):
     """Unified request model for setting up roles from various sources."""
+
     domain: str = Field(..., description="The domain/tenant for the roles")
     type: str = Field(..., description="Type of configuration: 'yaml' or 'csv'")
-    content: str = Field(..., description="Content defining roles and permissions (YAML or CSV format)")
+    content: str = Field(
+        ..., description="Content defining roles and permissions (YAML or CSV format)"
+    )

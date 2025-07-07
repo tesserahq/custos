@@ -29,14 +29,16 @@ class RoleConfigService:
             if not config_path.exists():
                 raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-            with open(config_path, 'r') as file:
+            with open(config_path, "r") as file:
                 config = yaml.safe_load(file)
 
             self.logger.info(f"Loaded role configuration from {config_file}")
             return config
 
         except Exception as e:
-            self.logger.error(f"Failed to load YAML configuration from {config_file}: {e}")
+            self.logger.error(
+                f"Failed to load YAML configuration from {config_file}: {e}"
+            )
             raise
 
     def load_roles_from_yaml_content(self, yaml_content: str) -> Dict[str, Any]:
@@ -77,11 +79,11 @@ class RoleConfigService:
                 raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
             policies = []
-            with open(config_path, 'r') as file:
+            with open(config_path, "r") as file:
                 csv_reader = csv.reader(file)
                 for row in csv_reader:
                     # Skip comments and empty lines
-                    if row and not row[0].startswith('#'):
+                    if row and not row[0].startswith("#"):
                         # Strip whitespace from each field
                         cleaned_row = [field.strip() for field in row]
                         policies.append(cleaned_row)
@@ -90,10 +92,14 @@ class RoleConfigService:
             return policies
 
         except Exception as e:
-            self.logger.error(f"Failed to load CSV configuration from {config_file}: {e}")
+            self.logger.error(
+                f"Failed to load CSV configuration from {config_file}: {e}"
+            )
             raise
 
-    def define_roles_from_yaml(self, domain: str, config_file: str = "roles.yaml") -> Dict[str, bool]:
+    def define_roles_from_yaml(
+        self, domain: str, config_file: str = "roles.yaml"
+    ) -> Dict[str, bool]:
         """
         Define roles for a domain using YAML configuration.
 
@@ -108,7 +114,7 @@ class RoleConfigService:
             config = self.load_roles_from_yaml(config_file)
             results = {}
 
-            for role_name, role_config in config.get('roles', {}).items():
+            for role_name, role_config in config.get("roles", {}).items():
                 success = self._define_role_from_config(role_name, domain, role_config)
                 results[role_name] = success
 
@@ -116,10 +122,14 @@ class RoleConfigService:
             return results
 
         except Exception as e:
-            self.logger.error(f"Failed to define roles from YAML for domain {domain}: {e}")
+            self.logger.error(
+                f"Failed to define roles from YAML for domain {domain}: {e}"
+            )
             return {}
 
-    def define_roles_from_yaml_content(self, domain: str, yaml_content: str) -> Dict[str, bool]:
+    def define_roles_from_yaml_content(
+        self, domain: str, yaml_content: str
+    ) -> Dict[str, bool]:
         """
         Define roles for a domain using YAML content.
 
@@ -134,18 +144,24 @@ class RoleConfigService:
             config = self.load_roles_from_yaml_content(yaml_content)
             results = {}
 
-            for role_name, role_config in config.get('roles', {}).items():
+            for role_name, role_config in config.get("roles", {}).items():
                 success = self._define_role_from_config(role_name, domain, role_config)
                 results[role_name] = success
 
-            self.logger.info(f"Defined roles from YAML content for domain {domain}: {results}")
+            self.logger.info(
+                f"Defined roles from YAML content for domain {domain}: {results}"
+            )
             return results
 
         except Exception as e:
-            self.logger.error(f"Failed to define roles from YAML content for domain {domain}: {e}")
+            self.logger.error(
+                f"Failed to define roles from YAML content for domain {domain}: {e}"
+            )
             return {}
 
-    def define_roles_from_csv(self, domain: str, config_file: str = "roles.csv") -> Dict[str, bool]:
+    def define_roles_from_csv(
+        self, domain: str, config_file: str = "roles.csv"
+    ) -> Dict[str, bool]:
         """
         Define roles for a domain using CSV configuration.
 
@@ -167,7 +183,7 @@ class RoleConfigService:
                     role = policy[1]
                     resource = policy[3]
                     action = policy[4]
-                    
+
                     if role not in role_policies:
                         role_policies[role] = []
                     role_policies[role].append((resource, action))
@@ -181,10 +197,14 @@ class RoleConfigService:
             return results
 
         except Exception as e:
-            self.logger.error(f"Failed to define roles from CSV for domain {domain}: {e}")
+            self.logger.error(
+                f"Failed to define roles from CSV for domain {domain}: {e}"
+            )
             return {}
 
-    def _define_role_from_config(self, role_name: str, domain: str, role_config: Dict[str, Any]) -> bool:
+    def _define_role_from_config(
+        self, role_name: str, domain: str, role_config: Dict[str, Any]
+    ) -> bool:
         """
         Define a role from YAML configuration.
 
@@ -198,7 +218,7 @@ class RoleConfigService:
         """
         try:
             permissions = []
-            role_permissions = role_config.get('permissions', {})
+            role_permissions = role_config.get("permissions", {})
 
             for resource, actions in role_permissions.items():
                 for action in actions:
@@ -210,7 +230,9 @@ class RoleConfigService:
             self.logger.error(f"Failed to define role {role_name} from config: {e}")
             return False
 
-    def _define_role_permissions(self, role_name: str, domain: str, permissions: List[tuple]) -> bool:
+    def _define_role_permissions(
+        self, role_name: str, domain: str, permissions: List[tuple]
+    ) -> bool:
         """
         Define permissions for a role.
 
@@ -225,7 +247,9 @@ class RoleConfigService:
         try:
             success_count = 0
             for resource, action in permissions:
-                if casbin_service.add_policy(role_name, resource, action, domain=domain):
+                if casbin_service.add_policy(
+                    role_name, resource, action, domain=domain
+                ):
                     success_count += 1
                 else:
                     self.logger.warning(
@@ -240,7 +264,9 @@ class RoleConfigService:
             return success_count >= len(permissions) * 0.8
 
         except Exception as e:
-            self.logger.error(f"Failed to define role '{role_name}' for domain {domain}: {e}")
+            self.logger.error(
+                f"Failed to define role '{role_name}' for domain {domain}: {e}"
+            )
             return False
 
     def get_available_roles(self, config_file: str = "roles.yaml") -> List[str]:
@@ -254,10 +280,10 @@ class RoleConfigService:
             List of role names
         """
         try:
-            if config_file.endswith('.yaml') or config_file.endswith('.yml'):
+            if config_file.endswith(".yaml") or config_file.endswith(".yml"):
                 config = self.load_roles_from_yaml(config_file)
-                return list(config.get('roles', {}).keys())
-            elif config_file.endswith('.csv'):
+                return list(config.get("roles", {}).keys())
+            elif config_file.endswith(".csv"):
                 policies = self.load_roles_from_csv(config_file)
                 roles = set()
                 for policy in policies:
@@ -265,7 +291,9 @@ class RoleConfigService:
                         roles.add(policy[1])
                 return list(roles)
             else:
-                raise ValueError(f"Unsupported configuration file format: {config_file}")
+                raise ValueError(
+                    f"Unsupported configuration file format: {config_file}"
+                )
 
         except Exception as e:
             self.logger.error(f"Failed to get available roles from {config_file}: {e}")
@@ -282,14 +310,17 @@ class RoleConfigService:
             Dict containing validation results
         """
         try:
-            if config_file.endswith('.yaml') or config_file.endswith('.yml'):
+            if config_file.endswith(".yaml") or config_file.endswith(".yml"):
                 config = self.load_roles_from_yaml(config_file)
                 return self._validate_yaml_config(config)
-            elif config_file.endswith('.csv'):
+            elif config_file.endswith(".csv"):
                 policies = self.load_roles_from_csv(config_file)
                 return self._validate_csv_config(policies)
             else:
-                return {"valid": False, "error": f"Unsupported file format: {config_file}"}
+                return {
+                    "valid": False,
+                    "error": f"Unsupported file format: {config_file}",
+                }
 
         except Exception as e:
             return {"valid": False, "error": str(e)}
@@ -307,18 +338,18 @@ class RoleConfigService:
         try:
             config = self.load_roles_from_yaml_content(yaml_content)
             validation_result = self._validate_yaml_config(config)
-            
+
             # Add additional metadata
             if validation_result["valid"]:
-                roles = list(config.get('roles', {}).keys())
+                roles = list(config.get("roles", {}).keys())
                 total_permissions = sum(
-                    len(actions) 
-                    for role_config in config.get('roles', {}).values()
-                    for actions in role_config.get('permissions', {}).values()
+                    len(actions)
+                    for role_config in config.get("roles", {}).values()
+                    for actions in role_config.get("permissions", {}).values()
                 )
                 validation_result["available_roles"] = roles
                 validation_result["total_permissions"] = total_permissions
-            
+
             return validation_result
 
         except Exception as e:
@@ -329,27 +360,27 @@ class RoleConfigService:
         errors = []
         warnings = []
 
-        if 'roles' not in config:
+        if "roles" not in config:
             errors.append("Missing 'roles' section")
 
-        for role_name, role_config in config.get('roles', {}).items():
-            if 'permissions' not in role_config:
+        for role_name, role_config in config.get("roles", {}).items():
+            if "permissions" not in role_config:
                 errors.append(f"Role '{role_name}' missing 'permissions' section")
                 continue
 
-            for resource, actions in role_config['permissions'].items():
+            for resource, actions in role_config["permissions"].items():
                 if not isinstance(actions, list):
-                    errors.append(f"Role '{role_name}' resource '{resource}' actions must be a list")
+                    errors.append(
+                        f"Role '{role_name}' resource '{resource}' actions must be a list"
+                    )
                 else:
                     for action in actions:
                         if not isinstance(action, str):
-                            errors.append(f"Role '{role_name}' resource '{resource}' action must be a string")
+                            errors.append(
+                                f"Role '{role_name}' resource '{resource}' action must be a string"
+                            )
 
-        return {
-            "valid": len(errors) == 0,
-            "errors": errors,
-            "warnings": warnings
-        }
+        return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}
 
     def _validate_csv_config(self, policies: List[List[str]]) -> Dict[str, Any]:
         """Validate CSV configuration structure."""
@@ -358,16 +389,14 @@ class RoleConfigService:
 
         for i, policy in enumerate(policies):
             if len(policy) < 5:
-                errors.append(f"Policy {i+1}: insufficient fields (expected 5, got {len(policy)})")
-            elif policy[0] != 'p':
+                errors.append(
+                    f"Policy {i+1}: insufficient fields (expected 5, got {len(policy)})"
+                )
+            elif policy[0] != "p":
                 errors.append(f"Policy {i+1}: first field must be 'p'")
 
-        return {
-            "valid": len(errors) == 0,
-            "errors": errors,
-            "warnings": warnings
-        }
+        return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}
 
 
 # Global instance
-role_config_service = RoleConfigService() 
+role_config_service = RoleConfigService()
