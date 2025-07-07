@@ -10,9 +10,15 @@ from app.schemas.authorization import (
     RoleDefinitionRequest,
     RoleDefinitionResponse,
     RoleListResponse,
+    RoleConfigRequest,
+    RoleConfigResponse,
+    RoleConfigValidationRequest,
+    RoleConfigValidationResponse,
+    SetupRolesRequest,
 )
 from app.services.casbin_service import casbin_service
 from app.services.role_definition_service import role_definition_service
+from app.services.role_config_service import role_config_service
 from app.core.logging_config import get_logger
 
 router = APIRouter(prefix="/authorization", tags=["authorization"])
@@ -359,4 +365,171 @@ async def setup_default_roles(domain: str) -> dict:
         raise HTTPException(
             status_code=500,
             detail="Internal server error while setting up default roles",
+        )
+
+
+@router.post("/setup-roles", response_model=RoleConfigResponse)
+async def setup_roles(request: SetupRolesRequest) -> RoleConfigResponse:
+    """
+    Set up roles for a domain using YAML or CSV content.
+    The request body must specify the type and provide the content.
+    """
+    try:
+        if request.type == "yaml":
+            # Validate YAML content
+            validation = role_config_service.validate_yaml_content(request.content)
+            if not validation["valid"]:
+                return RoleConfigResponse(
+                    success=False,
+                    domain=request.domain,
+                    config_name=None,
+                    results={},
+                    success_count=0,
+                    total_roles=0,
+                    message=f"Invalid YAML configuration: {validation.get('error', 'Unknown error')}",
+                    validation_errors=validation.get("errors", [validation.get("error", "Unknown error")])
+                )
+            results = role_config_service.define_roles_from_yaml_content(request.domain, request.content)
+        elif request.type == "csv":
+            # Parse CSV content and define roles
+            import io
+            import csv
+            # Write the CSV content to a temporary in-memory file and parse
+            csv_reader = csv.reader(io.StringIO(request.content))
+            policies = [row for row in csv_reader if row and not row[0].startswith('#')]
+            # Group policies by role
+            role_policies = {}
+            for policy in policies:
+                if len(policy) >= 5:
+                    role = policy[1].strip()
+                    resource = policy[3].strip()
+                    action = policy[4].strip()
+                    if role not in role_policies:
+                        role_policies[role] = []
+                    role_policies[role].append((resource, action))
+            results = {}
+            for role_name, permissions in role_policies.items():
+                success = role_config_service._define_role_permissions(role_name, request.domain, permissions)
+                results[role_name] = success
+        else:
+            return RoleConfigResponse(
+                success=False,
+                domain=request.domain,
+                config_name=None,
+                results={},
+                success_count=0,
+                total_roles=0,
+                message="Invalid type. Must be one of: yaml, csv",
+                validation_errors=["Invalid type. Must be one of: yaml, csv"]
+            )
+
+        success_count = sum(1 for success in results.values() if success)
+        total_roles = len(results)
+
+        response = RoleConfigResponse(
+            success=success_count > 0,
+            domain=request.domain,
+            config_name=None,
+            results=results,
+            success_count=success_count,
+            total_roles=total_roles,
+            message=f"Roles setup completed: {success_count}/{total_roles} roles created successfully",
+            validation_errors=None
+        )
+        logger.info(f"Roles setup for domain {request.domain}: {success_count}/{total_roles} successful")
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to setup roles for domain {request.domain}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while setting up roles",
+        )
+
+
+@router.get("/available-roles")
+async def get_available_roles(config_file: str = "roles.yaml") -> dict:
+    """
+    Get list of available roles from configuration files.
+
+    This endpoint returns all roles defined in the configuration files.
+    """
+    try:
+        roles = role_config_service.get_available_roles(config_file)
+
+        response = {
+            "config_file": config_file,
+            "available_roles": roles,
+            "count": len(roles),
+        }
+
+        logger.info(f"Available roles from {config_file}: {len(roles)} roles found")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to get available roles from {config_file}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while getting available roles",
+        )
+
+
+@router.get("/validate-config")
+async def validate_configuration(config_file: str = "roles.yaml") -> dict:
+    """
+    Validate role configuration files.
+
+    This endpoint validates the structure and content of role configuration files.
+    """
+    try:
+        validation_result = role_config_service.validate_configuration(config_file)
+
+        response = {
+            "config_file": config_file,
+            "valid": validation_result["valid"],
+            "errors": validation_result.get("errors", []),
+            "warnings": validation_result.get("warnings", []),
+        }
+
+        logger.info(f"Configuration validation for {config_file}: valid={validation_result['valid']}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to validate configuration {config_file}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while validating configuration",
+        )
+
+
+@router.post("/validate-yaml-content", response_model=RoleConfigValidationResponse)
+async def validate_yaml_content(request: RoleConfigValidationRequest) -> RoleConfigValidationResponse:
+    """
+    Validate YAML content for role configuration.
+
+    This endpoint validates YAML content without creating any roles.
+    """
+    try:
+        validation = role_config_service.validate_yaml_content(request.yaml_content)
+
+        response = RoleConfigValidationResponse(
+            valid=validation["valid"],
+            config_name=request.config_name,
+            errors=validation.get("errors", []),
+            warnings=validation.get("warnings", []),
+            available_roles=validation.get("available_roles", []),
+            total_permissions=validation.get("total_permissions", 0)
+        )
+
+        logger.info(f"YAML content validation: valid={validation['valid']}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to validate YAML content: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while validating YAML content",
         )

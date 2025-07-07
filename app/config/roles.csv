@@ -1,0 +1,44 @@
+# Casbin Policy CSV Format
+# Format: p, role, domain, resource, action
+# This file defines policies for each role
+
+p, admin, *, users, read
+p, admin, *, users, write
+p, admin, *, users, delete
+p, admin, *, users, create
+p, admin, *, projects, read
+p, admin, *, projects, write
+p, admin, *, projects, delete
+p, admin, *, projects, create
+p, admin, *, documents, read
+p, admin, *, documents, write
+p, admin, *, documents, delete
+p, admin, *, documents, create
+p, admin, *, roles, read
+p, admin, *, roles, write
+p, admin, *, roles, delete
+p, admin, *, roles, create
+p, admin, *, settings, read
+p, admin, *, settings, write
+
+p, editor, *, users, read
+p, editor, *, projects, read
+p, editor, *, projects, write
+p, editor, *, projects, create
+p, editor, *, documents, read
+p, editor, *, documents, write
+p, editor, *, documents, create
+p, editor, *, settings, read
+
+p, viewer, *, users, read
+p, viewer, *, projects, read
+p, viewer, *, documents, read
+p, viewer, *, settings, read
+
+p, moderator, *, users, read
+p, moderator, *, users, write
+p, moderator, *, comments, read
+p, moderator, *, comments, write
+p, moderator, *, comments, delete
+p, moderator, *, documents, read
+p, moderator, *, documents, write 

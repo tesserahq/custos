@@ -114,3 +114,59 @@ class RoleListResponse(BaseModel):
         ..., description="List of role names defined in the domain"
     )
     count: int = Field(..., description="Number of roles found")
+
+
+class RoleConfigRequest(BaseModel):
+    """Request model for role configuration from YAML content."""
+
+    domain: str = Field(..., description="The domain/tenant for the roles")
+    yaml_content: str = Field(..., description="YAML content defining roles and permissions")
+    config_name: Optional[str] = Field(
+        None, description="Optional name for this configuration (for logging/debugging)"
+    )
+
+
+class RoleConfigResponse(BaseModel):
+    """Response model for role configuration setup."""
+
+    success: bool = Field(..., description="Whether the role setup was successful")
+    domain: str = Field(..., description="The domain/tenant")
+    config_name: Optional[str] = Field(None, description="Name of the configuration")
+    results: Dict[str, bool] = Field(..., description="Results for each role setup")
+    success_count: int = Field(..., description="Number of roles successfully created")
+    total_roles: int = Field(..., description="Total number of roles attempted")
+    message: str = Field(..., description="Success or error message")
+    validation_errors: Optional[List[str]] = Field(
+        None, description="Validation errors if any"
+    )
+
+
+class RoleConfigValidationRequest(BaseModel):
+    """Request model for validating role configuration YAML content."""
+
+    yaml_content: str = Field(..., description="YAML content to validate")
+    config_name: Optional[str] = Field(
+        None, description="Optional name for this configuration"
+    )
+
+
+class RoleConfigValidationResponse(BaseModel):
+    """Response model for role configuration validation."""
+
+    valid: bool = Field(..., description="Whether the configuration is valid")
+    config_name: Optional[str] = Field(None, description="Name of the configuration")
+    errors: List[str] = Field(..., description="List of validation errors")
+    warnings: List[str] = Field(..., description="List of validation warnings")
+    available_roles: Optional[List[str]] = Field(
+        None, description="List of roles found in the configuration"
+    )
+    total_permissions: Optional[int] = Field(
+        None, description="Total number of permissions defined"
+    )
+
+
+class SetupRolesRequest(BaseModel):
+    """Unified request model for setting up roles from various sources."""
+    domain: str = Field(..., description="The domain/tenant for the roles")
+    type: str = Field(..., description="Type of configuration: 'yaml' or 'csv'")
+    content: str = Field(..., description="Content defining roles and permissions (YAML or CSV format)")
