@@ -36,6 +36,31 @@ def super_admin_user(db, faker):
 
 
 @pytest.fixture
+def super_admin_service_account(db, faker):
+    """Create a super admin service account with proper Casbin roles."""
+    service = ServiceAccountService(db)
+
+    service_account_data = ServiceAccountCreate(
+        name="Super Admin Service Account",
+        description="A service account with super admin privileges",
+        is_active=True,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+    )
+
+    # Create the service account
+    created_account = service.create_service_account(
+        service_account_data, created_by=None
+    )
+
+    # Assign super admin role in Casbin
+    casbin_service.assign_role(
+        user_id=str(created_account.id), role="super_admin", domain="*"
+    )
+
+    return created_account
+
+
+@pytest.fixture
 def regular_user(db, faker):
     """Create a regular user without admin privileges."""
     email = faker.email()
@@ -101,6 +126,14 @@ def client_with_regular_user(client, regular_user):
     """Create a test client with a regular user."""
     # Update the app state to use the regular user
     client.app.state.test_user = regular_user
+    return client
+
+
+@pytest.fixture
+def client_with_service_account(client, super_admin_service_account):
+    """Create a test client with a super admin service account."""
+    # Update the app state to use the service account
+    client.app.state.test_service_account = super_admin_service_account
     return client
 
 
@@ -461,3 +494,121 @@ class TestServiceAccountsEndpoints:
         response = client_with_regular_user.get("/service-accounts/")
         assert response.status_code == 403
         assert "Super admin privileges required" in response.json()["detail"]
+
+    def test_service_account_authentication_success(
+        self, client, super_admin_service_account, db
+    ):
+        """Test that service accounts can authenticate using X-Service-Token header."""
+        # Get the ORM model from the database
+        from app.models.service_account import ServiceAccount
+
+        db_account = (
+            db.query(ServiceAccount)
+            .filter(ServiceAccount.id == super_admin_service_account.id)
+            .first()
+        )
+
+        # Ensure the service account has the super_admin role in this session
+        casbin_service.assign_role(
+            user_id=str(db_account.id), role="super_admin", domain="*"
+        )
+
+        # Verify the service account has the super_admin role
+        service_account_roles = casbin_service.get_user_roles(str(db_account.id))
+        print(f"Service account roles: {service_account_roles}")
+
+        # Set the service account in the app state for the mock middleware
+        client.app.state.test_service_account = db_account
+
+        # Use the API key from the created service account
+        api_key = super_admin_service_account.api_key
+
+        response = client.get(
+            "/service-accounts/", headers={"X-Service-Token": api_key}
+        )
+
+        print(f"Response status: {response.status_code}")
+        print(f"Response body: {response.text}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    def test_service_account_authentication_invalid_token(self, client):
+        """Test that invalid service account tokens are rejected."""
+        response = client.get(
+            "/service-accounts/", headers={"X-Service-Token": "invalid_token"}
+        )
+
+        assert response.status_code == 401
+        assert "Invalid service token" in response.json()["error"]
+
+    def test_service_account_authentication_inactive_account(self, client, db):
+        """Test that inactive service accounts cannot authenticate."""
+        service = ServiceAccountService(db)
+
+        # Create an inactive service account
+        service_account_data = ServiceAccountCreate(
+            name="Inactive Service Account",
+            description="An inactive service account",
+            is_active=False,
+        )
+
+        created_account = service.create_service_account(
+            service_account_data, created_by=None
+        )
+
+        # Get the ORM model from the database
+        from app.models.service_account import ServiceAccount
+
+        db_account = (
+            db.query(ServiceAccount)
+            .filter(ServiceAccount.id == created_account.id)
+            .first()
+        )
+
+        # Set the service account in the app state for the mock middleware
+        client.app.state.test_service_account = db_account
+
+        response = client.get(
+            "/service-accounts/", headers={"X-Service-Token": created_account.api_key}
+        )
+
+        assert response.status_code == 410
+        assert "Service account is inactive" in response.json()["error"]
+
+    def test_service_account_authentication_expired_account(self, client, db):
+        """Test that expired service accounts cannot authenticate."""
+        service = ServiceAccountService(db)
+
+        # Create an expired service account
+        service_account_data = ServiceAccountCreate(
+            name="Expired Service Account",
+            description="An expired service account",
+            is_active=True,
+            expires_at=datetime.now(timezone.utc)
+            - timedelta(days=1),  # Expired yesterday
+        )
+
+        created_account = service.create_service_account(
+            service_account_data, created_by=None
+        )
+
+        # Get the ORM model from the database
+        from app.models.service_account import ServiceAccount
+
+        db_account = (
+            db.query(ServiceAccount)
+            .filter(ServiceAccount.id == created_account.id)
+            .first()
+        )
+
+        # Set the service account in the app state for the mock middleware
+        client.app.state.test_service_account = db_account
+
+        response = client.get(
+            "/service-accounts/", headers={"X-Service-Token": created_account.api_key}
+        )
+
+        assert response.status_code == 410
+        assert "Service account has expired" in response.json()["error"]

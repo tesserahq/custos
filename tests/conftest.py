@@ -109,8 +109,52 @@ def auth_token():
 
 class MockAuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
-        # Inject a fake user directly into request.state
-        request.state.user = getattr(request.app.state, "test_user", None)
+        # Check for service account token first (X-Service-Token header)
+        service_token = request.headers.get("X-Service-Token")
+
+        if service_token:
+            # Get the test service account from app state
+            test_service_account = getattr(
+                request.app.state, "test_service_account", None
+            )
+
+            # Validate service account state (mimic real validation)
+            if test_service_account is None:
+                from fastapi.responses import JSONResponse
+
+                return JSONResponse(
+                    status_code=401, content={"error": "Invalid service token"}
+                )
+
+            # Check if service account is active
+            if not test_service_account.is_active:
+                from fastapi.responses import JSONResponse
+
+                return JSONResponse(
+                    status_code=410,
+                    content={"error": "Service account is inactive"},
+                )
+
+            # Check if service account has expired
+            if test_service_account.is_expired():
+                from fastapi.responses import JSONResponse
+
+                return JSONResponse(
+                    status_code=410,
+                    content={"error": "Service account has expired"},
+                )
+
+            # If all validations pass, set the service account in request state
+            request.state.service_account = test_service_account
+            request.state.user = (
+                None  # Clear user to indicate service account authentication
+            )
+        else:
+            # Inject a fake user directly into request.state
+            test_user = getattr(request.app.state, "test_user", None)
+            request.state.user = test_user
+            request.state.service_account = None
+
         return await call_next(request)
 
 
@@ -162,4 +206,6 @@ def client(db, setup_user):
 
     # Clean up
     delattr(app.state, "test_user")
+    if hasattr(app.state, "test_service_account"):
+        delattr(app.state, "test_service_account")
     app.dependency_overrides.clear()  # Clear overrides after test

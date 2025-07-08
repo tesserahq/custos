@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
@@ -6,12 +6,13 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.utils.auth import get_current_user
 from app.models.user import User
+from app.models.service_account import ServiceAccount
 from app.services.service_account_service import ServiceAccountService
 from app.services.casbin_service import casbin_service
 from app.schemas.service_account import (
     ServiceAccountCreate,
     ServiceAccountUpdate,
-    ServiceAccount,
+    ServiceAccount as ServiceAccountSchema,
     ServiceAccountWithKey,
     ServiceAccountDetails,
 )
@@ -21,35 +22,72 @@ from app.core.logging_config import get_logger
 router = APIRouter(prefix="/service-accounts", tags=["service-accounts"])
 logger = get_logger()
 
+# Union type for authenticated entities
+AuthenticatedEntity = Union[User, ServiceAccount]
 
-def require_super_admin(user: User = Depends(get_current_user)) -> User:
-    """Dependency to ensure the user is a super admin."""
-    # Check if user has admin role in any domain or globally
-    user_roles = casbin_service.get_user_roles(str(user.id))
 
-    # Check for admin or super_admin role in any domain
-    for domain in ["*", "global", "admin"]:  # Common admin domains
-        domain_roles = casbin_service.get_user_roles(str(user.id), domain)
-        if "admin" in domain_roles or "super_admin" in domain_roles:
-            return user
+def get_entity_id(entity: AuthenticatedEntity) -> str:
+    """Get the ID from either a User or ServiceAccount entity."""
+    if isinstance(entity, ServiceAccount):
+        return str(entity.id)
+    elif isinstance(entity, User):
+        return str(entity.id)
+    else:
+        raise ValueError("Invalid entity type")
 
-    # Check if user has admin role globally
-    if "admin" in user_roles:
-        return user
 
-    # Check if user has super_admin role globally
-    if "super_admin" in user_roles:
-        return user
+def require_super_admin(
+    entity: AuthenticatedEntity = Depends(get_current_user),
+) -> AuthenticatedEntity:
+    """Dependency to ensure the authenticated entity has super admin privileges."""
+    if isinstance(entity, ServiceAccount):
+        # For service accounts, check if they have admin roles
+        service_account_roles = casbin_service.get_user_roles(str(entity.id))
 
-    raise HTTPException(
-        status_code=403, detail="Access denied. Super admin privileges required."
-    )
+        # Check for admin or super_admin role in any domain
+        for domain in ["*", "global", "admin"]:  # Common admin domains
+            domain_roles = casbin_service.get_user_roles(str(entity.id), domain)
+            if "admin" in domain_roles or "super_admin" in domain_roles:
+                return entity
+
+        # Check if service account has admin role globally
+        if "admin" in service_account_roles or "super_admin" in service_account_roles:
+            return entity
+
+        raise HTTPException(
+            status_code=403, detail="Access denied. Super admin privileges required."
+        )
+
+    elif isinstance(entity, User):
+        # For users, check if they have admin role in any domain or globally
+        user_roles = casbin_service.get_user_roles(str(entity.id))
+
+        # Check for admin or super_admin role in any domain
+        for domain in ["*", "global", "admin"]:  # Common admin domains
+            domain_roles = casbin_service.get_user_roles(str(entity.id), domain)
+            if "admin" in domain_roles or "super_admin" in domain_roles:
+                return entity
+
+        # Check if user has admin role globally
+        if "admin" in user_roles:
+            return entity
+
+        # Check if user has super_admin role globally
+        if "super_admin" in user_roles:
+            return entity
+
+        raise HTTPException(
+            status_code=403, detail="Access denied. Super admin privileges required."
+        )
+
+    else:
+        raise HTTPException(status_code=401, detail="Invalid authentication type")
 
 
 @router.post("/", response_model=ServiceAccountWithKey)
 async def create_service_account(
     service_account: ServiceAccountCreate,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ) -> ServiceAccountWithKey:
     """
@@ -62,12 +100,12 @@ async def create_service_account(
 
     try:
         created_account = service.create_service_account(
-            service_account, created_by=current_user.id
+            service_account, created_by=UUID(get_entity_id(current_user))
         )
 
         logger.info(
             f"Service account created: id={created_account.id}, "
-            f"name={created_account.name}, created_by={current_user.id}"
+            f"name={created_account.name}, created_by={get_entity_id(current_user)}"
         )
 
         return created_account
@@ -77,15 +115,15 @@ async def create_service_account(
         raise HTTPException(status_code=500, detail="Failed to create service account")
 
 
-@router.get("/", response_model=List[ServiceAccount])
+@router.get("/", response_model=List[ServiceAccountSchema])
 async def list_service_accounts(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(
         100, ge=1, le=1000, description="Maximum number of records to return"
     ),
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
-) -> List[ServiceAccount]:
+) -> List[ServiceAccountSchema]:
     """
     List all service accounts with pagination.
 
@@ -96,16 +134,17 @@ async def list_service_accounts(
 
     logger.info(
         f"Service accounts listed: count={len(service_accounts)}, "
-        f"requested_by={current_user.id}"
+        f"requested_by={get_entity_id(current_user)}"
     )
 
     return service_accounts
 
 
-@router.get("/active", response_model=List[ServiceAccount])
+@router.get("/active", response_model=List[ServiceAccountSchema])
 async def list_active_service_accounts(
-    current_user: User = Depends(require_super_admin), db: Session = Depends(get_db)
-) -> List[ServiceAccount]:
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+) -> List[ServiceAccountSchema]:
     """
     List all active service accounts.
 
@@ -116,16 +155,17 @@ async def list_active_service_accounts(
 
     logger.info(
         f"Active service accounts listed: count={len(service_accounts)}, "
-        f"requested_by={current_user.id}"
+        f"requested_by={get_entity_id(current_user)}"
     )
 
     return service_accounts
 
 
-@router.get("/expired", response_model=List[ServiceAccount])
+@router.get("/expired", response_model=List[ServiceAccountSchema])
 async def list_expired_service_accounts(
-    current_user: User = Depends(require_super_admin), db: Session = Depends(get_db)
-) -> List[ServiceAccount]:
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+) -> List[ServiceAccountSchema]:
     """
     List all expired service accounts.
 
@@ -136,7 +176,7 @@ async def list_expired_service_accounts(
 
     logger.info(
         f"Expired service accounts listed: count={len(service_accounts)}, "
-        f"requested_by={current_user.id}"
+        f"requested_by={get_entity_id(current_user)}"
     )
 
     return service_accounts
@@ -149,9 +189,9 @@ async def search_service_accounts(
     ),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     external_id: Optional[str] = Query(None, description="Search by external ID"),
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
-) -> List[ServiceAccount]:
+) -> List[ServiceAccountSchema]:
     """
     Search service accounts with various filters.
 
@@ -172,18 +212,18 @@ async def search_service_accounts(
 
     logger.info(
         f"Service accounts searched: filters={filters}, "
-        f"results_count={len(service_accounts)}, requested_by={current_user.id}"
+        f"results_count={len(service_accounts)}, requested_by={get_entity_id(current_user)}"
     )
 
     return service_accounts
 
 
-@router.get("/{service_account_id}", response_model=ServiceAccount)
+@router.get("/{service_account_id}", response_model=ServiceAccountSchema)
 async def get_service_account(
     service_account_id: UUID,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
-) -> ServiceAccount:
+) -> ServiceAccountSchema:
     """
     Get a specific service account by ID.
 
@@ -197,19 +237,19 @@ async def get_service_account(
 
     logger.info(
         f"Service account retrieved: id={service_account_id}, "
-        f"requested_by={current_user.id}"
+        f"requested_by={get_entity_id(current_user)}"
     )
 
     return service_account
 
 
-@router.put("/{service_account_id}", response_model=ServiceAccount)
+@router.put("/{service_account_id}", response_model=ServiceAccountSchema)
 async def update_service_account(
     service_account_id: UUID,
     service_account_update: ServiceAccountUpdate,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
-) -> ServiceAccount:
+) -> ServiceAccountSchema:
     """
     Update a service account.
 
@@ -231,7 +271,7 @@ async def update_service_account(
 
     logger.info(
         f"Service account updated: id={service_account_id}, "
-        f"updated_by={current_user.id}"
+        f"updated_by={get_entity_id(current_user)}"
     )
 
     return updated_account
@@ -240,7 +280,7 @@ async def update_service_account(
 @router.delete("/{service_account_id}")
 async def delete_service_account(
     service_account_id: UUID,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -262,7 +302,7 @@ async def delete_service_account(
 
     logger.info(
         f"Service account deleted: id={service_account_id}, "
-        f"deleted_by={current_user.id}"
+        f"deleted_by={get_entity_id(current_user)}"
     )
 
     return {"message": "Service account deleted successfully"}
@@ -273,7 +313,7 @@ async def delete_service_account(
 )
 async def regenerate_api_key(
     service_account_id: UUID,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ) -> ServiceAccountWithKey:
     """
@@ -296,7 +336,7 @@ async def regenerate_api_key(
 
     logger.info(
         f"API key regenerated: service_account_id={service_account_id}, "
-        f"regenerated_by={current_user.id}"
+        f"regenerated_by={get_entity_id(current_user)}"
     )
 
     return updated_account
@@ -305,9 +345,9 @@ async def regenerate_api_key(
 @router.post("/{service_account_id}/activate")
 async def activate_service_account(
     service_account_id: UUID,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
-) -> ServiceAccount:
+) -> ServiceAccountSchema:
     """
     Activate a service account.
 
@@ -329,7 +369,7 @@ async def activate_service_account(
 
     logger.info(
         f"Service account activated: id={service_account_id}, "
-        f"activated_by={current_user.id}"
+        f"activated_by={get_entity_id(current_user)}"
     )
 
     return activated_account
@@ -338,9 +378,9 @@ async def activate_service_account(
 @router.post("/{service_account_id}/deactivate")
 async def deactivate_service_account(
     service_account_id: UUID,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
-) -> ServiceAccount:
+) -> ServiceAccountSchema:
     """
     Deactivate a service account.
 
@@ -362,7 +402,7 @@ async def deactivate_service_account(
 
     logger.info(
         f"Service account deactivated: id={service_account_id}, "
-        f"deactivated_by={current_user.id}"
+        f"deactivated_by={get_entity_id(current_user)}"
     )
 
     return deactivated_account
@@ -372,7 +412,7 @@ async def deactivate_service_account(
 async def assign_role_to_service_account(
     service_account_id: UUID,
     request: RoleAssignmentRequest,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ) -> RoleAssignmentResponse:
     """
@@ -408,7 +448,7 @@ async def assign_role_to_service_account(
 
     logger.info(
         f"Role assigned to service account: service_account_id={service_account_id}, "
-        f"role={request.role}, domain={request.domain}, assigned_by={current_user.id}"
+        f"role={request.role}, domain={request.domain}, assigned_by={get_entity_id(current_user)}"
     )
 
     return response
@@ -420,7 +460,7 @@ async def assign_role_to_service_account(
 async def remove_role_from_service_account(
     service_account_id: UUID,
     request: RoleAssignmentRequest,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ) -> RoleAssignmentResponse:
     """
@@ -456,7 +496,7 @@ async def remove_role_from_service_account(
 
     logger.info(
         f"Role removed from service account: service_account_id={service_account_id}, "
-        f"role={request.role}, domain={request.domain}, removed_by={current_user.id}"
+        f"role={request.role}, domain={request.domain}, removed_by={get_entity_id(current_user)}"
     )
 
     return response
@@ -466,7 +506,7 @@ async def remove_role_from_service_account(
 async def get_service_account_roles(
     service_account_id: UUID,
     domain: Optional[str] = Query(None, description="Domain to filter roles by"),
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -485,7 +525,7 @@ async def get_service_account_roles(
 
     logger.info(
         f"Service account roles retrieved: service_account_id={service_account_id}, "
-        f"domain={domain}, roles_count={len(roles)}, requested_by={current_user.id}"
+        f"domain={domain}, roles_count={len(roles)}, requested_by={get_entity_id(current_user)}"
     )
 
     return {
@@ -500,7 +540,7 @@ async def get_service_account_roles(
 async def get_service_account_permissions(
     service_account_id: UUID,
     domain: Optional[str] = Query(None, description="Domain to filter permissions by"),
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -532,7 +572,7 @@ async def get_service_account_permissions(
     logger.info(
         f"Service account permissions retrieved: service_account_id={service_account_id}, "
         f"domain={domain}, permissions_count={len(formatted_permissions)}, "
-        f"requested_by={current_user.id}"
+        f"requested_by={get_entity_id(current_user)}"
     )
 
     return {
@@ -550,7 +590,7 @@ async def check_service_account_authorization(
     resource: str,
     domain: Optional[str] = None,
     resource_id: Optional[str] = None,
-    current_user: User = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -577,7 +617,7 @@ async def check_service_account_authorization(
         f"Service account authorization checked: service_account_id={service_account_id}, "
         f"action={action}, resource={resource}, domain={domain}, "
         f"resource_id={resource_id}, authorized={authorized}, "
-        f"checked_by={current_user.id}"
+        f"checked_by={get_entity_id(current_user)}"
     )
 
     return {

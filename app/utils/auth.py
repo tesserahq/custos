@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer
 
 from app.config import get_settings
 from app.services.user_service import UserService
+from app.services.service_account_service import ServiceAccountService
 
 security = HTTPBearer()
 
@@ -34,7 +35,50 @@ def verify_token_dependency(request: Request, token: str):
     request.state.user = user
 
 
-async def get_current_user(request: Request):
+def verify_service_account_token(request: Request, token: str):
+    """Verify a service account API key and set the service account in request state."""
+    db_session = get_db_from_request(request)
+    service_account_service = ServiceAccountService(db_session)
+
+    # Get service account by API key
+    service_account = service_account_service.get_service_account_by_api_key(token)
+
+    if not service_account:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid service account token",
+        )
+
+    # Check if service account is active
+    if not service_account.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE, detail="Service account is inactive"
+        )
+
+    # Check if service account has expired
+    if service_account.is_expired():
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE, detail="Service account has expired"
+        )
+
+    # Update last used timestamp
+    service_account_service.update_last_used(service_account.id)
+
+    # Set service account in request state
+    request.state.service_account = service_account
+    request.state.user = None  # Clear user to indicate service account authentication
+
+
+def get_current_user(request: Request):
+    """Get the current authenticated user or service account."""
+    # Check for service account first
+    if (
+        hasattr(request.state, "service_account")
+        and request.state.service_account is not None
+    ):
+        return request.state.service_account
+
+    # Fall back to user authentication
     if not hasattr(request.state, "user") or request.state.user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
