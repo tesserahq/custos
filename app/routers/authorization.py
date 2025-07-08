@@ -19,6 +19,7 @@ from app.schemas.authorization import (
 from app.services.casbin_service import casbin_service
 from app.services.role_definition_service import role_definition_service
 from app.services.role_config_service import role_config_service
+from app.services.role_template_service import role_template_service
 from app.core.logging_config import get_logger
 import json
 
@@ -609,4 +610,340 @@ async def validate_json_content(
         raise HTTPException(
             status_code=500,
             detail="Internal server error while validating JSON content",
+        )
+
+
+@router.post("/templates", response_model=dict)
+async def create_role_template(request: dict) -> dict:
+    """
+    Create a new role template.
+
+    Request body:
+    {
+        "template_name": "standard-roles",
+        "role_config": {
+            "roles": {
+                "admin": {
+                    "permissions": {
+                        "users": ["read", "write", "delete", "create"],
+                        "documents": ["read", "write", "delete", "create"]
+                    }
+                }
+            }
+        }
+    }
+    """
+    try:
+        template_name = request.get("template_name")
+        role_config = request.get("role_config")
+
+        if not template_name or not role_config:
+            raise HTTPException(
+                status_code=400, detail="template_name and role_config are required"
+            )
+
+        success = role_template_service.create_role_template(template_name, role_config)
+
+        if success:
+            return {
+                "success": True,
+                "template_name": template_name,
+                "message": f"Template '{template_name}' created successfully",
+            }
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to create template '{template_name}'"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create role template: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while creating template"
+        )
+
+
+@router.get("/templates", response_model=dict)
+async def list_role_templates() -> dict:
+    """
+    List all available role templates.
+    """
+    try:
+        templates = role_template_service.list_role_templates()
+
+        return {"templates": templates, "count": len(templates)}
+
+    except Exception as e:
+        logger.error(f"Failed to list role templates: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while listing templates"
+        )
+
+
+@router.get("/templates/{template_name}", response_model=dict)
+async def get_role_template(template_name: str) -> dict:
+    """
+    Get a specific role template.
+    """
+    try:
+        config = role_template_service.get_role_template(template_name)
+
+        if not config:
+            raise HTTPException(
+                status_code=404, detail=f"Template '{template_name}' not found"
+            )
+
+        return {"template_name": template_name, "config": config}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get role template {template_name}: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while getting template"
+        )
+
+
+@router.post("/templates/{template_name}/apply", response_model=dict)
+async def apply_template_to_domain(template_name: str, request: dict) -> dict:
+    """
+    Apply a role template to a domain.
+
+    Request body:
+    {
+        "domain": "tenant-123",
+        "overwrite_existing": false
+    }
+    """
+    try:
+        domain = request.get("domain")
+        overwrite_existing = request.get("overwrite_existing", False)
+
+        if not domain:
+            raise HTTPException(status_code=400, detail="domain is required")
+
+        results = role_template_service.apply_template_to_domain(
+            template_name, domain, overwrite_existing
+        )
+
+        return {
+            "template_name": template_name,
+            "domain": domain,
+            "results": results,
+            "success": "error" not in results,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to apply template {template_name} to domain {domain}: {e}"
+        )
+        raise HTTPException(
+            status_code=500, detail="Internal server error while applying template"
+        )
+
+
+@router.post("/templates/{template_name}/apply-multiple", response_model=dict)
+async def apply_template_to_multiple_domains(template_name: str, request: dict) -> dict:
+    """
+    Apply a role template to multiple domains.
+
+    Request body:
+    {
+        "domains": ["tenant-1", "tenant-2", "tenant-3"],
+        "overwrite_existing": false
+    }
+    """
+    try:
+        domains = request.get("domains", [])
+        overwrite_existing = request.get("overwrite_existing", False)
+
+        if not domains:
+            raise HTTPException(status_code=400, detail="domains list is required")
+
+        results = role_template_service.apply_template_to_multiple_domains(
+            template_name, domains, overwrite_existing
+        )
+
+        success_count = sum(
+            1 for domain_results in results.values() if "error" not in domain_results
+        )
+
+        return {
+            "template_name": template_name,
+            "domains": domains,
+            "results": results,
+            "success_count": success_count,
+            "total_domains": len(domains),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to apply template {template_name} to multiple domains: {e}"
+        )
+        raise HTTPException(
+            status_code=500, detail="Internal server error while applying template"
+        )
+
+
+@router.post("/templates/{template_name}/add-permission", response_model=dict)
+async def add_permission_to_template(template_name: str, request: dict) -> dict:
+    """
+    Add a permission to a role in a template.
+
+    Request body:
+    {
+        "role_name": "admin",
+        "resource": "reports",
+        "action": "read"
+    }
+    """
+    try:
+        role_name = request.get("role_name")
+        resource = request.get("resource")
+        action = request.get("action")
+
+        if not all([role_name, resource, action]):
+            raise HTTPException(
+                status_code=400, detail="role_name, resource, and action are required"
+            )
+
+        success = role_template_service.add_permission_to_template(
+            template_name, role_name, resource, action
+        )
+
+        if success:
+            return {
+                "success": True,
+                "template_name": template_name,
+                "role_name": role_name,
+                "resource": resource,
+                "action": action,
+                "message": f"Permission {action}:{resource} added to role {role_name}",
+            }
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to add permission to template '{template_name}'",
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to add permission to template {template_name}: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while adding permission"
+        )
+
+
+@router.post("/templates/{template_name}/remove-permission", response_model=dict)
+async def remove_permission_from_template(template_name: str, request: dict) -> dict:
+    """
+    Remove a permission from a role in a template.
+
+    Request body:
+    {
+        "role_name": "admin",
+        "resource": "reports",
+        "action": "read"
+    }
+    """
+    try:
+        role_name = request.get("role_name")
+        resource = request.get("resource")
+        action = request.get("action")
+
+        if not all([role_name, resource, action]):
+            raise HTTPException(
+                status_code=400, detail="role_name, resource, and action are required"
+            )
+
+        success = role_template_service.remove_permission_from_template(
+            template_name, role_name, resource, action
+        )
+
+        if success:
+            return {
+                "success": True,
+                "template_name": template_name,
+                "role_name": role_name,
+                "resource": resource,
+                "action": action,
+                "message": f"Permission {action}:{resource} removed from role {role_name}",
+            }
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to remove permission from template '{template_name}'",
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to remove permission from template {template_name}: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while removing permission"
+        )
+
+
+@router.post("/templates/{template_name}/update-and-apply", response_model=dict)
+async def update_template_and_apply(template_name: str, request: dict) -> dict:
+    """
+    Update a template and apply it to multiple domains.
+
+    Request body:
+    {
+        "updated_config": {
+            "roles": {
+                "admin": {
+                    "permissions": {
+                        "users": ["read", "write", "delete", "create"],
+                        "documents": ["read", "write", "delete", "create"],
+                        "reports": ["read", "write"]
+                    }
+                }
+            }
+        },
+        "domains": ["tenant-1", "tenant-2", "tenant-3"],
+        "overwrite_existing": true
+    }
+    """
+    try:
+        updated_config = request.get("updated_config")
+        domains = request.get("domains", [])
+        overwrite_existing = request.get("overwrite_existing", True)
+
+        if not updated_config or not domains:
+            raise HTTPException(
+                status_code=400, detail="updated_config and domains are required"
+            )
+
+        results = role_template_service.update_template_and_apply(
+            template_name, updated_config, domains, overwrite_existing
+        )
+
+        success_count = sum(
+            1 for domain_results in results.values() if "error" not in domain_results
+        )
+
+        return {
+            "template_name": template_name,
+            "domains": domains,
+            "results": results,
+            "success_count": success_count,
+            "total_domains": len(domains),
+            "message": f"Template updated and applied to {success_count}/{len(domains)} domains",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update and apply template {template_name}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while updating and applying template",
         )

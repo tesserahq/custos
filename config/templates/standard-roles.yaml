@@ -1,0 +1,82 @@
+roles:
+  admin:
+    description: "Full system administrator with all permissions"
+    permissions:
+      users:
+        - read
+        - write
+        - delete
+        - create
+      projects:
+        - read
+        - write
+        - delete
+        - create
+      documents:
+        - read
+        - write
+        - delete
+        - create
+      reports:
+        - read
+        - write
+        - delete
+        - create
+      settings:
+        - read
+        - write
+        - delete
+        - create
+
+  editor:
+    description: "Content editor with read/write permissions"
+    permissions:
+      users:
+        - read
+      projects:
+        - read
+        - write
+        - create
+      documents:
+        - read
+        - write
+        - create
+      reports:
+        - read
+        - write
+        - create
+      settings:
+        - read
+
+  viewer:
+    description: "Read-only user with limited access"
+    permissions:
+      users:
+        - read
+      projects:
+        - read
+      documents:
+        - read
+      reports:
+        - read
+      settings:
+        - read
+
+  moderator:
+    description: "Content moderator with user management"
+    permissions:
+      users:
+        - read
+        - write
+      projects:
+        - read
+        - write
+      documents:
+        - read
+        - write
+        - delete
+      reports:
+        - read
+        - write
+      settings:
+        - read
