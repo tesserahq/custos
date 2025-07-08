@@ -10,7 +10,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.telemetry import setup_tracing
 from app.exceptions.handlers import register_exception_handlers
 from app.core.logging_config import get_logger
-from app.routers import authorization
+from app.routers import authorization, service_accounts
 
 
 def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
@@ -59,6 +59,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
 
     # Include routers
     app.include_router(authorization.router)
+    app.include_router(service_accounts.router)
 
     return app
 
