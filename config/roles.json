@@ -1,0 +1,44 @@
+{
+  "roles": {
+    "admin": {
+      "description": "Full access to all resources",
+      "permissions": {
+        "users": ["read", "write", "delete", "create"],
+        "projects": ["read", "write", "delete", "create"],
+        "documents": ["read", "write", "delete", "create"],
+        "roles": ["read", "write", "delete", "create"],
+        "settings": ["read", "write", "delete", "create"]
+      }
+    },
+    "editor": {
+      "description": "Can read and write most resources, but cannot delete",
+      "permissions": {
+        "users": ["read"],
+        "projects": ["read", "write", "create"],
+        "documents": ["read", "write", "create"],
+        "roles": ["read"],
+        "settings": ["read", "write"]
+      }
+    },
+    "viewer": {
+      "description": "Read-only access to resources",
+      "permissions": {
+        "users": ["read"],
+        "projects": ["read"],
+        "documents": ["read"],
+        "roles": ["read"],
+        "settings": ["read"]
+      }
+    },
+    "moderator": {
+      "description": "Can moderate content and manage comments",
+      "permissions": {
+        "users": ["read"],
+        "projects": ["read"],
+        "documents": ["read", "write"],
+        "comments": ["read", "write", "delete"],
+        "settings": ["read"]
+      }
+    }
+  }
+}
