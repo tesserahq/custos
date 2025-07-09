@@ -11,7 +11,7 @@ from app.services.service_account_service import ServiceAccountService
 
 
 @pytest.fixture
-def super_admin_user(db, faker):
+def system_admin_user(db, faker):
     """Create a super admin user with proper Casbin roles."""
     email = faker.email()
 
@@ -30,13 +30,13 @@ def super_admin_user(db, faker):
     db.refresh(user)
 
     # Assign super admin role in Casbin
-    casbin_service.assign_role(user_id=str(user.id), role="super_admin", domain="*")
+    casbin_service.assign_role(user_id=str(user.id), role="system_admin", domain="*")
 
     return user
 
 
 @pytest.fixture
-def super_admin_service_account(db, faker):
+def system_admin_service_account(db, faker):
     """Create a super admin service account with proper Casbin roles."""
     service = ServiceAccountService(db)
 
@@ -54,7 +54,7 @@ def super_admin_service_account(db, faker):
 
     # Assign super admin role in Casbin
     casbin_service.assign_role(
-        user_id=str(created_account.id), role="super_admin", domain="*"
+        user_id=str(created_account.id), role="system_admin", domain="*"
     )
 
     return created_account
@@ -114,10 +114,10 @@ def service_account(db, faker):
 
 
 @pytest.fixture
-def client_with_super_admin(client, super_admin_user):
+def client_with_system_admin(client, system_admin_user):
     """Create a test client with a super admin user."""
     # Update the app state to use the super admin user
-    client.app.state.test_user = super_admin_user
+    client.app.state.test_user = system_admin_user
     return client
 
 
@@ -130,17 +130,17 @@ def client_with_regular_user(client, regular_user):
 
 
 @pytest.fixture
-def client_with_service_account(client, super_admin_service_account):
+def client_with_service_account(client, system_admin_service_account):
     """Create a test client with a super admin service account."""
     # Update the app state to use the service account
-    client.app.state.test_service_account = super_admin_service_account
+    client.app.state.test_service_account = system_admin_service_account
     return client
 
 
 class TestServiceAccountsEndpoints:
     """Test cases for service accounts endpoints."""
 
-    def test_create_service_account_success(self, client_with_super_admin, db):
+    def test_create_service_account_success(self, client_with_system_admin, db):
         """Test creating a service account successfully."""
         service_account_data = {
             "name": "Test Service Account",
@@ -149,7 +149,7 @@ class TestServiceAccountsEndpoints:
             "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
         }
 
-        response = client_with_super_admin.post(
+        response = client_with_system_admin.post(
             "/service-accounts/", json=service_account_data
         )
 
@@ -175,7 +175,7 @@ class TestServiceAccountsEndpoints:
         assert response.status_code == 403
         assert "Super admin privileges required" in response.json()["detail"]
 
-    def test_list_service_accounts_success(self, client_with_super_admin, db):
+    def test_list_service_accounts_success(self, client_with_system_admin, db):
         """Test listing service accounts successfully."""
         # First create a service account
         service = ServiceAccountService(db)
@@ -199,7 +199,7 @@ class TestServiceAccountsEndpoints:
 
             service.create_service_account(service_account_data, created_by=1)
 
-        response = client_with_super_admin.get("/service-accounts/")
+        response = client_with_system_admin.get("/service-accounts/")
 
         assert response.status_code == 200
         data = response.json()
@@ -212,7 +212,7 @@ class TestServiceAccountsEndpoints:
         assert response.status_code == 403
         assert "Super admin privileges required" in response.json()["detail"]
 
-    def test_get_service_account_success(self, client_with_super_admin, db):
+    def test_get_service_account_success(self, client_with_system_admin, db):
         """Test getting a service account successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -221,14 +221,14 @@ class TestServiceAccountsEndpoints:
             description="Test account for get operation",
             external_id="ext_get_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Now get the service account via API
-        response = client_with_super_admin.get(
+        response = client_with_system_admin.get(
             f"/service-accounts/{created_account.id}"
         )
 
@@ -237,16 +237,16 @@ class TestServiceAccountsEndpoints:
         assert data["name"] == "Get Test Account"
         assert data["description"] == "Test account for get operation"
 
-    def test_get_service_account_not_found(self, client_with_super_admin, db):
+    def test_get_service_account_not_found(self, client_with_system_admin, db):
         """Test getting a non-existent service account."""
-        response = client_with_super_admin.get(
+        response = client_with_system_admin.get(
             "/service-accounts/123e4567-e89b-12d3-a456-426614174000"
         )
 
         assert response.status_code == 404
         assert "Service account not found" in response.json()["detail"]
 
-    def test_update_service_account_success(self, client_with_super_admin, db):
+    def test_update_service_account_success(self, client_with_system_admin, db):
         """Test updating a service account successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -255,10 +255,10 @@ class TestServiceAccountsEndpoints:
             description="Test account for update operation",
             external_id="ext_update_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Update the service account via API
@@ -267,7 +267,7 @@ class TestServiceAccountsEndpoints:
             "description": "Updated Description",
         }
 
-        response = client_with_super_admin.put(
+        response = client_with_system_admin.put(
             f"/service-accounts/{created_account.id}",
             json=update_data,
         )
@@ -277,7 +277,7 @@ class TestServiceAccountsEndpoints:
         assert data["name"] == "Updated Name"
         assert data["description"] == "Updated Description"
 
-    def test_delete_service_account_success(self, client_with_super_admin, db):
+    def test_delete_service_account_success(self, client_with_system_admin, db):
         """Test deleting a service account successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -286,14 +286,14 @@ class TestServiceAccountsEndpoints:
             description="Test account for delete operation",
             external_id="ext_delete_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Delete the service account via API
-        response = client_with_super_admin.delete(
+        response = client_with_system_admin.delete(
             f"/service-accounts/{created_account.id}"
         )
 
@@ -301,7 +301,7 @@ class TestServiceAccountsEndpoints:
         data = response.json()
         assert "deleted successfully" in data["message"]
 
-    def test_regenerate_api_key_success(self, client_with_super_admin, db):
+    def test_regenerate_api_key_success(self, client_with_system_admin, db):
         """Test regenerating API key successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -310,17 +310,17 @@ class TestServiceAccountsEndpoints:
             description="Test account for regenerate operation",
             external_id="ext_regenerate_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Store the original API key
         original_api_key = created_account.api_key
 
         # Regenerate the API key via API
-        response = client_with_super_admin.post(
+        response = client_with_system_admin.post(
             f"/service-accounts/{created_account.id}/regenerate-key"
         )
 
@@ -329,7 +329,7 @@ class TestServiceAccountsEndpoints:
         assert "api_key" in data
         assert data["api_key"] != original_api_key  # Should be different
 
-    def test_assign_role_to_service_account_success(self, client_with_super_admin, db):
+    def test_assign_role_to_service_account_success(self, client_with_system_admin, db):
         """Test assigning a role to a service account successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -338,10 +338,10 @@ class TestServiceAccountsEndpoints:
             description="Test account for role assignment",
             external_id="ext_role_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Assign a role via API
@@ -352,7 +352,7 @@ class TestServiceAccountsEndpoints:
             "resource": "users",
         }
 
-        response = client_with_super_admin.post(
+        response = client_with_system_admin.post(
             f"/service-accounts/{created_account.id}/assign-role",
             json=role_data,
         )
@@ -362,7 +362,7 @@ class TestServiceAccountsEndpoints:
         assert data["success"] is True
         assert "successfully assigned" in data["message"]
 
-    def test_get_service_account_roles_success(self, client_with_super_admin, db):
+    def test_get_service_account_roles_success(self, client_with_system_admin, db):
         """Test getting roles for a service account successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -371,17 +371,17 @@ class TestServiceAccountsEndpoints:
             description="Test account for roles retrieval",
             external_id="ext_roles_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Assign a role first
         service.assign_role(created_account.id, "admin", "production")
 
         # Get roles via API
-        response = client_with_super_admin.get(
+        response = client_with_system_admin.get(
             f"/service-accounts/{created_account.id}/roles"
         )
 
@@ -391,7 +391,7 @@ class TestServiceAccountsEndpoints:
         assert "roles_count" in data
         assert data["roles_count"] >= 0
 
-    def test_search_service_accounts_success(self, client_with_super_admin, db):
+    def test_search_service_accounts_success(self, client_with_system_admin, db):
         """Test searching service accounts successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -400,14 +400,14 @@ class TestServiceAccountsEndpoints:
             description="Test account for search operation",
             external_id="ext_search_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Search via API
-        response = client_with_super_admin.get("/service-accounts/search?name=Search")
+        response = client_with_system_admin.get("/service-accounts/search?name=Search")
 
         assert response.status_code == 200
         data = response.json()
@@ -417,7 +417,7 @@ class TestServiceAccountsEndpoints:
         account_names = [account["name"] for account in data]
         assert "Search Test Account" in account_names
 
-    def test_activate_service_account_success(self, client_with_super_admin, db):
+    def test_activate_service_account_success(self, client_with_system_admin, db):
         """Test activating a service account successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -426,17 +426,17 @@ class TestServiceAccountsEndpoints:
             description="Test account for activate operation",
             external_id="ext_activate_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Deactivate it first
         service.deactivate_service_account(created_account.id)
 
         # Activate via API
-        response = client_with_super_admin.post(
+        response = client_with_system_admin.post(
             f"/service-accounts/{created_account.id}/activate"
         )
 
@@ -444,7 +444,7 @@ class TestServiceAccountsEndpoints:
         data = response.json()
         assert data["is_active"] is True
 
-    def test_deactivate_service_account_success(self, client_with_super_admin, db):
+    def test_deactivate_service_account_success(self, client_with_system_admin, db):
         """Test deactivating a service account successfully."""
         # Create a real service account first
         service = ServiceAccountService(db)
@@ -453,14 +453,14 @@ class TestServiceAccountsEndpoints:
             description="Test account for deactivate operation",
             external_id="ext_deactivate_123",
         )
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         created_account = service.create_service_account(
-            service_account_data, created_by=super_admin_user.id
+            service_account_data, created_by=system_admin_user.id
         )
 
         # Deactivate via API
-        response = client_with_super_admin.post(
+        response = client_with_system_admin.post(
             f"/service-accounts/{created_account.id}/deactivate"
         )
 
@@ -468,17 +468,19 @@ class TestServiceAccountsEndpoints:
         data = response.json()
         assert data["is_active"] is False
 
-    def test_super_admin_authorization_real_casbin(self, client_with_super_admin, db):
+    def test_system_admin_authorization_real_casbin(self, client_with_system_admin, db):
         """Test that super admin authorization works with real Casbin."""
         # This test verifies that the real Casbin service recognizes our super admin user
-        super_admin_user = client_with_super_admin.app.state.test_user
+        system_admin_user = client_with_system_admin.app.state.test_user
 
         # Check that the user has super admin role in Casbin (with domain "*")
-        user_roles = casbin_service.get_user_roles(str(super_admin_user.id), domain="*")
-        assert "super_admin" in user_roles
+        user_roles = casbin_service.get_user_roles(
+            str(system_admin_user.id), domain="*"
+        )
+        assert "system_admin" in user_roles
 
         # Test that the user can access a protected endpoint
-        response = client_with_super_admin.get("/service-accounts/")
+        response = client_with_system_admin.get("/service-accounts/")
         assert response.status_code == 200
 
     def test_regular_user_authorization_real_casbin(self, client_with_regular_user, db):
@@ -487,7 +489,7 @@ class TestServiceAccountsEndpoints:
 
         # Check that the user does NOT have super admin role
         user_roles = casbin_service.get_user_roles(str(regular_user.id), domain="*")
-        assert "super_admin" not in user_roles
+        assert "system_admin" not in user_roles
         assert "user" in user_roles
 
         # Test that the user is denied access to protected endpoints
@@ -496,7 +498,7 @@ class TestServiceAccountsEndpoints:
         assert "Super admin privileges required" in response.json()["detail"]
 
     def test_service_account_authentication_success(
-        self, client, super_admin_service_account, db
+        self, client, system_admin_service_account, db
     ):
         """Test that service accounts can authenticate using X-Service-Token header."""
         # Get the ORM model from the database
@@ -504,16 +506,16 @@ class TestServiceAccountsEndpoints:
 
         db_account = (
             db.query(ServiceAccount)
-            .filter(ServiceAccount.id == super_admin_service_account.id)
+            .filter(ServiceAccount.id == system_admin_service_account.id)
             .first()
         )
 
-        # Ensure the service account has the super_admin role in this session
+        # Ensure the service account has the system_admin role in this session
         casbin_service.assign_role(
-            user_id=str(db_account.id), role="super_admin", domain="*"
+            user_id=str(db_account.id), role="system_admin", domain="*"
         )
 
-        # Verify the service account has the super_admin role
+        # Verify the service account has the system_admin role
         service_account_roles = casbin_service.get_user_roles(str(db_account.id))
         print(f"Service account roles: {service_account_roles}")
 
@@ -521,7 +523,7 @@ class TestServiceAccountsEndpoints:
         client.app.state.test_service_account = db_account
 
         # Use the API key from the created service account
-        api_key = super_admin_service_account.api_key
+        api_key = system_admin_service_account.api_key
 
         response = client.get(
             "/service-accounts/", headers={"X-Service-Token": api_key}

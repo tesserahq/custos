@@ -57,20 +57,6 @@ roles:
       settings:
         - read
 
-  moderator:
-    description: "Content moderation with limited user management"
-    permissions:
-      users:
-        - read
-        - write
-      comments:
-        - read
-        - write
-        - delete
-      documents:
-        - read
-        - write
-
 # Resource definitions for reference
 resources:
   - users

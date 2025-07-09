@@ -97,7 +97,6 @@ roles:
         assert results["admin"] is True
         assert results["editor"] is True
         assert results["viewer"] is True
-        assert results["moderator"] is True
 
         # Check that roles have expected permissions
         admin_permissions = role_config_service._define_role_permissions(
@@ -162,8 +161,7 @@ roles:
         assert "admin" in yaml_roles
         assert "editor" in yaml_roles
         assert "viewer" in yaml_roles
-        assert "moderator" in yaml_roles
-        assert len(yaml_roles) == 4
+        assert len(yaml_roles) == 3
 
         # Test CSV
         csv_roles = role_config_service.get_available_roles("roles.csv")

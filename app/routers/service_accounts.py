@@ -36,7 +36,7 @@ def get_entity_id(entity: AuthenticatedEntity) -> str:
         raise ValueError("Invalid entity type")
 
 
-def require_super_admin(
+def require_system_admin(
     entity: AuthenticatedEntity = Depends(get_current_user),
 ) -> AuthenticatedEntity:
     """Dependency to ensure the authenticated entity has super admin privileges."""
@@ -44,14 +44,14 @@ def require_super_admin(
         # For service accounts, check if they have admin roles
         service_account_roles = casbin_service.get_user_roles(str(entity.id))
 
-        # Check for admin or super_admin role in any domain
+        # Check for admin or system_admin role in any domain
         for domain in ["*", "global", "admin"]:  # Common admin domains
             domain_roles = casbin_service.get_user_roles(str(entity.id), domain)
-            if "admin" in domain_roles or "super_admin" in domain_roles:
+            if "admin" in domain_roles or "system_admin" in domain_roles:
                 return entity
 
         # Check if service account has admin role globally
-        if "admin" in service_account_roles or "super_admin" in service_account_roles:
+        if "admin" in service_account_roles or "system_admin" in service_account_roles:
             return entity
 
         raise HTTPException(
@@ -62,18 +62,18 @@ def require_super_admin(
         # For users, check if they have admin role in any domain or globally
         user_roles = casbin_service.get_user_roles(str(entity.id))
 
-        # Check for admin or super_admin role in any domain
+        # Check for admin or system_admin role in any domain
         for domain in ["*", "global", "admin"]:  # Common admin domains
             domain_roles = casbin_service.get_user_roles(str(entity.id), domain)
-            if "admin" in domain_roles or "super_admin" in domain_roles:
+            if "admin" in domain_roles or "system_admin" in domain_roles:
                 return entity
 
         # Check if user has admin role globally
         if "admin" in user_roles:
             return entity
 
-        # Check if user has super_admin role globally
-        if "super_admin" in user_roles:
+        # Check if user has system_admin role globally
+        if "system_admin" in user_roles:
             return entity
 
         raise HTTPException(
@@ -87,7 +87,7 @@ def require_super_admin(
 @router.post("/", response_model=ServiceAccountWithKey)
 async def create_service_account(
     service_account: ServiceAccountCreate,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> ServiceAccountWithKey:
     """
@@ -121,7 +121,7 @@ async def list_service_accounts(
     limit: int = Query(
         100, ge=1, le=1000, description="Maximum number of records to return"
     ),
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> List[ServiceAccountSchema]:
     """
@@ -142,7 +142,7 @@ async def list_service_accounts(
 
 @router.get("/active", response_model=List[ServiceAccountSchema])
 async def list_active_service_accounts(
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> List[ServiceAccountSchema]:
     """
@@ -163,7 +163,7 @@ async def list_active_service_accounts(
 
 @router.get("/expired", response_model=List[ServiceAccountSchema])
 async def list_expired_service_accounts(
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> List[ServiceAccountSchema]:
     """
@@ -189,7 +189,7 @@ async def search_service_accounts(
     ),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     external_id: Optional[str] = Query(None, description="Search by external ID"),
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> List[ServiceAccountSchema]:
     """
@@ -221,7 +221,7 @@ async def search_service_accounts(
 @router.get("/{service_account_id}", response_model=ServiceAccountSchema)
 async def get_service_account(
     service_account_id: UUID,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> ServiceAccountSchema:
     """
@@ -247,7 +247,7 @@ async def get_service_account(
 async def update_service_account(
     service_account_id: UUID,
     service_account_update: ServiceAccountUpdate,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> ServiceAccountSchema:
     """
@@ -280,7 +280,7 @@ async def update_service_account(
 @router.delete("/{service_account_id}")
 async def delete_service_account(
     service_account_id: UUID,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -313,7 +313,7 @@ async def delete_service_account(
 )
 async def regenerate_api_key(
     service_account_id: UUID,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> ServiceAccountWithKey:
     """
@@ -345,7 +345,7 @@ async def regenerate_api_key(
 @router.post("/{service_account_id}/activate")
 async def activate_service_account(
     service_account_id: UUID,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> ServiceAccountSchema:
     """
@@ -378,7 +378,7 @@ async def activate_service_account(
 @router.post("/{service_account_id}/deactivate")
 async def deactivate_service_account(
     service_account_id: UUID,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> ServiceAccountSchema:
     """
@@ -412,7 +412,7 @@ async def deactivate_service_account(
 async def assign_role_to_service_account(
     service_account_id: UUID,
     request: RoleAssignmentRequest,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> RoleAssignmentResponse:
     """
@@ -460,7 +460,7 @@ async def assign_role_to_service_account(
 async def remove_role_from_service_account(
     service_account_id: UUID,
     request: RoleAssignmentRequest,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> RoleAssignmentResponse:
     """
@@ -506,7 +506,7 @@ async def remove_role_from_service_account(
 async def get_service_account_roles(
     service_account_id: UUID,
     domain: Optional[str] = Query(None, description="Domain to filter roles by"),
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -540,7 +540,7 @@ async def get_service_account_roles(
 async def get_service_account_permissions(
     service_account_id: UUID,
     domain: Optional[str] = Query(None, description="Domain to filter permissions by"),
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -590,7 +590,7 @@ async def check_service_account_authorization(
     resource: str,
     domain: Optional[str] = None,
     resource_id: Optional[str] = None,
-    current_user: AuthenticatedEntity = Depends(require_super_admin),
+    current_user: AuthenticatedEntity = Depends(require_system_admin),
     db: Session = Depends(get_db),
 ) -> dict:
     """
