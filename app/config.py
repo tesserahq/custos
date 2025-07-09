@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     rollbar_access_token: Optional[str] = Field(
         default=None, json_schema_extra={"env": "ROLLBAR_ACCESS_TOKEN"}
     )  # Optional field
+    super_user_email: Optional[str] = Field(
+        default=None, json_schema_extra={"env": "SUPER_USER_EMAIL"}
+    )  # Optional field for super user setup
 
     oidc_domain: str = "test.oidc.com"
     oidc_api_audience: str = "https://test-api"

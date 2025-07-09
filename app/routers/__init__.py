@@ -1,2 +1,2 @@
 # Routers package
-from . import authorization, service_accounts
+from . import authorization, service_accounts, setup

@@ -158,6 +158,45 @@ class RoleDefinitionService:
             self.logger.error(f"Failed to define viewer role for domain {domain}: {e}")
             return False
 
+    def define_system_admin_role(self, domain: str = "*") -> bool:
+        """
+        Define system admin role with permissions to manage service accounts and roles.
+        Args:
+            domain: The domain for the role (defaults to "*" for global access)
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Only allow management of service accounts and roles
+            permissions = [
+                ("system_admin", domain, "service_accounts", "create"),
+                ("system_admin", domain, "service_accounts", "read"),
+                ("system_admin", domain, "service_accounts", "write"),
+                ("system_admin", domain, "service_accounts", "delete"),
+                ("system_admin", domain, "roles", "create"),
+                ("system_admin", domain, "roles", "read"),
+                ("system_admin", domain, "roles", "write"),
+                ("system_admin", domain, "roles", "delete"),
+                ("system_admin", domain, "roles", "assign"),
+            ]
+            success_count = 0
+            for subject, dom, obj, action in permissions:
+                if casbin_service.add_policy(subject, obj, action, domain=dom):
+                    success_count += 1
+                else:
+                    self.logger.warning(
+                        f"Failed to add system admin policy: {subject} -> {obj} -> {action}"
+                    )
+            self.logger.info(
+                f"System admin role defined for domain {domain}: {success_count}/{len(permissions)} policies added"
+            )
+            return success_count >= len(permissions) * 0.8
+        except Exception as e:
+            self.logger.error(
+                f"Failed to define system admin role for domain {domain}: {e}"
+            )
+            return False
+
     def define_custom_role(
         self, role_name: str, domain: str, permissions: List[tuple]
     ) -> bool:
