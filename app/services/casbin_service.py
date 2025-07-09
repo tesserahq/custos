@@ -326,6 +326,70 @@ class CasbinService:
             self.logger.error(f"Failed to remove policy: {e}")
             return False
 
+    def get_users_for_role(self, role: str, domain: Optional[str] = None) -> List[str]:
+        """
+        Get all users that have a specific role.
+
+        Args:
+            role: The role to search for
+            domain: The domain/tenant to check roles for
+
+        Returns:
+            List[str]: List of user IDs that have the specified role
+        """
+        try:
+            if domain:
+                users = self.enforcer.get_users_for_role_in_domain(role, domain)
+            else:
+                users = self.enforcer.get_users_for_role(role)
+
+            return users
+
+        except Exception as e:
+            self.logger.error(f"Failed to get users for role {role}: {e}")
+            return []
+
+    def clear_all_policies(self) -> bool:
+        """
+        Clear all policies and role assignments from the Casbin enforcer.
+        This is primarily used for testing purposes.
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Clear all policies (both policy rules and role assignments)
+            self.enforcer.clear_policy()
+
+            # Also clear the role assignments explicitly
+            # Get all users and remove all their roles
+            all_users = self.enforcer.get_all_subjects()
+            for user in all_users:
+                # Remove all roles for this user (both domain-specific and global)
+                user_roles = self.enforcer.get_roles_for_user(user)
+                for role in user_roles:
+                    self.enforcer.delete_role_for_user(user, role)
+
+                # Also check domain-specific roles
+                for domain in ["*", "global", "admin"]:
+                    domain_roles = self.enforcer.get_roles_for_user_in_domain(
+                        user, domain
+                    )
+                    for role in domain_roles:
+                        self.enforcer.delete_role_for_user_in_domain(user, role, domain)
+
+            # Save the empty policy
+            self.enforcer.save_policy()
+
+            self.logger.info(
+                "All Casbin policies and role assignments cleared successfully"
+            )
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Failed to clear Casbin policies: {e}")
+            return False
+
 
 # Global instance
 casbin_service = CasbinService()

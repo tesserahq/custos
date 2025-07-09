@@ -23,6 +23,49 @@ class SetupResponse(BaseModel):
     role_assigned: Optional[str] = None
 
 
+class SystemStatusResponse(BaseModel):
+    """Response model for system status endpoint."""
+
+    setup_required: bool
+    message: str
+
+
+@router.get("/system-status", response_model=SystemStatusResponse)
+async def get_system_status() -> SystemStatusResponse:
+    """
+    Check if the system administrator has been set up.
+
+    Returns setup_required=true if no system admin users exist,
+    setup_required=false if at least one system admin user exists.
+    """
+    try:
+        # Check for system admin users in the global domain (*)
+        system_admin_users = casbin_service.get_users_for_role(
+            "system_admin", domain="*"
+        )
+
+        if system_admin_users:
+            logger.info(f"System admin users found: {len(system_admin_users)}")
+            return SystemStatusResponse(
+                setup_required=False,
+                message=f"System administrator is already set up. Found {len(system_admin_users)} system admin user(s).",
+            )
+        else:
+            logger.info("No system admin users found. Setup is required.")
+            return SystemStatusResponse(
+                setup_required=True,
+                message="System administrator has not been set up. Call POST /setup to initialize the system admin.",
+            )
+
+    except Exception as e:
+        logger.error(f"Error checking system status: {e}")
+        # In case of error, assume setup is required to be safe
+        return SystemStatusResponse(
+            setup_required=True,
+            message=f"Error checking system status: {str(e)}. Setup may be required.",
+        )
+
+
 @router.post("", response_model=SetupResponse)
 async def setup_super_user(db: Session = Depends(get_db)) -> SetupResponse:
     """
