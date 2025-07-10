@@ -370,22 +370,22 @@ roles:
         allowed = casbin_service.authorize(user_id, "create", "projects", domain)
         assert allowed is True
 
-        # 4. Assign moderator role to another user
+        # 4. Assign editor role to another user
         user2_id = "auth0|user2"
-        success = casbin_service.assign_role(user2_id, "moderator", domain)
+        success = casbin_service.assign_role(user2_id, "editor", domain)
         assert success is True
 
-        # 5. Check authorization for moderator permissions
+        # 5. Check authorization for editor permissions
         # Should be able to read users
         allowed = casbin_service.authorize(user2_id, "read", "users", domain)
         assert allowed is True
 
-        # Should be able to write comments
-        allowed = casbin_service.authorize(user2_id, "write", "comments", domain)
+        # Should be able to write documents
+        allowed = casbin_service.authorize(user2_id, "write", "documents", domain)
         assert allowed is True
 
-        # Should be able to delete comments
-        allowed = casbin_service.authorize(user2_id, "delete", "comments", domain)
+        # Should be able to create documents
+        allowed = casbin_service.authorize(user2_id, "create", "documents", domain)
         assert allowed is True
 
         # Should NOT be able to delete users

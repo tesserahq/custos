@@ -1,6 +1,6 @@
 import os
 from pydantic import Field, model_validator
-from typing import Optional
+from typing import Optional, List
 from pydantic_settings import BaseSettings
 from sqlalchemy.engine.url import make_url, URL
 
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     )  # Optional field
     super_user_email: Optional[str] = Field(
         default=None, json_schema_extra={"env": "SUPER_USER_EMAIL"}
-    )  # Optional field for super user setup
+    )  # Optional field for super user setup (comma-separated list)
 
     oidc_domain: str = "test.oidc.com"
     oidc_api_audience: str = "https://test-api"
@@ -50,6 +50,21 @@ class Settings(BaseSettings):
             values["database_url"] = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
 
         return values
+
+    def get_super_user_emails(self) -> List[str]:
+        """Parse the super_user_email setting into a list of emails.
+
+        Returns:
+            List of email addresses, stripped of whitespace.
+            Returns empty list if super_user_email is None or empty.
+        """
+        if not self.super_user_email:
+            return []
+
+        # Split by comma and strip whitespace from each email
+        emails = [email.strip() for email in self.super_user_email.split(",")]
+        # Filter out empty strings
+        return [email for email in emails if email]
 
     @property
     def is_production(self) -> bool:
