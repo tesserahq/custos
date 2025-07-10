@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.db import get_db
@@ -18,8 +18,8 @@ class SetupResponse(BaseModel):
 
     success: bool
     message: str
-    super_user_email: Optional[str] = None
-    user_id: Optional[str] = None
+    super_user_emails: Optional[List[str]] = None
+    user_ids: Optional[List[str]] = None
     role_assigned: Optional[str] = None
 
 
@@ -69,50 +69,84 @@ async def get_system_status() -> SystemStatusResponse:
 @router.post("", response_model=SetupResponse)
 async def setup_super_user(db: Session = Depends(get_db)) -> SetupResponse:
     """
-    Set up a system administrator role and assign it to the user specified by SUPER_USER_EMAIL.
+    Set up a system administrator role and assign it to the users specified by SUPER_USER_EMAIL.
+    Supports comma-separated list of emails.
     """
     settings = get_settings()
-    if not settings.super_user_email:
+    super_user_emails = settings.get_super_user_emails()
+
+    if not super_user_emails:
         raise HTTPException(
             status_code=400,
-            detail="SUPER_USER_EMAIL environment variable is not set. Cannot proceed with system admin setup.",
+            detail="SUPER_USER_EMAIL environment variable is not set or contains no valid emails. Cannot proceed with system admin setup.",
         )
-    system_admin_email = settings.super_user_email
+
     user_service = UserService(db)
-    user = user_service.get_user_by_email(system_admin_email)
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No user found with email: {system_admin_email}. Please ensure the user exists in the database before running setup.",
-        )
+    successful_users = []
+    failed_emails = []
+
     try:
-        logger.info(f"Defining system admin role for user: {system_admin_email}")
+        # Define system admin role once for all users
+        logger.info("Defining system admin role")
         role_defined = role_definition_service.define_system_admin_role(domain="*")
         if not role_defined:
             raise HTTPException(
                 status_code=500,
                 detail="Failed to define system admin role. Check logs for details.",
             )
-        logger.info(f"Assigning system admin role to user: {user.id}")
-        role_assigned = casbin_service.assign_role(
-            user_id=str(user.id), role="system_admin", domain="*"
-        )
-        if not role_assigned:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to assign system admin role to user. Check logs for details.",
+
+        # Process each email in the list
+        for email in super_user_emails:
+            user = user_service.get_user_by_email(email)
+            if not user:
+                failed_emails.append(email)
+                logger.warning(f"No user found with email: {email}")
+                continue
+
+            logger.info(f"Assigning system admin role to user: {user.id} ({email})")
+            role_assigned = casbin_service.assign_role(
+                user_id=str(user.id), role="system_admin", domain="*"
             )
+            if not role_assigned:
+                failed_emails.append(email)
+                logger.error(f"Failed to assign system admin role to user: {email}")
+                continue
+
+            successful_users.append({"email": email, "user_id": str(user.id)})
+            logger.info(f"Successfully assigned system admin role to user: {email}")
+
+        # Check if any users were successfully set up
+        if not successful_users:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No users found with the provided emails: {', '.join(super_user_emails)}. Please ensure the users exist in the database before running setup.",
+            )
+
+        # Prepare response message
+        if failed_emails:
+            message = (
+                f"System admin setup completed with partial success. "
+                f"Successfully set up {len(successful_users)} user(s): {', '.join([u['email'] for u in successful_users])}. "
+                f"Failed to set up {len(failed_emails)} user(s): {', '.join(failed_emails)}."
+            )
+        else:
+            message = (
+                f"System admin setup completed successfully. "
+                f"Users {', '.join([u['email'] for u in successful_users])} now have system administrator privileges."
+            )
+
         logger.info(
-            f"System admin setup completed successfully: email={system_admin_email}, "
-            f"user_id={user.id}, role=system_admin"
+            f"System admin setup completed: {len(successful_users)} successful, {len(failed_emails)} failed"
         )
+
         return SetupResponse(
             success=True,
-            message=f"System admin setup completed successfully. User {system_admin_email} now has system administrator privileges.",
-            super_user_email=system_admin_email,
-            user_id=str(user.id),
+            message=message,
+            super_user_emails=[u["email"] for u in successful_users],
+            user_ids=[u["user_id"] for u in successful_users],
             role_assigned="system_admin",
         )
+
     except HTTPException:
         raise
     except Exception as e:

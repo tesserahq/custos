@@ -358,25 +358,50 @@ class CasbinService:
             bool: True if successful, False otherwise
         """
         try:
-            # Clear all policies (both policy rules and role assignments)
-            self.enforcer.clear_policy()
-
-            # Also clear the role assignments explicitly
-            # Get all users and remove all their roles
+            # Get all users and their roles BEFORE clearing policies
             all_users = self.enforcer.get_all_subjects()
+            users_to_clear = []
+
             for user in all_users:
-                # Remove all roles for this user (both domain-specific and global)
+                # Get all roles for this user (both domain-specific and global)
                 user_roles = self.enforcer.get_roles_for_user(user)
-                for role in user_roles:
-                    self.enforcer.delete_role_for_user(user, role)
+                domain_roles = []
 
                 # Also check domain-specific roles
                 for domain in ["*", "global", "admin"]:
-                    domain_roles = self.enforcer.get_roles_for_user_in_domain(
-                        user, domain
-                    )
-                    for role in domain_roles:
+                    try:
+                        domain_user_roles = self.enforcer.get_roles_for_user_in_domain(
+                            user, domain
+                        )
+                        domain_roles.extend(
+                            [(role, domain) for role in domain_user_roles]
+                        )
+                    except:
+                        # Domain might not exist, continue
+                        pass
+
+                users_to_clear.append((user, user_roles, domain_roles))
+
+            # Clear all policies first
+            self.enforcer.clear_policy()
+
+            # Now remove all role assignments
+            for user, user_roles, domain_roles in users_to_clear:
+                # Remove global roles
+                for role in user_roles:
+                    try:
+                        self.enforcer.delete_role_for_user(user, role)
+                    except:
+                        # Role might already be removed, continue
+                        pass
+
+                # Remove domain-specific roles
+                for role, domain in domain_roles:
+                    try:
                         self.enforcer.delete_role_for_user_in_domain(user, role, domain)
+                    except:
+                        # Role might already be removed, continue
+                        pass
 
             # Save the empty policy
             self.enforcer.save_policy()
