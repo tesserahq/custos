@@ -1,7 +1,7 @@
 import uvicorn
-import os
+from app.config import get_settings
 
 
 def dev():
-    port = int(os.getenv("PORT", "8000"))
-    uvicorn.run("app.main:app", reload=True, port=port)
+    settings = get_settings()
+    uvicorn.run("app.main:app", reload=True, port=settings.port)

@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     redis_namespace: str = Field(
         default="llama_index", json_schema_extra={"env": "REDIS_NAMESPACE"}
     )
+    port: int = Field(default=8000, json_schema_extra={"env": "PORT"})
 
     @model_validator(mode="before")
     def set_database_url(cls, values):
