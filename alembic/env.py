@@ -6,7 +6,6 @@ from alembic import context
 from app.db import Base
 from app.config import Settings
 
-
 # Manually create a fresh, uncached Settings instance
 settings = Settings()
 
@@ -93,6 +92,10 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        # Set execution option to indicate Alembic context
+        # This prevents soft delete filters from being applied during migrations
+        connection = connection.execution_options(alembic_context=True)
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

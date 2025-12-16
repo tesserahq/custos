@@ -10,12 +10,18 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.telemetry import setup_tracing
 from app.exceptions.handlers import register_exception_handlers
 from app.core.logging_config import get_logger
-from app.routers import authorization, service_accounts, setup
+from app.routers import authorization, setup, role, permission
+from fastapi_pagination import add_pagination
+from app.db import db_manager
+
+SKIP_PATHS = ["/health", "/openapi.json", "/docs"]
 
 
 def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     logger = get_logger()
     settings = get_settings()
+
+    app = FastAPI()
 
     if settings.is_production:
         # Initialize Rollbar SDK with your server-side access token
@@ -32,13 +38,27 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
         # Attach Rollbar handler to the root logger
         logger.addHandler(rollbar_handler)
 
-    app = FastAPI()
-
     if not testing and not settings.disable_auth:
         logger.info("Main: Adding authentication middleware")
-        from app.middleware.authentication import AuthenticationMiddleware
+        from tessera_sdk.middleware.authentication import AuthenticationMiddleware
+        from tessera_sdk.middleware.user_onboarding import UserOnboardingMiddleware
+        from tessera_sdk.utils.service_factory import create_service_factory
+        from app.services.user_service import UserService
 
-        app.add_middleware(AuthenticationMiddleware)
+        # Create service factory for UserService
+        user_service_factory = create_service_factory(UserService, db_manager)
+
+        app.add_middleware(
+            UserOnboardingMiddleware,
+            identies_base_url=settings.identies_host,
+            user_service_factory=user_service_factory,
+        )
+        app.add_middleware(
+            AuthenticationMiddleware,
+            identies_base_url=settings.identies_host,
+            skip_paths=SKIP_PATHS,
+            user_service_factory=user_service_factory,
+        )
     else:
         logger.info("Main: No authentication middleware")
         if auth_middleware:
@@ -59,8 +79,12 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
 
     # Include routers
     app.include_router(authorization.router)
-    app.include_router(service_accounts.router)
     app.include_router(setup.router)
+    app.include_router(role.router)
+    app.include_router(permission.router)
+
+    # Add pagination support
+    add_pagination(app)
 
     return app
 

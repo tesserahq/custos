@@ -1,6 +1,6 @@
 """create users table
 
-Revision ID: create_users_table
+Revision ID: init
 Revises:
 Create Date: 2024-03-21
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = "create_users_table"
+revision: str = "init"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -44,6 +44,7 @@ def upgrade() -> None:
         sa.Column(
             "updated_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
         ),
+        sa.Column("deleted_at", sa.DateTime, nullable=True),
     )
 
     # Add a partial unique index for external_id
@@ -55,8 +56,55 @@ def upgrade() -> None:
         postgresql_where=sa.text("external_id IS NOT NULL"),
     )
 
+    op.create_table(
+        "roles",
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("gen_random_uuid()"),
+        ),
+        sa.Column("name", sa.String, nullable=False),
+        sa.Column("description", sa.String, nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
+        ),
+        sa.Column("deleted_at", sa.DateTime, nullable=True),
+    )
+
+    op.create_table(
+        "permissions",
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("gen_random_uuid()"),
+        ),
+        sa.Column(
+            "role_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("roles.id"),
+            nullable=False,
+        ),
+        sa.Column("object", sa.String, nullable=False),
+        sa.Column("action", sa.String, nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
+        ),
+        sa.Column("deleted_at", sa.DateTime, nullable=True),
+    )
+
 
 def downgrade() -> None:
-    # Drop the partial unique index
+    # Drop indexes before dropping tables
     op.drop_index("uq_users_external_id", table_name="users")
+
+    op.drop_table("permissions")
+    op.drop_table("roles")
     op.drop_table("users")

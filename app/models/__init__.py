@@ -1,5 +1,6 @@
 from .user import User
-from .service_account import ServiceAccount
 from .mixins import TimestampMixin
+from .role import Role
+from .permission import Permission
 
-__all__ = ["User", "ServiceAccount", "TimestampMixin"]
+__all__ = ["User", "Role", "Permission", "TimestampMixin"]

@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     app_name: str = SERVICE_NAME
     otel_enabled: bool = Field(default=False, json_schema_extra={"env": "OTEL_ENABLED"})
     database_url: Optional[str] = None  # Will be set dynamically
+    database_pool_size: int = Field(
+        default=10, json_schema_extra={"env": "DATABASE_POOL_SIZE"}
+    )
+    database_max_overflow: int = Field(
+        default=20, json_schema_extra={"env": "DATABASE_MAX_OVERFLOW"}
+    )
     environment: str = Field(
         default="development",
         validation_alias=AliasChoices("ENV", "ENVIRONMENT"),
@@ -41,6 +47,14 @@ class Settings(BaseSettings):
         default="llama_index", json_schema_extra={"env": "REDIS_NAMESPACE"}
     )
     port: int = Field(default=8000, json_schema_extra={"env": "PORT"})
+    identies_host: Optional[str] = Field(
+        default=None,
+        json_schema_extra={"env": "IDENTIES_HOST"},
+    )
+    db_app_name: str = Field(
+        default="custos-api",
+        json_schema_extra={"env": "DB_APP_NAME"},
+    )
 
     @model_validator(mode="before")
     def set_database_url(cls, values):

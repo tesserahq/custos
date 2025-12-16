@@ -18,5 +18,3 @@ In the services directory:
 * Use model names in lowercase for variable names and method prefixes
 * Use .model_dump() on Pydantic objects for instantiation
 * Always commit and refresh updated or created objects
-
-Reference: WorkspaceService in services/workspace.py
