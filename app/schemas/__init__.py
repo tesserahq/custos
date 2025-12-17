@@ -18,6 +18,22 @@ from .service_account import (
     ServiceAccountDetails,
 )
 
+from .role import (
+    RoleBase,
+    RoleCreate,
+    RoleUpdate,
+    RoleInDB,
+    Role,
+)
+
+from .permission import (
+    PermissionBase,
+    PermissionCreate,
+    PermissionUpdate,
+    PermissionInDB,
+    Permission,
+)
+
 __all__ = [
     # User schemas
     "UserBase",
@@ -35,4 +51,16 @@ __all__ = [
     "ServiceAccount",
     "ServiceAccountWithKey",
     "ServiceAccountDetails",
+    # Role schemas
+    "RoleBase",
+    "RoleCreate",
+    "RoleUpdate",
+    "RoleInDB",
+    "Role",
+    # Permission schemas
+    "PermissionBase",
+    "PermissionCreate",
+    "PermissionUpdate",
+    "PermissionInDB",
+    "Permission",
 ]
