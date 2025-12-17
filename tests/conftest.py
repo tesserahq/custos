@@ -6,9 +6,12 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from fastapi import Request
 from fastapi.security import HTTPAuthorizationCredentials
-from app.db import Base, get_db
+from app.db import get_db
 from app.main import create_app
 from starlette.middleware.base import BaseHTTPMiddleware
+from alembic import command
+from alembic.config import Config
+from faker import Faker
 
 pytest_plugins = [
     "tests.fixtures.user_fixtures",
@@ -17,20 +20,6 @@ pytest_plugins = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment():
-    """Set up test environment variables."""
-    # Set it in the environment
-    import os
-
-    os.environ["SECRET_KEY"] = "test"
-    # Get settings with the new key
-    settings = get_settings()
-    yield settings
-
-
 settings = get_settings()
 
 
@@ -38,20 +27,46 @@ def ensure_test_database():
     """Ensure the test database exists."""
 
     # Connect to default postgres database
-    engine = create_engine(settings.database_url)
+    default_url = settings.database_url.replace("/custos_test", "/postgres")
+    engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
     conn = engine.connect()
 
-    logger.debug(f"Connected to PostgreSQL database: {settings.database_url}")
+    logger.debug(f"Connected to PostgreSQL database: {default_url}")
 
     # Check if test database exists
     result = conn.execute(
-        text("SELECT 1 FROM pg_database WHERE datname = 'vaulta_test'")
+        text("SELECT 1 FROM pg_database WHERE datname = 'custos_test'")
     )
     if not result.scalar():
         logger.debug("Creating test database...")
-        conn.execute(text("COMMIT"))  # Close any open transaction
-        conn.execute(text("CREATE DATABASE vaulta_test"))
+        conn.execute(text("CREATE DATABASE custos_test"))
+    else:
+        logger.debug("Test database already exists")
 
+    conn.close()
+    engine.dispose()
+
+
+def drop_test_database():
+    """Drop the test database."""
+    # Connect to default postgres database (not the test database)
+    default_url = settings.database_url.replace("/custos_test", "/postgres")
+    engine = create_engine(default_url, isolation_level="AUTOCOMMIT")
+    conn = engine.connect()
+
+    # Terminate all connections to the test database
+    conn.execute(
+        text(
+            """
+        SELECT pg_terminate_backend(pid) 
+        FROM pg_stat_activity 
+        WHERE datname = 'custos_test' AND pid <> pg_backend_pid()
+    """
+        )
+    )
+
+    # Drop the test database
+    conn.execute(text("DROP DATABASE IF EXISTS custos_test"))
     conn.close()
     engine.dispose()
 
@@ -64,17 +79,22 @@ def engine():
     # Create PostgreSQL engine for testing
     engine = create_engine(settings.database_url)
 
-    logger.debug("Creating tables...")
-    # Register models and create all tables
-    Base.metadata.create_all(engine)
-    logger.debug("Tables created successfully")
+    logger.debug("Running migrations...")
+
+    # Set up alembic configuration for testing
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
+
+    # Run migrations to create tables
+    command.upgrade(alembic_cfg, "head")
+    logger.debug("Migrations completed successfully")
 
     yield engine
 
-    logger.debug("Dropping tables...")
-    # Drop all tables after tests
-    Base.metadata.drop_all(engine)
-    logger.debug("Tables dropped successfully")
+    logger.debug("Dropping test database...")
+    # Drop the entire test database
+    drop_test_database()
+    logger.debug("Test database dropped successfully")
 
     engine.dispose()
 
@@ -104,59 +124,68 @@ def db(engine):
 
 
 @pytest.fixture(scope="function")
+def faker():
+    """Create a Faker instance for generating test data."""
+    return Faker()
+
+
+@pytest.fixture(scope="function")
 def auth_token():
     """Create a mock authorization token for testing."""
     return "mock_token"
 
 
+def create_client_fixture(user_fixture_name):
+    """Helper function to create client fixtures with different users."""
+
+    @pytest.fixture(scope="function")
+    def client_fixture(db, request):
+        """Create a FastAPI test client with overridden database dependency and auth."""
+
+        # Get the user from the specified fixture
+        test_user = request.getfixturevalue(user_fixture_name)
+
+        def override_get_db():
+            try:
+                yield db
+            finally:
+                pass  # Don't close the session here, it's handled by the db fixture
+
+        # Create app with testing mode ON (no auth middleware)
+        logger.debug("Creating app with testing mode ON")
+        app = create_app(testing=True, auth_middleware=MockAuthenticationMiddleware)
+
+        # Store the test user in the app state so it can be accessed by the mock dependency
+        app.state.test_user = test_user
+
+        # Override dependencies
+        app.dependency_overrides[get_db] = override_get_db
+
+        # Create test client with auth headers
+        test_client = TestClient(app)
+
+        # Add default authorization header to all requests
+        test_client.headers.update({"Authorization": "Bearer mock_token"})
+
+        yield test_client
+
+        # Clean up
+        delattr(app.state, "test_user")
+        app.dependency_overrides.clear()  # Clear overrides after test
+
+    return client_fixture
+
+
+# Create client fixtures using the helper function
+client = create_client_fixture("setup_user")
+client_another_user = create_client_fixture("setup_another_user")
+client_test_user = create_client_fixture("test_user")
+
+
 class MockAuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
-        # Check for service account token first (X-Service-Token header)
-        service_token = request.headers.get("X-Service-Token")
-
-        if service_token:
-            # Get the test service account from app state
-            test_service_account = getattr(
-                request.app.state, "test_service_account", None
-            )
-
-            # Validate service account state (mimic real validation)
-            if test_service_account is None:
-                from fastapi.responses import JSONResponse
-
-                return JSONResponse(
-                    status_code=401, content={"error": "Invalid service token"}
-                )
-
-            # Check if service account is active
-            if not test_service_account.is_active:
-                from fastapi.responses import JSONResponse
-
-                return JSONResponse(
-                    status_code=410,
-                    content={"error": "Service account is inactive"},
-                )
-
-            # Check if service account has expired
-            if test_service_account.is_expired():
-                from fastapi.responses import JSONResponse
-
-                return JSONResponse(
-                    status_code=410,
-                    content={"error": "Service account has expired"},
-                )
-
-            # If all validations pass, set the service account in request state
-            request.state.service_account = test_service_account
-            request.state.user = (
-                None  # Clear user to indicate service account authentication
-            )
-        else:
-            # Inject a fake user directly into request.state
-            test_user = getattr(request.app.state, "test_user", None)
-            request.state.user = test_user
-            request.state.service_account = None
-
+        # Inject a fake user directly into request.state
+        request.state.user = getattr(request.app.state, "test_user", None)
         return await call_next(request)
 
 
@@ -174,40 +203,3 @@ def mock_verify_token_dependency(
     request.state.user = user
 
     return user
-
-
-@pytest.fixture(scope="function")
-def client(db, setup_user):
-    """Create a FastAPI test client with overridden database dependency and auth."""
-
-    test_user = setup_user
-
-    def override_get_db():
-        try:
-            yield db
-        finally:
-            pass  # Don't close the session here, it's handled by the db fixture
-
-    # Create app with testing mode ON (no auth middleware)
-    logger.debug("Creating app with testing mode ON")
-    app = create_app(testing=True, auth_middleware=MockAuthenticationMiddleware)
-
-    # Store the test user in the app state so it can be accessed by the mock dependency
-    app.state.test_user = test_user
-
-    # Override dependencies
-    app.dependency_overrides[get_db] = override_get_db
-
-    # Create test client with auth headers
-    test_client = TestClient(app)
-
-    # Add default authorization header to all requests
-    test_client.headers.update({"Authorization": "Bearer mock_token"})
-
-    yield test_client
-
-    # Clean up
-    delattr(app.state, "test_user")
-    if hasattr(app.state, "test_service_account"):
-        delattr(app.state, "test_service_account")
-    app.dependency_overrides.clear()  # Clear overrides after test

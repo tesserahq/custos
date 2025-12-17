@@ -1,5 +1,4 @@
 import logging
-from app.middleware.db_session import DBSessionMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
@@ -63,9 +62,6 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
         logger.info("Main: No authentication middleware")
         if auth_middleware:
             app.add_middleware(auth_middleware)
-
-    app.add_middleware(DBSessionMiddleware)
-
     # TODO: Restrict this to the allowed origins
     app.add_middleware(
         CORSMiddleware,

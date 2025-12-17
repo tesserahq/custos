@@ -8,15 +8,6 @@ from .user import (
     UserDetails,
 )
 
-from .service_account import (
-    ServiceAccountBase,
-    ServiceAccountCreate,
-    ServiceAccountUpdate,
-    ServiceAccountInDB,
-    ServiceAccount,
-    ServiceAccountWithKey,
-    ServiceAccountDetails,
-)
 
 from .role import (
     RoleBase,
@@ -29,6 +20,7 @@ from .role import (
 from .permission import (
     PermissionBase,
     PermissionCreate,
+    PermissionCreateRequest,
     PermissionUpdate,
     PermissionInDB,
     Permission,
@@ -60,6 +52,7 @@ __all__ = [
     # Permission schemas
     "PermissionBase",
     "PermissionCreate",
+    "PermissionCreateRequest",
     "PermissionUpdate",
     "PermissionInDB",
     "Permission",

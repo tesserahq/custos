@@ -42,10 +42,7 @@ class RoleInDB(RoleBase):
     updated_at: datetime
     """Timestamp when the role record was last updated."""
 
-    class Config:
-        """Pydantic model configuration."""
-
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class Role(RoleInDB):

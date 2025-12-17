@@ -25,6 +25,18 @@ class PermissionCreate(PermissionBase):
     pass
 
 
+class PermissionCreateRequest(BaseModel):
+    """Schema for creating a permission when role_id comes from the URL path."""
+
+    object: str = Field(
+        ..., description="The object/resource this permission applies to"
+    )
+    """Object/resource name. Required field."""
+
+    action: str
+    """Action name (e.g., 'read', 'write', 'delete'). Required field."""
+
+
 class PermissionUpdate(BaseModel):
     """Schema for updating an existing permission. All fields are optional."""
 
@@ -50,10 +62,7 @@ class PermissionInDB(PermissionBase):
     updated_at: datetime
     """Timestamp when the permission record was last updated."""
 
-    class Config:
-        """Pydantic model configuration."""
-
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class Permission(PermissionInDB):
