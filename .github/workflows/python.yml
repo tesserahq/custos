@@ -41,7 +41,7 @@ jobs:
       EVENT_TYPE_PREFIX: "com.custos"
       EVENT_SOURCE_PREFIX: "custos"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Wait for DB to be ready
         run: |
           for i in {1..5}; do
