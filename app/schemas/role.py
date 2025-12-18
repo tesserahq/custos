@@ -10,6 +10,9 @@ class RoleBase(BaseModel):
     name: str
     """Role name. Required field."""
 
+    identifier: str
+    """Role identifier. Required field."""
+
     description: Optional[str] = None
     """Role description. Optional field."""
 
@@ -36,6 +39,9 @@ class RoleInDB(RoleBase):
     id: UUID
     """Unique identifier for the role in the database."""
 
+    identifier: str
+    """Role identifier. Required field."""
+
     created_at: datetime
     """Timestamp when the role record was created."""
 
@@ -49,3 +55,55 @@ class Role(RoleInDB):
     """Schema for role data returned in API responses. Inherits all fields from RoleInDB."""
 
     pass
+
+
+class PermissionItem(BaseModel):
+    """Schema for a permission item in batch role creation."""
+
+    object: str
+    """Object/resource name. Required field."""
+
+    action: str
+    """Action name (e.g., 'read', 'write', 'delete'). Required field."""
+
+
+class RoleBatchItem(BaseModel):
+    """Schema for a single role in batch creation."""
+
+    name: str
+    """Role name. Required field."""
+
+    identifier: str
+    """Role identifier. Required field."""
+
+    description: Optional[str] = None
+    """Role description. Optional field."""
+
+    permissions: List[PermissionItem]
+    """List of permissions for this role. Required field."""
+
+
+class RoleBindRequest(BaseModel):
+    """Schema for binding a role to a domain by creating policies."""
+
+    domain: str
+    """Domain/tenant for the policies. Required field."""
+
+
+class RoleBindResponse(BaseModel):
+    """Schema for the response when binding a role to a domain."""
+
+    success: bool
+    """Whether the binding operation was successful."""
+
+    role_name: str
+    """Name of the role that was bound."""
+
+    total_permissions: int
+    """Total number of permissions associated with the role."""
+
+    policies_added: int
+    """Number of policies successfully added."""
+
+    policies_failed: int
+    """Number of policies that failed to be added."""

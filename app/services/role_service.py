@@ -16,6 +16,9 @@ class RoleService:
     def get_role_by_name(self, name: str) -> Optional[Role]:
         return self.db.query(Role).filter(Role.name == name).first()
 
+    def get_role_by_identifier(self, identifier: str) -> Optional[Role]:
+        return self.db.query(Role).filter(Role.identifier == identifier).first()
+
     def get_roles(self, skip: int = 0, limit: int = 100) -> List[Role]:
         return self.db.query(Role).offset(skip).limit(limit).all()
 
@@ -33,6 +36,21 @@ class RoleService:
         self.db.add(db_role)
         self.db.commit()
         self.db.refresh(db_role)
+        return db_role
+
+    def add_role(self, role: RoleCreate) -> Role:
+        """
+        Add a role to the session without committing.
+        Useful for batch operations where multiple objects need to be created atomically.
+
+        Args:
+            role: The role data to create
+
+        Returns:
+            Role: The created role object (not yet committed)
+        """
+        db_role = Role(**role.model_dump())
+        self.db.add(db_role)
         return db_role
 
     def update_role(self, role_id: UUID, role: RoleUpdate) -> Optional[Role]:

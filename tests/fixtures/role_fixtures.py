@@ -7,6 +7,7 @@ def setup_role(db, faker):
     """Create a test role for use in tests."""
     role_data = {
         "name": faker.word().capitalize() + "Role",
+        "identifier": faker.uuid4(),
         "description": faker.text(100),
     }
 
@@ -23,6 +24,7 @@ def setup_another_role(db, faker):
     """Create another test role for use in tests."""
     role_data = {
         "name": faker.word().capitalize() + "Role",
+        "identifier": faker.uuid4(),
         "description": faker.text(100),
     }
 

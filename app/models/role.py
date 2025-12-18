@@ -18,10 +18,19 @@ class Role(Base, TimestampMixin, SoftDeleteMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
+    identifier = Column(String, nullable=False)
     description = Column(String, nullable=True)
 
     permissions = relationship(
         "Permission", back_populates="role", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_roles_identifier",
+            "identifier",
+            unique=True,
+        ),
     )
 
     def __init__(self, **kwargs):
