@@ -1,0 +1,19 @@
+# Role definitions for Custos authorization system
+# This file defines the permissions for each role type
+
+roles:
+  rbac_admin:
+    name: "RBAC Admin"
+    identifier: "rbac_admin"
+    description: "RBAC admin role with full permissions to manage roles and permissions"
+    permissions:
+      role:
+        - read
+        - write
+        - delete
+        - create
+      permission:
+        - read
+        - write
+        - delete
+        - create

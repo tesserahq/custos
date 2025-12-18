@@ -1,4 +1,3 @@
-import pytest
 from uuid import uuid4
 from app.schemas.permission import PermissionCreate, PermissionUpdate
 from app.services.permission_service import PermissionService

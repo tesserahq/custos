@@ -1,5 +1,4 @@
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from app.schemas.authorization import (
     AuthorizationRequest,
     AuthorizationResponse,

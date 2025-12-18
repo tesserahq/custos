@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from app.commands.role.create_role_command import CreateRoleCommand
 from app.schemas.role import RoleCreate
 
@@ -53,7 +53,7 @@ class TestCreateRoleCommand:
         mock_publisher.publish_sync = Mock()
 
         command = CreateRoleCommand(db, nats_publisher=mock_publisher)
-        role = command.execute(role_data)
+        command.execute(role_data)
 
         # Verify event was published
         assert mock_publisher.publish_sync.called

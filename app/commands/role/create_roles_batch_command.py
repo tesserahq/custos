@@ -135,7 +135,7 @@ class CreateRolesBatchCommand:
                         )
                 raise ValueError("One or more roles already exist")
             raise Exception(
-                f"Failed to create roles batch: database constraint violation"
+                "Failed to create roles batch: database constraint violation"
             )
         except Exception as e:
             # Rollback the transaction if something goes wrong
@@ -180,6 +180,4 @@ class CreateRolesBatchCommand:
                     f"Published batch event for {len(created_roles)} roles and {len(created_permissions)} permissions"
                 )
         except Exception:  # pragma: no cover - defensive logging
-            self.logger.exception(
-                f"Failed to publish roles batch-created event to NATS"
-            )
+            self.logger.exception("Failed to publish roles batch-created event to NATS")

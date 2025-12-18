@@ -1,4 +1,3 @@
-import pytest
 from uuid import uuid4
 from app.schemas.role import RoleCreate, RoleUpdate
 from app.services.role_service import RoleService

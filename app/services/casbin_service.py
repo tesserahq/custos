@@ -2,7 +2,7 @@ import os
 from typing import Optional, List, Tuple
 import casbin
 from casbin_sqlalchemy_adapter import Adapter
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from app.config import get_settings
 from app.core.logging_config import get_logger
 
@@ -352,7 +352,7 @@ class CasbinService:
                         domain_roles.extend(
                             [(role, domain) for role in domain_user_roles]
                         )
-                    except:
+                    except Exception:
                         # Domain might not exist, continue
                         pass
 
@@ -367,7 +367,7 @@ class CasbinService:
                 for role in user_roles:
                     try:
                         self.enforcer.delete_role_for_user(user, role)
-                    except:
+                    except Exception:
                         # Role might already be removed, continue
                         pass
 
@@ -375,7 +375,7 @@ class CasbinService:
                 for role, domain in domain_roles:
                     try:
                         self.enforcer.delete_role_for_user_in_domain(user, role, domain)
-                    except:
+                    except Exception:
                         # Role might already be removed, continue
                         pass
 

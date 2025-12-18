@@ -1,6 +1,5 @@
 from app.models.mixins import TimestampMixin, SoftDeleteMixin
 from sqlalchemy import Column, String, Boolean, DateTime, Index, text
-from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
 import uuid
