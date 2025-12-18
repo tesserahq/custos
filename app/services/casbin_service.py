@@ -136,12 +136,6 @@ class CasbinService:
                 # For global roles
                 success = self.enforcer.add_role_for_user(user_id, role)
 
-            if success:
-                self.enforcer.save_policy()
-                self.logger.info(
-                    f"Role {role} assigned to user {user_id} in domain {domain}"
-                )
-
             return success
 
         except Exception as e:
@@ -164,17 +158,11 @@ class CasbinService:
         """
         try:
             if domain:
-                success = self.enforcer.delete_role_for_user_in_domain(
+                success = self.enforcer.delete_roles_for_user_in_domain(
                     user_id, role, domain
                 )
             else:
                 success = self.enforcer.delete_role_for_user(user_id, role)
-
-            if success:
-                self.enforcer.save_policy()
-                self.logger.info(
-                    f"Role {role} removed from user {user_id} in domain {domain}"
-                )
 
             return success
 
@@ -281,12 +269,6 @@ class CasbinService:
 
                 success = self.enforcer.add_policy(subject, obj, action)
 
-            if success:
-                self.enforcer.save_policy()
-                self.logger.info(
-                    f"Policy added: {subject} -> {obj} -> {action} in domain {domain}"
-                )
-
             return success
 
         except Exception as e:
@@ -313,12 +295,6 @@ class CasbinService:
                 success = self.enforcer.remove_policy(subject, domain, obj, action)
             else:
                 success = self.enforcer.remove_policy(subject, obj, action)
-
-            if success:
-                self.enforcer.save_policy()
-                self.logger.info(
-                    f"Policy removed: {subject} -> {obj} -> {action} in domain {domain}"
-                )
 
             return success
 
@@ -414,7 +390,3 @@ class CasbinService:
         except Exception as e:
             self.logger.error(f"Failed to clear Casbin policies: {e}")
             return False
-
-
-# Global instance
-casbin_service = CasbinService()

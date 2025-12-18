@@ -11,6 +11,7 @@ class TestCreateRoleCommand:
         """Test successful role creation."""
         role_data = RoleCreate(
             name=faker.word().capitalize() + "Role",
+            identifier=faker.uuid4(),
             description=faker.text(100),
         )
 
@@ -28,6 +29,7 @@ class TestCreateRoleCommand:
         """Test that creating a role with duplicate name raises ValueError."""
         role_data = RoleCreate(
             name=setup_role.name,  # Use existing role name
+            identifier=setup_role.identifier,
             description=faker.text(100),
         )
 
@@ -42,6 +44,7 @@ class TestCreateRoleCommand:
         """Test that role creation publishes an event when nats_publisher is provided."""
         role_data = RoleCreate(
             name=faker.word().capitalize() + "Role",
+            identifier=faker.uuid4(),
             description=faker.text(100),
         )
 
@@ -63,6 +66,7 @@ class TestCreateRoleCommand:
         """Test that role creation works without nats_publisher."""
         role_data = RoleCreate(
             name=faker.word().capitalize() + "Role",
+            identifier=faker.uuid4(),
             description=faker.text(100),
         )
 
@@ -77,6 +81,7 @@ class TestCreateRoleCommand:
         """Test that exceptions are properly handled and error message is set."""
         role_data = RoleCreate(
             name=faker.word().capitalize() + "Role",
+            identifier=faker.uuid4(),
             description=faker.text(100),
         )
 
@@ -95,6 +100,7 @@ class TestCreateRoleCommand:
         """Test that ValueError exceptions allow the transaction to continue."""
         role_data = RoleCreate(
             name=setup_role.name,  # Duplicate name
+            identifier=setup_role.identifier,
             description=faker.text(100),
         )
 
@@ -114,6 +120,7 @@ class TestCreateRoleCommand:
         """Test that event publishing failure doesn't raise an exception."""
         role_data = RoleCreate(
             name=faker.word().capitalize() + "Role",
+            identifier=faker.uuid4(),
             description=faker.text(100),
         )
 
@@ -133,6 +140,7 @@ class TestCreateRoleCommand:
         """Test that command works with default NatsEventPublisher."""
         role_data = RoleCreate(
             name=faker.word().capitalize() + "Role",
+            identifier=faker.uuid4(),
             description=faker.text(100),
         )
 
@@ -148,6 +156,7 @@ class TestCreateRoleCommand:
         """Test creating a role without description."""
         role_data = RoleCreate(
             name=faker.word().capitalize() + "Role",
+            identifier=faker.uuid4(),
         )
 
         command = CreateRoleCommand(db, nats_publisher=None)
@@ -162,10 +171,12 @@ class TestCreateRoleCommand:
         """Test creating multiple roles with different names."""
         role_data1 = RoleCreate(
             name=faker.word().capitalize() + "Role1",
+            identifier=faker.uuid4(),
             description=faker.text(100),
         )
         role_data2 = RoleCreate(
             name=faker.word().capitalize() + "Role2",
+            identifier=faker.uuid4(),
             description=faker.text(100),
         )
 

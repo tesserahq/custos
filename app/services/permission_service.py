@@ -48,6 +48,21 @@ class PermissionService:
         self.db.refresh(db_permission)
         return db_permission
 
+    def add_permission(self, permission: PermissionCreate) -> Permission:
+        """
+        Add a permission to the session without committing.
+        Useful for batch operations where multiple objects need to be created atomically.
+
+        Args:
+            permission: The permission data to create
+
+        Returns:
+            Permission: The created permission object (not yet committed)
+        """
+        db_permission = Permission(**permission.model_dump())
+        self.db.add(db_permission)
+        return db_permission
+
     def update_permission(
         self, permission_id: UUID, permission: PermissionUpdate
     ) -> Optional[Permission]:

@@ -1,4 +1,4 @@
-"""create users table
+"""initialize tables
 
 Revision ID: init
 Revises:
@@ -65,6 +65,7 @@ def upgrade() -> None:
             server_default=sa.text("gen_random_uuid()"),
         ),
         sa.Column("name", sa.String, nullable=False),
+        sa.Column("identifier", sa.String, nullable=False),
         sa.Column("description", sa.String, nullable=True),
         sa.Column(
             "created_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
@@ -73,6 +74,13 @@ def upgrade() -> None:
             "updated_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
         ),
         sa.Column("deleted_at", sa.DateTime, nullable=True),
+    )
+
+    op.create_index(
+        "uq_roles_identifier",
+        "roles",
+        ["identifier"],
+        unique=True,
     )
 
     op.create_table(

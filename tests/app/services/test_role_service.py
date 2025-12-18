@@ -9,6 +9,7 @@ def test_create_role(db, faker):
     # Create role
     role_data = {
         "name": faker.word().capitalize() + "Role",
+        "identifier": faker.uuid4(),
         "description": faker.text(100),
     }
     role_create = RoleCreate(**role_data)
