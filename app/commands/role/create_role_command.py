@@ -71,7 +71,7 @@ class CreateRoleCommand:
             error_str = str(e.orig) if hasattr(e, "orig") else str(e)
             if "name" in error_str.lower() or "unique" in error_str.lower():
                 raise ValueError(f"Role with name '{role_data.name}' already exists")
-            raise Exception(f"Failed to create role: database constraint violation")
+            raise Exception("Failed to create role: database constraint violation")
         except Exception as e:
             # Rollback the transaction if something goes wrong
             # This handles cases where create_role commits but subsequent operations fail

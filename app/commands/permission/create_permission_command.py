@@ -83,7 +83,7 @@ class CreatePermissionCommand:
                     f"action '{permission_data.action}', and role_id '{permission_data.role_id}' already exists"
                 )
             raise Exception(
-                f"Failed to create permission: database constraint violation"
+                "Failed to create permission: database constraint violation"
             )
         except Exception as e:
             # Rollback the transaction if something goes wrong
