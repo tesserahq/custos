@@ -12,8 +12,13 @@ from app.core.logging_config import get_logger
 from app.routers import authorization, role, permission, system
 from fastapi_pagination import add_pagination
 from app.db import db_manager
+from app.middleware.rbac_middleware import RBACMiddleware
 
 SKIP_PATHS = ["/health", "/openapi.json", "/docs"]
+SKIP_RBAC_PATHS = [
+    "/system/setup",
+    # Add more paths here as needed
+]
 
 
 def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
@@ -46,6 +51,8 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
 
         # Create service factory for UserService
         user_service_factory = create_service_factory(UserService, db_manager)
+
+        app.add_middleware(RBACMiddleware, skip_paths=SKIP_RBAC_PATHS)
 
         app.add_middleware(
             UserOnboardingMiddleware,

@@ -2,18 +2,28 @@
 # This file defines the permissions for each role type
 
 roles:
-  rbac_admin:
-    name: "RBAC Admin"
-    identifier: "rbac_admin"
+  custos_admin:
+    name: "Custos Admin"
+    identifier: "custos_admin"
     description: "RBAC admin role with full permissions to manage roles and permissions"
     permissions:
       role:
         - read
-        - write
+        - update
         - delete
         - create
       permission:
         - read
-        - write
+        - update
+        - delete
+        - create
+  identies_admin:
+    name: "Identies Admin"
+    identifier: "identies_admin"
+    description: "Identies admin role with full permissions to manage System accounts and more"
+    permissions:
+      system_account:
+        - read
+        - update
         - delete
         - create
