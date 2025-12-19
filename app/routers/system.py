@@ -4,8 +4,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.services.setup_service import SetupService
 from app.schemas.system import SetupRequest, SetupResponse
+from app.commands.setup.setup_command import SetupCommand
 from app.schemas.role import Role
 from app.core.logging_config import get_logger
 
@@ -35,8 +35,8 @@ def setup_system(
             request.yaml_file_path if request and request.yaml_file_path else None
         )
 
-        service = SetupService(db, nats_publisher=None)
-        created_roles = service.import_roles_from_yaml(yaml_file_path)
+        command = SetupCommand(db, nats_publisher=None)
+        created_roles = command.execute(yaml_file_path)
 
         logger.info(f"System setup completed: {len(created_roles)} roles created")
 

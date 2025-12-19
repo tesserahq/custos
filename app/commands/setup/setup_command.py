@@ -199,9 +199,8 @@ class SetupCommand:
                     "Please ensure the user exists before running setup."
                 )
             # Use external_id if available, otherwise use email as user identifier
-            user_id = user.external_id if user.external_id else user.email
-            super_users.append((user, user_id))
-            self.logger.info(f"Found super user: {email} (user_id: {user_id})")
+            super_users.append((user, user.id))
+            self.logger.info(f"Found super user: {email} (user_id: {user.id})")
 
         # Bind each role and assign to super users
         policy_command = CreatePolicyCommand(self.db, self.nats_publisher)
