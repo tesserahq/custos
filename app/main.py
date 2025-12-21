@@ -13,14 +13,29 @@ from app.routers import authorization, role, permission, system
 from fastapi_pagination import add_pagination
 from app.db import db_manager
 from app.middleware.rbac_middleware import RBACMiddleware
+from app.utils.metrics import PrometheusMiddleware, metrics
 
-SKIP_PATHS = ["/health", "/openapi.json", "/docs"]
+SKIP_AUTH_PATHS = ["/health", "/openapi.json", "/docs", "/metrics"]
 SKIP_RBAC_PATHS = [
+    "/health",
+    "/openapi.json",
+    "/docs",
     "/system/setup",
     "/authorization/authorize",
+    "/metrics",
     "/",
     # Add more paths here as needed
 ]
+
+
+class EndpointFilter(logging.Filter):
+    # Uvicorn endpoint access log filter
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.getMessage().find("GET /metrics") == -1
+
+
+# Filter out /endpoint
+logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 
 def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
@@ -64,9 +79,14 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
         app.add_middleware(
             AuthenticationMiddleware,
             identies_base_url=settings.identies_host,
-            skip_paths=SKIP_PATHS,
+            skip_paths=SKIP_AUTH_PATHS,
             user_service_factory=user_service_factory,
         )
+
+        # Setting metrics middleware
+        app.add_middleware(PrometheusMiddleware, app_name=settings.app_name)
+        app.add_route("/metrics", metrics)
+
     else:
         logger.info("Main: No authentication middleware")
         if auth_middleware:

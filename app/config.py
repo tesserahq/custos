@@ -7,7 +7,7 @@ from sqlalchemy.engine.url import make_url, URL
 DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/custos"
 DEFAULT_TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/custos_test"
 
-SERVICE_NAME = "custos"
+SERVICE_NAME = "custos-api"
 
 
 class Settings(BaseSettings):
