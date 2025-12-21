@@ -254,7 +254,7 @@ def create_role_permission(
         command = CreatePermissionCommand(db)
         permission = command.execute(permission_create)
         logger.info(
-            f"Created permission: {permission.id} ({permission.object}:{permission.action}) for role {role_id}"
+            f"Created permission: {permission.id} ({permission.object}:{permission.action}) for role {role.id}"
         )
         return permission
     except ValueError as e:

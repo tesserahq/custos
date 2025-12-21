@@ -3,7 +3,9 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.services.role_service import RoleService
+from app.services.permission_service import PermissionService
 from app.models.role import Role
+from app.models.permission import Permission
 
 
 def get_role_by_id(
@@ -26,3 +28,25 @@ def get_role_by_id(
     if role is None:
         raise HTTPException(status_code=404, detail="Role not found")
     return role
+
+
+def get_permission_by_id(
+    permission_id: UUID,
+    db: Session = Depends(get_db),
+) -> Permission:
+    """FastAPI dependency to get a permission by ID.
+
+    Args:
+        permission_id: The UUID of the permission to retrieve
+        db: Database session dependency
+
+    Returns:
+        Permission: The retrieved permission
+
+    Raises:
+        HTTPException: If the permission is not found
+    """
+    permission = PermissionService(db).get_permission(permission_id)
+    if permission is None:
+        raise HTTPException(status_code=404, detail="Permission not found")
+    return permission

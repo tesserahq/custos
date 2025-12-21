@@ -7,30 +7,28 @@ from app.schemas.permission import Permission, PermissionUpdate
 from app.core.logging_config import get_logger
 from app.commands.permission.update_permission_command import UpdatePermissionCommand
 from app.commands.permission.delete_permission_command import DeletePermissionCommand
+from app.routers.utils.dependencies import get_permission_by_id
 
 router = APIRouter(prefix="/permissions", tags=["Permission"])
 logger = get_logger()
 
 
 @router.get("/{permission_id}", response_model=Permission)
-def get_permission(permission_id: UUID, db: Session = Depends(get_db)) -> Permission:
+def get_permission(
+    permission: Permission = Depends(get_permission_by_id),
+) -> Permission:
     """
     Retrieve a specific permission by ID.
 
     Raises 404 if the permission is not found.
     """
-    permission = PermissionService(db).get_permission(permission_id)
-    if not permission:
-        raise HTTPException(
-            status_code=404, detail=f"Permission with id {permission_id} not found"
-        )
     return permission
 
 
 @router.put("/{permission_id}", response_model=Permission)
 def update_permission(
-    permission_id: UUID,
     permission_data: PermissionUpdate,
+    permission: Permission = Depends(get_permission_by_id),
     db: Session = Depends(get_db),
 ) -> Permission:
     """
@@ -40,7 +38,7 @@ def update_permission(
     """
     try:
         command = UpdatePermissionCommand(db)
-        updated_permission = command.execute(permission_id, permission_data)
+        updated_permission = command.execute(permission.id, permission_data)
         logger.info(
             f"Updated permission: {updated_permission.id} ({updated_permission.object}:{updated_permission.action})"
         )
@@ -59,7 +57,10 @@ def update_permission(
 
 
 @router.delete("/{permission_id}", status_code=204)
-def delete_permission(permission_id: UUID, db: Session = Depends(get_db)) -> None:
+def delete_permission(
+    permission: Permission = Depends(get_permission_by_id),
+    db: Session = Depends(get_db),
+) -> None:
     """
     Delete a permission by ID.
 
@@ -67,12 +68,12 @@ def delete_permission(permission_id: UUID, db: Session = Depends(get_db)) -> Non
     """
     try:
         command = DeletePermissionCommand(db)
-        success = command.execute(permission_id)
+        success = command.execute(permission.id)
         if not success:
             raise HTTPException(
-                status_code=404, detail=f"Permission with id {permission_id} not found"
+                status_code=404, detail=f"Permission with id {permission.id} not found"
             )
-        logger.info(f"Deleted permission: {permission_id}")
+        logger.info(f"Deleted permission: {permission.id}")
     except ValueError as e:
         # Handle validation errors (e.g., permission not found)
         error_message = str(e)
