@@ -12,6 +12,12 @@ roles:
         - update
         - delete
         - create
+        - assign
+      bindings:
+        - read
+        - update
+        - delete
+        - create
       permission:
         - read
         - update
@@ -23,6 +29,11 @@ roles:
     description: "Identies admin role with full permissions to manage System accounts and more"
     permissions:
       system_account:
+        - read
+        - update
+        - delete
+        - create
+      api_key:
         - read
         - update
         - delete

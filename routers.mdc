@@ -1,0 +1,43 @@
+---
+description: Use this rule when generating or updating API routers. It enforces a consistent response format ({"data": [...]}), prevents redundant foreign keys in request bodies, and promotes clean multi-tenant patterns. Always validate parent scope (e.g., resource) via the URL, not the payload.
+globs:
+alwaysApply: false
+---
+In the routers directory:
+
+* Create a file named <model>_router.py
+* Define an APIRouter instance with:
+* prefix="/<model_plural>" or for nested: prefix="/resources/{resource_id}/<model_plural>"
+* tags=["<Model>"]
+* Implement the following endpoints:
+* GET / – list all items, returns { "data": [...] }
+* GET /{id} – retrieve a specific item by ID
+* POST / – create a new item
+* PUT /{id} – update an existing item
+* DELETE /{id} – delete an item
+* Do not use underscore for path definition. A model named "RealEstate" should have a path "real-states"
+* Use the corresponding service (<Model>Service) for database interaction
+* Use Pydantic schemas for validation (<Model>CreateRequest, <Model>Update)
+* Do not include resource_id in the request body schema if it’s passed via the URL
+* Use routers/utils/dependencies when possible
+
+Nested Resources
+
+For resource-scoped routes:
+* Use prefix="/resource/{[resource]_id}/<resource_plural>"
+* Accept resource_id as a path parameter in each route function
+* Always call get_resource_by_id(resource, db) at the start of the route to:
+* Validate the resource exists
+* Enforce access control and scope
+* Inject resource_id manually into service-layer calls, not the request body
+
+```python
+@router.post("/", response_model=CredentialRead)
+def create_credential(
+    resource_id: UUID,
+    data: CredentialCreateRequest,
+    db: Session = Depends(get_db),
+):
+    resource = get_resource_by_id(resource_id, db)
+    return CredentialService(db).create_credential(data, resource_id=resource.id)
+```

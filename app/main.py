@@ -17,6 +17,8 @@ from app.middleware.rbac_middleware import RBACMiddleware
 SKIP_PATHS = ["/health", "/openapi.json", "/docs"]
 SKIP_RBAC_PATHS = [
     "/system/setup",
+    "/authorization/authorize",
+    "/",
     # Add more paths here as needed
 ]
 

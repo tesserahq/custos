@@ -52,46 +52,6 @@ async def authorize(request: AuthorizationRequest) -> AuthorizationResponse:
     return response
 
 
-@router.post("/assign-role", response_model=RoleAssignmentResponse)
-async def assign_role(request: RoleAssignmentRequest) -> RoleAssignmentResponse:
-    """
-    Assign a role to a user.
-
-    This endpoint assigns a role to a user, optionally scoped to a specific
-    domain for multi-tenancy support.
-    """
-    casbin_service = CasbinService()
-    # Assign role
-    success = casbin_service.assign_role(
-        user_id=request.user_id,
-        role=request.role,
-        domain=request.domain,
-        resource=request.resource,
-    )
-
-    if not success:
-        raise HTTPException(
-            status_code=400,
-            detail="Failed to assign role. Role may already exist or be invalid.",
-        )
-
-    response = RoleAssignmentResponse(
-        success=True,
-        user_id=request.user_id,
-        role=request.role,
-        domain=request.domain,
-        resource=request.resource,
-        message=f"Role '{request.role}' successfully assigned to user '{request.user_id}'",
-    )
-
-    logger.info(
-        f"Role assigned: user={request.user_id}, role={request.role}, "
-        f"domain={request.domain}, resource={request.resource}"
-    )
-
-    return response
-
-
 @router.delete("/remove-role", response_model=RoleAssignmentResponse)
 async def remove_role(request: RoleAssignmentRequest) -> RoleAssignmentResponse:
     """

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from uuid import UUID
+from typing import Optional
 from app.db import get_db
 from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
@@ -23,9 +24,69 @@ from app.commands.policy.create_policy_command import CreatePolicyCommand
 from app.schemas.permission import PermissionCreate
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
+from app.services.casbin_service import CasbinService
+from app.schemas.authorization import RoleAssignmentRequest, RoleAssignmentResponse
+from app.routers.utils.dependencies import get_role_by_id
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/roles", tags=["Role"])
 logger = get_logger()
+
+
+class RoleBindingRequest(BaseModel):
+    """Request model for role bindings."""
+
+    user_id: str = Field(..., description="The ID of the user")
+    domain: Optional[str] = Field(None, description="The domain/tenant for the role")
+    resource: Optional[str] = Field(
+        None, description="The resource the role applies to"
+    )
+
+
+@router.post("/{role_id}/bindings", response_model=RoleAssignmentResponse)
+async def create_role_binding(
+    request: RoleBindingRequest,
+    role: Role = Depends(get_role_by_id),
+) -> RoleAssignmentResponse:
+    """
+    Create a role binding.
+
+    This endpoint creates a role binding, optionally scoped to a specific
+    domain for multi-tenancy support. Uses role_id to look up the role.
+    """
+    # Use the role identifier for Casbin
+    role_identifier = str(role.identifier)
+
+    casbin_service = CasbinService()
+    # Assign role
+    success = casbin_service.assign_role(
+        user_id=request.user_id,
+        role=role_identifier,
+        domain=request.domain,
+        resource=request.resource,
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to assign role. Role may already exist or be invalid.",
+        )
+
+    response = RoleAssignmentResponse(
+        success=True,
+        user_id=request.user_id,
+        role=role_identifier,
+        domain=request.domain,
+        resource=request.resource,
+        message=f"Role '{role_identifier}' successfully assigned to user '{request.user_id}'",
+    )
+
+    logger.info(
+        f"Role assigned: user={request.user_id}, role={role_identifier}, "
+        f"domain={request.domain}, resource={request.resource}"
+    )
+
+    return response
 
 
 @router.post("/batch", response_model=list[Role], status_code=201)
@@ -43,7 +104,7 @@ def create_roles_batch(
         command = CreateRolesBatchCommand(db)
         created_roles = command.execute(roles_data)
         logger.info(f"Created {len(created_roles)} roles in batch")
-        return created_roles
+        return [Role.model_validate(role) for role in created_roles]
     except ValueError as e:
         # Handle validation errors (e.g., duplicate role name, duplicate permission)
         raise HTTPException(status_code=400, detail=str(e))
@@ -66,15 +127,12 @@ def list_roles(db: Session = Depends(get_db)) -> Page[Role]:
 
 
 @router.get("/{role_id}", response_model=Role)
-def get_role(role_id: UUID, db: Session = Depends(get_db)) -> Role:
+def get_role(role: Role = Depends(get_role_by_id)) -> Role:
     """
     Retrieve a specific role by ID.
 
     Raises 404 if the role is not found.
     """
-    role = RoleService(db).get_role(role_id)
-    if not role:
-        raise HTTPException(status_code=404, detail=f"Role with id {role_id} not found")
     return role
 
 
@@ -101,7 +159,9 @@ def create_role(role_data: RoleCreate, db: Session = Depends(get_db)) -> Role:
 
 @router.put("/{role_id}", response_model=Role)
 def update_role(
-    role_id: UUID, role_data: RoleUpdate, db: Session = Depends(get_db)
+    role_data: RoleUpdate,
+    role: Role = Depends(get_role_by_id),
+    db: Session = Depends(get_db),
 ) -> Role:
     """
     Update an existing role.
@@ -110,7 +170,7 @@ def update_role(
     """
     try:
         command = UpdateRoleCommand(db)
-        updated_role = command.execute(role_id, role_data)
+        updated_role = command.execute(role.id, role_data)
         logger.info(f"Updated role: {updated_role.id} ({updated_role.name})")
         return updated_role
     except ValueError as e:
@@ -127,7 +187,9 @@ def update_role(
 
 
 @router.delete("/{role_id}", status_code=204)
-def delete_role(role_id: UUID, db: Session = Depends(get_db)) -> None:
+def delete_role(
+    role: Role = Depends(get_role_by_id), db: Session = Depends(get_db)
+) -> None:
     """
     Delete a role by ID.
 
@@ -135,12 +197,12 @@ def delete_role(role_id: UUID, db: Session = Depends(get_db)) -> None:
     """
     try:
         command = DeleteRoleCommand(db)
-        success = command.execute(role_id)
+        success = command.execute(role.id)
         if not success:
             raise HTTPException(
-                status_code=404, detail=f"Role with id {role_id} not found"
+                status_code=404, detail=f"Role with id {role.id} not found"
             )
-        logger.info(f"Deleted role: {role_id}")
+        logger.info(f"Deleted role: {role.id}")
     except ValueError as e:
         # Handle validation errors (e.g., role not found)
         error_message = str(e)
@@ -155,26 +217,24 @@ def delete_role(role_id: UUID, db: Session = Depends(get_db)) -> None:
 
 
 @router.get("/{role_id}/permissions", response_model=list[Permission])
-def list_role_permissions(role_id: UUID, db: Session = Depends(get_db)):
+def list_role_permissions(
+    role: Role = Depends(get_role_by_id), db: Session = Depends(get_db)
+):
     """
     List all permissions for a specific role.
 
     Raises 404 if the role is not found.
     """
     # Validate role exists
-    role = RoleService(db).get_role(role_id)
-    if not role:
-        raise HTTPException(status_code=404, detail=f"Role with id {role_id} not found")
-
     permission_service = PermissionService(db)
-    permissions = permission_service.get_permissions_by_role(role_id)
+    permissions = permission_service.get_permissions_by_role(role.id)
     return permissions
 
 
 @router.post("/{role_id}/permissions", response_model=Permission, status_code=201)
 def create_role_permission(
-    role_id: UUID,
     permission_data: PermissionCreateRequest,
+    role: Role = Depends(get_role_by_id),
     db: Session = Depends(get_db),
 ) -> Permission:
     """
@@ -184,16 +244,12 @@ def create_role_permission(
     Returns the created permission with a 201 status code.
     """
     # Validate role exists
-    role = RoleService(db).get_role(role_id)
-    if not role:
-        raise HTTPException(status_code=404, detail=f"Role with id {role_id} not found")
-
     try:
         # Create PermissionCreate with role_id from URL
         permission_create = PermissionCreate(
             object=permission_data.object,
             action=permission_data.action,
-            role_id=role_id,
+            role_id=role.id,
         )
         command = CreatePermissionCommand(db)
         permission = command.execute(permission_create)
@@ -212,8 +268,8 @@ def create_role_permission(
 
 @router.post("/{role_id}/bind", response_model=RoleBindResponse)
 def bind_role(
-    role_id: UUID,
     bind_data: RoleBindRequest,
+    role: Role = Depends(get_role_by_id),
     db: Session = Depends(get_db),
 ) -> RoleBindResponse:
     """
@@ -225,9 +281,9 @@ def bind_role(
     """
     try:
         command = CreatePolicyCommand(db)
-        result = command.execute(role_id, bind_data.domain)
+        result = command.execute(role.id, bind_data.domain)
         logger.info(
-            f"Bound role {role_id} to domain '{bind_data.domain}': "
+            f"Bound role {role.id} to domain '{bind_data.domain}': "
             f"{result['policies_added']}/{result['total_permissions']} policies added"
         )
         return RoleBindResponse(**result)
@@ -241,6 +297,6 @@ def bind_role(
     except Exception as e:
         # Handle unexpected errors
         logger.error(
-            f"Failed to bind role {role_id} to domain '{bind_data.domain}': {str(e)}"
+            f"Failed to bind role {role.id} to domain '{bind_data.domain}': {str(e)}"
         )
         raise HTTPException(status_code=500, detail="Failed to bind role")
