@@ -25,6 +25,10 @@ class Role(Base, TimestampMixin, SoftDeleteMixin):
         "Permission", back_populates="role", cascade="all, delete-orphan"
     )
 
+    memberships = relationship(
+        "Membership", back_populates="role", cascade="all, delete-orphan"
+    )
+
     __table_args__ = (
         Index(
             "uq_roles_identifier",

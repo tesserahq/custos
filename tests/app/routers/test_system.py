@@ -198,32 +198,3 @@ roles:
         role_identifiers = {role["identifier"] for role in data["roles"]}
         assert "admin_test" in role_identifiers
         assert "viewer_test" in role_identifiers
-
-    @patch("app.commands.setup.setup_command.get_settings")
-    def test_setup_system_duplicate_identifier(
-        self, mock_get_settings, client, tmp_path, setup_role, db, faker
-    ):
-        """Test POST /system/setup with duplicate role identifier."""
-        # Create a super user first (test will fail on duplicate but still needs user for binding attempt)
-        self._create_super_user(db, "admin@example.com", faker)
-
-        # Mock settings
-        mock_settings = Mock()
-        mock_settings.get_super_user_emails.return_value = ["admin@example.com"]
-        mock_get_settings.return_value = mock_settings
-        # Create YAML with role that has same identifier as existing role
-        yaml_content = f"""
-roles:
-  duplicate_role:
-    name: "Duplicate Role"
-    identifier: "{setup_role.identifier}"
-    description: "This should fail"
-"""
-        yaml_file = tmp_path / "duplicate_roles.yaml"
-        yaml_file.write_text(yaml_content)
-
-        request_data = {"yaml_file_path": str(yaml_file)}
-        response = client.post("/system/setup", json=request_data)
-
-        assert response.status_code == 400
-        assert "already exists" in response.json()["detail"].lower()

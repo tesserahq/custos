@@ -58,22 +58,20 @@ class CreateRolesBatchCommand:
             # Create all roles and permissions without committing
             for role_item in roles_data:
                 # Check if role identifier already exists
-                if self.role_service.get_role_by_identifier(role_item.identifier):
-                    raise ValueError(
-                        f"Role with identifier '{role_item.identifier}' already exists"
-                    )
+                role = self.role_service.get_role_by_identifier(role_item.identifier)
 
-                # Create role using service (add to session, don't commit yet)
-                role_create = RoleCreate(
-                    name=role_item.name,
-                    identifier=role_item.identifier,
-                    description=role_item.description,
-                )
-                db_role = self.role_service.add_role(role_create)
-                self.db.flush()  # Flush to get the role ID without committing
+                if not role:
+                    # Create role using service (add to session, don't commit yet)
+                    role_create = RoleCreate(
+                        name=role_item.name,
+                        identifier=role_item.identifier,
+                        description=role_item.description,
+                    )
+                    role = self.role_service.add_role(role_create)
+                    self.db.flush()  # Flush to get the role ID without committing
 
                 # Get the role ID as UUID (after flush, id is populated)
-                role_id = cast(UUID, db_role.id)
+                role_id = cast(UUID, role.id)
 
                 # Create permissions for this role
                 for perm_item in role_item.permissions:
@@ -85,24 +83,19 @@ class CreateRolesBatchCommand:
                             role_id,
                         )
                     )
-                    if existing:
-                        raise ValueError(
-                            f"Permission with object '{perm_item.object}', "
-                            f"action '{perm_item.action}', and role '{role_item.name}' already exists"
+                    if not existing:
+                        # Create permission using service (add to session, don't commit yet)
+                        permission_create = PermissionCreate(
+                            object=perm_item.object,
+                            action=perm_item.action,
+                            role_id=role_id,
                         )
+                        db_permission = self.permission_service.add_permission(
+                            permission_create
+                        )
+                        created_permissions.append((role, db_permission))
 
-                    # Create permission using service (add to session, don't commit yet)
-                    permission_create = PermissionCreate(
-                        object=perm_item.object,
-                        action=perm_item.action,
-                        role_id=role_id,
-                    )
-                    db_permission = self.permission_service.add_permission(
-                        permission_create
-                    )
-                    created_permissions.append((db_role, db_permission))
-
-                created_roles.append(db_role)
+                created_roles.append(role)
 
             # Commit all changes in a single transaction
             self.db.commit()
@@ -135,7 +128,8 @@ class CreateRolesBatchCommand:
                         )
                 raise ValueError("One or more roles already exist")
             raise Exception(
-                "Failed to create roles batch: database constraint violation"
+                "Failed to create roles batch: database constraint violation "
+                + error_str
             )
         except Exception as e:
             # Rollback the transaction if something goes wrong
