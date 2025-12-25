@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
+from app.schemas.user import User
 
 
 class MembershipBase(BaseModel):
@@ -48,4 +49,5 @@ class MembershipInDB(MembershipBase):
 class Membership(MembershipInDB):
     """Schema for membership data returned in API responses. Inherits all fields from MembershipInDB."""
 
-    pass
+    user: Optional[User] = None
+    """User object associated with this membership. Populated when user relationship is loaded."""

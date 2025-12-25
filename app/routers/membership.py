@@ -76,4 +76,3 @@ def delete_membership(
         # Handle unexpected errors
         logger.error(f"Failed to delete membership: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete membership")
-

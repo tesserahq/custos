@@ -231,8 +231,13 @@ def list_role_memberships(
     Returns a paginated response using fastapi-pagination.
     """
     from app.models.membership import Membership as MembershipModel
+    from sqlalchemy.orm import joinedload
 
-    query = db.query(MembershipModel).filter(MembershipModel.role_id == role.id)
+    query = (
+        db.query(MembershipModel)
+        .options(joinedload(MembershipModel.user))
+        .filter(MembershipModel.role_id == role.id)
+    )
     return paginate(query)
 
 
