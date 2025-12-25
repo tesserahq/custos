@@ -710,14 +710,14 @@ standard-no-fastapi-cloud-cli = ["email-validator (>=2.0.0)", "fastapi-cli[stand
 
 [[package]]
 name = "fastapi-pagination"
-version = "0.15.3"
+version = "0.15.4"
 description = "FastAPI pagination"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "fastapi_pagination-0.15.3-py3-none-any.whl", hash = "sha256:6c0e8b3265270bfa46a580f7a3a24559b0825917625b5c4ed3a1cd60a173552f"},
-    {file = "fastapi_pagination-0.15.3.tar.gz", hash = "sha256:0667c3e31eb0c47f15e2d4d0a971490beed9b65a1079158b5ad0115488a370e2"},
+    {file = "fastapi_pagination-0.15.4-py3-none-any.whl", hash = "sha256:66d3eb5e28bfb8128a978c3f11c49300c5e914a03b96a24c9f491727e6a8d2d1"},
+    {file = "fastapi_pagination-0.15.4.tar.gz", hash = "sha256:be9be01181399be0a54bdbd9c991b70ed6cde3aa52d543ffd92af76202ee1013"},
 ]
 
 [package.dependencies]
@@ -726,6 +726,7 @@ pydantic = ">=1.9.1"
 typing-extensions = ">=4.8.0"
 
 [package.extras]
+aiosqlite = ["aiosqlite (>=0.19.0,!=0.22.0)"]
 asyncpg = ["asyncpg (>=0.24.0)", "sqlalchemy (>=1.3.20)"]
 beanie = ["beanie (>=2.0.0)"]
 bunnet = ["bunnet (>=1.1.0)"]
@@ -1616,14 +1617,14 @@ files = [
 
 [[package]]
 name = "pycasbin"
-version = "2.6.0"
+version = "2.6.1"
 description = "An authorization library that supports access control models like ACL, RBAC, ABAC in Python"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "pycasbin-2.6.0-py3-none-any.whl", hash = "sha256:080b970b6f5d6600885feaa0a7530252698bcd3a7a3bad97f7e9744146dd18ff"},
-    {file = "pycasbin-2.6.0.tar.gz", hash = "sha256:c120b19ce05085ca7a401fad14b447b1c430519d68389e138eb63e97e36da44d"},
+    {file = "pycasbin-2.6.1-py3-none-any.whl", hash = "sha256:879226bbdf92a10712c76bb42806ad78752e153760370c0d6f1e41ac974da79c"},
+    {file = "pycasbin-2.6.1.tar.gz", hash = "sha256:ff3ee135c912454db3ea986725b181c1a95b9d6bdb559c4952fdfab70ff9e0e0"},
 ]
 
 [package.dependencies]
@@ -2525,4 +2526,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "e0799a5e03cf592cf3f03540dfc73fa63386534ed5a0b3c40cfb1338913754d4"
+content-hash = "166b6c026eda1f3e977988a330a8f4c5637422ac7416c7931e5636ed67a102c1"
