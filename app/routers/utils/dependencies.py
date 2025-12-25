@@ -4,8 +4,10 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
+from app.services.membership_service import MembershipService
 from app.models.role import Role
 from app.models.permission import Permission
+from app.schemas.membership import Membership
 
 
 def get_role_by_id(
@@ -50,3 +52,25 @@ def get_permission_by_id(
     if permission is None:
         raise HTTPException(status_code=404, detail="Permission not found")
     return permission
+
+
+def get_membership_by_id(
+    membership_id: UUID,
+    db: Session = Depends(get_db),
+) -> Membership:
+    """FastAPI dependency to get a membership by ID.
+
+    Args:
+        membership_id: The UUID of the membership to retrieve
+        db: Database session dependency
+
+    Returns:
+        Membership: The retrieved membership
+
+    Raises:
+        HTTPException: If the membership is not found
+    """
+    membership = MembershipService(db).get_membership(membership_id)
+    if membership is None:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    return Membership.model_validate(membership)

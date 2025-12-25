@@ -5,6 +5,7 @@ from typing import Optional
 from app.db import get_db
 from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
+from app.services.membership_service import MembershipService
 from app.schemas.role import (
     Role,
     RoleCreate,
@@ -15,6 +16,7 @@ from app.schemas.role import (
 )
 from app.models.role import Role as RoleModel
 from app.schemas.permission import Permission, PermissionCreateRequest
+from app.schemas.membership import Membership
 from app.core.logging_config import get_logger
 from app.commands.role.create_role_command import CreateRoleCommand
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
@@ -216,6 +218,22 @@ def list_role_permissions(
     permission_service = PermissionService(db)
     permissions = permission_service.get_permissions_by_role(role.id)
     return permissions
+
+
+@router.get("/{role_id}/memberships", response_model=Page[Membership])
+def list_role_memberships(
+    role: Role = Depends(get_role_by_id), db: Session = Depends(get_db)
+) -> Page[Membership]:
+    """
+    List all memberships for a specific role with pagination.
+
+    Raises 404 if the role is not found.
+    Returns a paginated response using fastapi-pagination.
+    """
+    from app.models.membership import Membership as MembershipModel
+
+    query = db.query(MembershipModel).filter(MembershipModel.role_id == role.id)
+    return paginate(query)
 
 
 @router.post("/{role_id}/permissions", response_model=Permission, status_code=201)

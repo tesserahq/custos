@@ -12,6 +12,8 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     """User model for the application.
     This model represents a user in the system and includes fields for
     personal information, authentication, and relationships with other models.
+
+    It's important to note that users are like cache for Identies users. They might might have inconsistent data.
     """
 
     __tablename__ = "users"
@@ -36,6 +38,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     verified = Column(Boolean, default=False)
     verified_at = Column(DateTime, nullable=True)
     external_id = Column(String, nullable=True)
+    service_account = Column(Boolean, default=False)
 
     memberships = relationship(
         "Membership", back_populates="user", cascade="all, delete-orphan"

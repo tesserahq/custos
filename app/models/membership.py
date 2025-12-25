@@ -11,6 +11,8 @@ from app.db import Base
 class Membership(Base, TimestampMixin, SoftDeleteMixin):
     """Membership model for the application.
     This model represents the relationship between users and roles in the system.
+
+    It's important to note that memberships are like cache. They might might have inconsistent data.
     """
 
     __tablename__ = "memberships"

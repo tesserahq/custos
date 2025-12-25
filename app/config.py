@@ -47,9 +47,9 @@ class Settings(BaseSettings):
         default="llama_index", json_schema_extra={"env": "REDIS_NAMESPACE"}
     )
     port: int = Field(default=8000, json_schema_extra={"env": "PORT"})
-    identies_host: Optional[str] = Field(
+    identies_api_url: Optional[str] = Field(
         default=None,
-        json_schema_extra={"env": "IDENTIES_HOST"},
+        json_schema_extra={"env": "IDENTIES_API_URL"},
     )
     db_app_name: str = Field(
         default="custos-api",

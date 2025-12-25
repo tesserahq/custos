@@ -10,8 +10,8 @@ from app.schemas.role import RoleBatchItem, PermissionItem
 from app.models.role import Role
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
 from app.commands.policy.create_policy_command import CreatePolicyCommand
+from app.commands.bind.create_bind_command import CreateBindCommand
 from app.services.user_service import UserService
-from app.services.casbin_service import CasbinService
 from app.config import get_settings
 from tessera_sdk.events.nats_router import NatsEventPublisher  # type: ignore
 
@@ -39,7 +39,6 @@ class SetupCommand:
         self.nats_publisher = nats_publisher
         self.logger = logging.getLogger(__name__)
         self.user_service = UserService(db)
-        self.casbin_service = CasbinService()
 
     def execute(self, yaml_file_path: Optional[str] = None) -> List[Role]:
         """
@@ -223,22 +222,29 @@ class SetupCommand:
                 # Continue with role assignment even if binding fails
 
             # Assign role to each super user
+            bind_command = CreateBindCommand(self.db, self.nats_publisher)
             for user, user_id in super_users:
                 try:
-                    role_identifier: str = role.identifier  # type: ignore[assignment]
-                    success = self.casbin_service.assign_role(
+                    response = bind_command.execute(
+                        role=role,
                         user_id=str(user_id),
-                        role=role_identifier,
                         domain=domain,
+                        resource=None,
                     )
-                    if success:
+                    if response.success:
                         self.logger.info(
-                            f"Assigned role '{role.name}' ({role_identifier}) to user '{user.email}' (user_id: {user_id}) in domain '{domain}'"
+                            f"Assigned role '{role.name}' ({role.identifier}) to user '{user.email}' (user_id: {user_id}) in domain '{domain}'"
                         )
                     else:
                         self.logger.warning(
                             f"Failed to assign role '{role.name}' to user '{user.email}'"
                         )
+                except ValueError as e:
+                    # Handle validation errors (e.g., role already assigned)
+                    self.logger.warning(
+                        f"Error assigning role '{role.name}' to user '{user.email}': {e}"
+                    )
+                    # Continue with other assignments
                 except Exception as e:
                     self.logger.warning(
                         f"Error assigning role '{role.name}' to user '{user.email}': {e}"

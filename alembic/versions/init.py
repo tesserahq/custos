@@ -38,6 +38,7 @@ def upgrade() -> None:
         sa.Column("confirmed_at", sa.DateTime, nullable=True),
         sa.Column("verified", sa.Boolean, default=False),
         sa.Column("verified_at", sa.DateTime, nullable=True),
+        sa.Column("service_account", sa.Boolean, default=False),
         sa.Column(
             "created_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
         ),
@@ -108,11 +109,41 @@ def upgrade() -> None:
         sa.Column("deleted_at", sa.DateTime, nullable=True),
     )
 
+    op.create_table(
+        "memberships",
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            primary_key=True,
+            server_default=sa.text("gen_random_uuid()"),
+        ),
+        sa.Column(
+            "user_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "role_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("roles.id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "created_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
+        ),
+        sa.Column("deleted_at", sa.DateTime, nullable=True),
+    )
+
 
 def downgrade() -> None:
     # Drop indexes before dropping tables
     op.drop_index("uq_users_external_id", table_name="users")
 
+    op.drop_table("memberships")
     op.drop_table("permissions")
     op.drop_table("roles")
     op.drop_table("users")

@@ -12,6 +12,12 @@ from app.schemas.authorization import RoleAssignmentResponse
 from app.schemas.membership import MembershipCreate
 from app.events.bind_events import build_bind_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
+from app.services.user_service import UserService
+from app.schemas.user import User
+from tessera_sdk import IdentiesClient
+from tessera_sdk.utils.m2m_token import M2MTokenClient
+from app.config import get_settings
+from app.schemas.user import UserOnboard
 
 
 class CreateBindCommand:
@@ -26,12 +32,14 @@ class CreateBindCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
+        self.user_service = UserService(db)
         self.casbin_service = CasbinService()
         self.membership_service = MembershipService(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
         self.logger = logging.getLogger(__name__)
+        self.settings = get_settings()
 
     def execute(
         self,
@@ -72,7 +80,8 @@ class CreateBindCommand:
                     "Failed to assign role. Role may already exist or be invalid."
                 )
 
-            # Create membership record
+            # Create membership record. We are keeping a "cache" of memberships in the database. This is not the source of truth.
+            # Services using Custos are the source of truth.
             try:
                 # Convert user_id string to UUID
                 user_uuid = UUID(user_id)
@@ -158,3 +167,56 @@ class CreateBindCommand:
                 self.nats_publisher.publish_sync(event, event.event_type)
             except Exception:  # pragma: no cover - defensive logging
                 self.logger.exception("Failed to publish bind-created event to NATS")
+
+    def fetch_user(
+        self,
+        user_id: str,
+    ) -> User:
+        """
+        Fetch a user from Identies.
+
+        Args:
+            user_id: The ID of the user
+
+        Returns:
+            User: The user
+        """
+        # If the user doesn't exist, we need to fetch it from Identies
+        user = self.user_service.get_user(user_id)
+        if user:
+            return user
+
+        m2m_token = self._get_m2m_token()
+
+        identies_client = IdentiesClient(
+            base_url=self.settings.identies_api_url,
+            # TODO: This is a temporary solution, we need to move this into jobs
+            timeout=320,  # Shorter timeout for middleware
+            max_retries=1,  # Fewer retries for middleware
+            api_token=m2m_token,
+        )
+
+        identies_user = identies_client.get_user(user_id)
+        user = UserOnboard(
+            id=identies_user.id,
+            email=identies_user.email,
+            username=identies_user.username,
+            service_account=user.service_account,
+            first_name=identies_user.first_name,
+            last_name=identies_user.last_name,
+            avatar_url=identies_user.avatar_url,
+            provider=identies_user.provider,
+            verified=identies_user.verified,
+            verified_at=identies_user.verified_at,
+            confirmed_at=identies_user.confirmed_at,
+            external_id=identies_user.external_id,
+        )
+
+        return self.user_service.onboard_user(user)
+
+    def _get_m2m_token(self) -> str:
+        """
+        Get an M2M token.
+        """
+        # TODO: We could change this to use Identies system accounts instead.
+        return M2MTokenClient().get_token_sync().access_token

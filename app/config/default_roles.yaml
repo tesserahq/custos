@@ -18,6 +18,10 @@ roles:
         - update
         - delete
         - create
+      memberships:
+        - read
+        - delete
+        - create
       permission:
         - read
         - update
@@ -26,9 +30,9 @@ roles:
   identies_admin:
     name: "Identies Admin"
     identifier: "identies_admin"
-    description: "Identies admin role with full permissions to manage System accounts and more"
+    description: "Identies admin role with full permissions to manage Service accounts and more"
     permissions:
-      system_account:
+      service_account:
         - read
         - update
         - delete
