@@ -34,6 +34,9 @@ class UserBase(BaseModel):
     verified_at: Optional[datetime] = None
     """Timestamp when the user's account was verified."""
 
+    service_account: bool = False
+    """Whether the user is a service account."""
+
 
 class UserCreate(UserBase):
     """Schema for creating a new user. Inherits all fields from UserBase."""
@@ -43,6 +46,9 @@ class UserCreate(UserBase):
 
 class UserOnboard(UserBase):
     """Schema for onboarding a new user with external authentication."""
+
+    id: Optional[UUID] = None
+    """Unique identifier for the user in the database."""
 
     external_id: str
     """Unique identifier from the external authentication provider."""

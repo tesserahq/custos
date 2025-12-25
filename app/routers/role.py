@@ -5,6 +5,7 @@ from typing import Optional
 from app.db import get_db
 from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
+from app.services.membership_service import MembershipService
 from app.schemas.role import (
     Role,
     RoleCreate,
@@ -13,18 +14,20 @@ from app.schemas.role import (
     RoleBindRequest,
     RoleBindResponse,
 )
+from app.models.role import Role as RoleModel
 from app.schemas.permission import Permission, PermissionCreateRequest
+from app.schemas.membership import Membership
 from app.core.logging_config import get_logger
 from app.commands.role.create_role_command import CreateRoleCommand
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
 from app.commands.role.update_role_command import UpdateRoleCommand
 from app.commands.role.delete_role_command import DeleteRoleCommand
+from app.commands.bind.create_bind_command import CreateBindCommand
 from app.commands.permission.create_permission_command import CreatePermissionCommand
 from app.commands.policy.create_policy_command import CreatePolicyCommand
 from app.schemas.permission import PermissionCreate
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
-from app.services.casbin_service import CasbinService
 from app.schemas.authorization import RoleAssignmentRequest, RoleAssignmentResponse
 from app.routers.utils.dependencies import get_role_by_id
 from pydantic import BaseModel, Field
@@ -46,7 +49,8 @@ class RoleBindingRequest(BaseModel):
 @router.post("/{role_id}/bindings", response_model=RoleAssignmentResponse)
 async def create_role_binding(
     request: RoleBindingRequest,
-    role: Role = Depends(get_role_by_id),
+    role: RoleModel = Depends(get_role_by_id),
+    db: Session = Depends(get_db),
 ) -> RoleAssignmentResponse:
     """
     Create a role binding.
@@ -54,39 +58,22 @@ async def create_role_binding(
     This endpoint creates a role binding, optionally scoped to a specific
     domain for multi-tenancy support. Uses role_id to look up the role.
     """
-    # Use the role identifier for Casbin
-    role_identifier = str(role.identifier)
-
-    casbin_service = CasbinService()
-    # Assign role
-    success = casbin_service.assign_role(
-        user_id=request.user_id,
-        role=role_identifier,
-        domain=request.domain,
-        resource=request.resource,
-    )
-
-    if not success:
-        raise HTTPException(
-            status_code=400,
-            detail="Failed to assign role. Role may already exist or be invalid.",
+    try:
+        command = CreateBindCommand(db)
+        response = command.execute(
+            role=role,
+            user_id=request.user_id,
+            domain=request.domain,
+            resource=request.resource,
         )
-
-    response = RoleAssignmentResponse(
-        success=True,
-        user_id=request.user_id,
-        role=role_identifier,
-        domain=request.domain,
-        resource=request.resource,
-        message=f"Role '{role_identifier}' successfully assigned to user '{request.user_id}'",
-    )
-
-    logger.info(
-        f"Role assigned: user={request.user_id}, role={role_identifier}, "
-        f"domain={request.domain}, resource={request.resource}"
-    )
-
-    return response
+        return response
+    except ValueError as e:
+        # Handle validation errors (e.g., role assignment failed)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Handle unexpected errors
+        logger.error(f"Failed to create role binding: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create role binding")
 
 
 @router.post("/batch", response_model=list[Role], status_code=201)
@@ -111,7 +98,9 @@ def create_roles_batch(
     except Exception as e:
         # Handle unexpected errors
         logger.error(f"Failed to create roles batch: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create roles batch")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create roles batch: {str(e)}"
+        )
 
 
 @router.get("/", response_model=Page[Role])
@@ -229,6 +218,27 @@ def list_role_permissions(
     permission_service = PermissionService(db)
     permissions = permission_service.get_permissions_by_role(role.id)
     return permissions
+
+
+@router.get("/{role_id}/memberships", response_model=Page[Membership])
+def list_role_memberships(
+    role: Role = Depends(get_role_by_id), db: Session = Depends(get_db)
+) -> Page[Membership]:
+    """
+    List all memberships for a specific role with pagination.
+
+    Raises 404 if the role is not found.
+    Returns a paginated response using fastapi-pagination.
+    """
+    from app.models.membership import Membership as MembershipModel
+    from sqlalchemy.orm import joinedload
+
+    query = (
+        db.query(MembershipModel)
+        .options(joinedload(MembershipModel.user))
+        .filter(MembershipModel.role_id == role.id)
+    )
+    return paginate(query)
 
 
 @router.post("/{role_id}/permissions", response_model=Permission, status_code=201)

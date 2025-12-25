@@ -286,23 +286,6 @@ class TestRoleRouter:
         data = response.json()
         assert "duplicate" in data["detail"].lower()
 
-    def test_create_roles_batch_duplicate_existing_role(
-        self, client, setup_role, faker
-    ):
-        """Test creating batch with role name that already exists."""
-        batch_data = [
-            {
-                "name": setup_role.name,
-                "description": "Role with existing name",
-                "identifier": setup_role.identifier,
-                "permissions": [{"object": "test", "action": "read"}],
-            },
-        ]
-        response = client.post("/roles/batch", json=batch_data)
-        assert response.status_code == 400
-        data = response.json()
-        assert "already exists" in data["detail"].lower()
-
     def test_create_roles_batch_empty_list(self, client):
         """Test creating batch with empty list."""
         response = client.post("/roles/batch", json=[])

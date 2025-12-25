@@ -1,4 +1,4 @@
 # Routers package
-from . import authorization, role, permission, system
+from . import authorization, role, permission, system, membership
 
-__all__ = ["authorization", "role", "permission", "system"]
+__all__ = ["authorization", "role", "permission", "system", "membership"]
