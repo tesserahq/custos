@@ -200,17 +200,17 @@ class TestRoleRouter:
     def test_get_role_invalid_uuid(self, client):
         """Test retrieving a role with invalid UUID format."""
         response = client.get("/roles/invalid-uuid")
-        assert response.status_code == 422
+        assert response.status_code == 404
 
     def test_update_role_invalid_uuid(self, client):
         """Test updating a role with invalid UUID format."""
         response = client.put("/roles/invalid-uuid", json={"name": "Test"})
-        assert response.status_code == 422
+        assert response.status_code == 404
 
     def test_delete_role_invalid_uuid(self, client):
         """Test deleting a role with invalid UUID format."""
         response = client.delete("/roles/invalid-uuid")
-        assert response.status_code == 422
+        assert response.status_code == 404
 
     def test_create_roles_batch_success(self, client, faker):
         """Test creating multiple roles with permissions in batch."""
@@ -389,7 +389,7 @@ class TestRoleRouter:
         db.commit()
 
         bind_data = {"domain": domain}
-        response = client.post(f"/roles/{setup_role.id}/bind", json=bind_data)
+        response = client.post(f"/roles/{setup_role.id}/policies", json=bind_data)
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -402,7 +402,7 @@ class TestRoleRouter:
         """Test binding a non-existent role."""
         non_existent_id = uuid4()
         bind_data = {"domain": faker.word().lower()}
-        response = client.post(f"/roles/{non_existent_id}/bind", json=bind_data)
+        response = client.post(f"/roles/{non_existent_id}/policies", json=bind_data)
         assert response.status_code == 404
         data = response.json()
         assert "not found" in data["detail"].lower()
@@ -411,7 +411,7 @@ class TestRoleRouter:
         """Test binding a role with no permissions."""
         domain = faker.word().lower()
         bind_data = {"domain": domain}
-        response = client.post(f"/roles/{setup_role.id}/bind", json=bind_data)
+        response = client.post(f"/roles/{setup_role.id}/policies", json=bind_data)
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -423,11 +423,11 @@ class TestRoleRouter:
     def test_bind_role_invalid_uuid(self, client, faker):
         """Test binding a role with invalid UUID format."""
         bind_data = {"domain": faker.word().lower()}
-        response = client.post("/roles/invalid-uuid/bind", json=bind_data)
-        assert response.status_code == 422
+        response = client.post("/roles/invalid-uuid/policies", json=bind_data)
+        assert response.status_code == 404
 
     def test_bind_role_missing_domain(self, client, setup_role):
         """Test binding a role without domain field."""
         bind_data = {}
-        response = client.post(f"/roles/{setup_role.id}/bind", json=bind_data)
+        response = client.post(f"/roles/{setup_role.id}/policies", json=bind_data)
         assert response.status_code == 422

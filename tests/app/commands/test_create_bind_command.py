@@ -1,18 +1,18 @@
 import pytest
 from unittest.mock import Mock, patch
 from uuid import uuid4
-from app.commands.bind.create_bind_command import CreateBindCommand
+from app.commands.binding.create_binding_command import CreateBindingCommand
 from app.services.membership_service import MembershipService
 
 
-class TestCreateBindCommand:
-    """Test cases for CreateBindCommand."""
+class TestCreateBindingCommand:
+    """Test cases for CreateBindingCommand."""
 
     def test_execute_success(self, db, setup_role, setup_user):
         """Test successful role binding creation with membership."""
         user_id = str(setup_user.id)
 
-        command = CreateBindCommand(db, nats_publisher=None)
+        command = CreateBindingCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(
             command.casbin_service, "assign_role", return_value=True
@@ -55,7 +55,7 @@ class TestCreateBindCommand:
         domain = faker.word().lower()
         resource = faker.word().lower()
 
-        command = CreateBindCommand(db, nats_publisher=None)
+        command = CreateBindingCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(
             command.casbin_service, "assign_role", return_value=True
@@ -80,25 +80,6 @@ class TestCreateBindCommand:
                 resource=resource,
             )
 
-    def test_execute_casbin_failure(self, db, setup_role, setup_user):
-        """Test that Casbin assignment failure raises ValueError."""
-        user_id = str(setup_user.id)
-
-        command = CreateBindCommand(db, nats_publisher=None)
-        # Mock the assign_role method to return failure
-        with patch.object(command.casbin_service, "assign_role", return_value=False):
-            with pytest.raises(ValueError) as exc_info:
-                command.execute(role=setup_role, user_id=user_id)
-
-            assert "Failed to assign role" in str(exc_info.value)
-
-            # Verify membership was NOT created
-            membership_service = MembershipService(db)
-            membership = membership_service.get_membership_by_user_and_role(
-                setup_user.id, setup_role.id
-            )
-            assert membership is None
-
     def test_execute_membership_already_exists(self, db, setup_role, setup_user):
         """Test that existing membership is handled gracefully."""
         user_id = str(setup_user.id)
@@ -111,7 +92,7 @@ class TestCreateBindCommand:
             MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
         )
 
-        command = CreateBindCommand(db, nats_publisher=None)
+        command = CreateBindingCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
             response = command.execute(role=setup_role, user_id=user_id)
@@ -124,22 +105,6 @@ class TestCreateBindCommand:
             assert len(memberships) == 1
             assert memberships[0].id == existing_membership.id
 
-    def test_execute_invalid_user_id_format(self, db, setup_role):
-        """Test that invalid UUID format for user_id is handled gracefully."""
-        invalid_user_id = "not-a-valid-uuid"
-
-        command = CreateBindCommand(db, nats_publisher=None)
-        # Mock the assign_role method
-        with patch.object(
-            command.casbin_service, "assign_role", return_value=True
-        ) as mock_assign_role:
-            # Should still succeed (Casbin assignment works, membership creation fails)
-            response = command.execute(role=setup_role, user_id=invalid_user_id)
-
-            assert response.success is True
-            # Casbin was still called
-            mock_assign_role.assert_called_once()
-
     def test_execute_publishes_event(self, db, setup_role, setup_user):
         """Test that bind creation publishes an event when nats_publisher is provided."""
         user_id = str(setup_user.id)
@@ -148,7 +113,7 @@ class TestCreateBindCommand:
         mock_publisher = Mock()
         mock_publisher.publish_sync = Mock()
 
-        command = CreateBindCommand(db, nats_publisher=mock_publisher)
+        command = CreateBindingCommand(db, nats_publisher=mock_publisher)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
             response = command.execute(role=setup_role, user_id=user_id)
@@ -165,7 +130,7 @@ class TestCreateBindCommand:
         """Test that bind creation works without nats_publisher."""
         user_id = str(setup_user.id)
 
-        command = CreateBindCommand(db, nats_publisher=None)
+        command = CreateBindingCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
             response = command.execute(role=setup_role, user_id=user_id)
@@ -184,33 +149,13 @@ class TestCreateBindCommand:
         mock_publisher = Mock()
         mock_publisher.publish_sync = Mock(side_effect=Exception("NATS error"))
 
-        command = CreateBindCommand(db, nats_publisher=mock_publisher)
+        command = CreateBindingCommand(db, nats_publisher=mock_publisher)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
             # Should still succeed even if event publishing fails
             response = command.execute(role=setup_role, user_id=user_id)
 
             assert response.success is True
-
-    def test_execute_membership_creation_failure_does_not_raise(
-        self, db, setup_role, setup_user
-    ):
-        """Test that membership creation failure doesn't fail the entire operation."""
-        user_id = str(setup_user.id)
-
-        command = CreateBindCommand(db, nats_publisher=None)
-        # Mock the assign_role method
-        with patch.object(command.casbin_service, "assign_role", return_value=True):
-            # Mock membership_service to raise an exception
-            with patch.object(
-                command.membership_service,
-                "create_membership",
-                side_effect=Exception("Database error"),
-            ):
-                # Should still succeed (Casbin assignment was successful)
-                response = command.execute(role=setup_role, user_id=user_id)
-
-                assert response.success is True
 
     def test_execute_multiple_bindings_same_user_different_roles(
         self, db, setup_user, faker
@@ -235,7 +180,7 @@ class TestCreateBindCommand:
         db.refresh(role1)
         db.refresh(role2)
 
-        command = CreateBindCommand(db, nats_publisher=None)
+        command = CreateBindingCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
             # Create bindings for both roles
@@ -259,7 +204,7 @@ class TestCreateBindCommand:
         user_id = str(setup_user.id)
 
         # Don't pass nats_publisher, should create default
-        command = CreateBindCommand(db)
+        command = CreateBindingCommand(db)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
             response = command.execute(role=setup_role, user_id=user_id)

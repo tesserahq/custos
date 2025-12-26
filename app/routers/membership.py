@@ -6,7 +6,7 @@ from app.services.membership_service import MembershipService
 from app.services.role_service import RoleService
 from app.schemas.membership import Membership
 from app.core.logging_config import get_logger
-from app.commands.bind.delete_bind_command import DeleteBindCommand
+from app.commands.binding.delete_binding_command import DeleteBindingCommand
 from app.routers.utils.dependencies import get_membership_by_id
 from app.models.role import Role as RoleModel
 
@@ -38,7 +38,7 @@ def delete_membership(
     Returns 204 No Content on success. Raises 404 if the membership is not found.
     """
     try:
-        # Get the role to pass to DeleteBindCommand
+        # Get the role to pass to DeleteBindingCommand
         role_service = RoleService(db)
         role = role_service.get_role(membership.role_id)
         if not role:
@@ -46,8 +46,8 @@ def delete_membership(
                 status_code=404, detail=f"Role with id {membership.role_id} not found"
             )
 
-        # Use DeleteBindCommand to remove from both Casbin and database
-        command = DeleteBindCommand(db)
+        # Use DeleteBindingCommand to remove from both Casbin and database
+        command = DeleteBindingCommand(db)
         response = command.execute(
             role=role,
             user_id=str(membership.user_id),

@@ -10,7 +10,7 @@ from app.schemas.role import RoleBatchItem, PermissionItem
 from app.models.role import Role
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
 from app.commands.policy.create_policy_command import CreatePolicyCommand
-from app.commands.bind.create_bind_command import CreateBindCommand
+from app.commands.binding.create_binding_command import CreateBindingCommand
 from app.services.user_service import UserService
 from app.config import get_settings
 from tessera_sdk.events.nats_router import NatsEventPublisher  # type: ignore
@@ -222,7 +222,7 @@ class SetupCommand:
                 # Continue with role assignment even if binding fails
 
             # Assign role to each super user
-            bind_command = CreateBindCommand(self.db, self.nats_publisher)
+            bind_command = CreateBindingCommand(self.db, self.nats_publisher)
             for user, user_id in super_users:
                 try:
                     response = bind_command.execute(

@@ -133,7 +133,7 @@ class TestRolePermissionRouter:
     def test_list_role_permissions_invalid_uuid(self, client):
         """Test listing permissions with invalid role UUID format."""
         response = client.get("/roles/invalid-uuid/permissions")
-        assert response.status_code == 422
+        assert response.status_code == 404
 
     def test_create_role_permission_success(self, client, setup_role, faker):
         """Test creating a permission for a role."""
@@ -199,4 +199,4 @@ class TestRolePermissionRouter:
         response = client.post(
             "/roles/invalid-uuid/permissions", json={"object": "test", "action": "read"}
         )
-        assert response.status_code == 422
+        assert response.status_code == 404

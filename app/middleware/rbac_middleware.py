@@ -25,7 +25,7 @@ class RBACMiddleware(BaseHTTPMiddleware):
 
         # Skip RBAC for paths in the skip list
         if path in self.skip_paths:
-            self.logger.info(
+            self.logger.debug(
                 f"RBAC Middleware: Skipping authorization for path: {path}"
             )
             return await call_next(request)

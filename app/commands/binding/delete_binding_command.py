@@ -13,7 +13,7 @@ from app.events.bind_events import build_bind_deleted_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 
 
-class DeleteBindCommand:
+class DeleteBindingCommand:
     """
     Command to delete a role binding (remove a role from a user).
     Uses Casbin to remove the role, optionally scoped to a domain and resource.

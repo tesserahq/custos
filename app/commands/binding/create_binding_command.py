@@ -20,7 +20,7 @@ from app.config import get_settings
 from app.schemas.user import UserOnboard
 
 
-class CreateBindCommand:
+class CreateBindingCommand:
     """
     Command to create a role binding (assign a role to a user).
     Uses Casbin to assign the role, optionally scoped to a domain and resource.
@@ -44,7 +44,7 @@ class CreateBindCommand:
     def execute(
         self,
         role: Role,
-        user_id: str,
+        user_id: UUID,
         domain: Optional[str] = None,
         resource: Optional[str] = None,
     ) -> RoleAssignmentResponse:
@@ -67,46 +67,50 @@ class CreateBindCommand:
             # Use the role identifier for Casbin
             role_identifier = str(role.identifier)
 
-            # Assign role
-            success = self.casbin_service.assign_role(
-                user_id=user_id,
-                role=role_identifier,
-                domain=domain,
-                resource=resource,
-            )
-
-            if not success:
-                raise ValueError(
-                    "Failed to assign role. Role may already exist or be invalid."
-                )
-
             # Create membership record. We are keeping a "cache" of memberships in the database. This is not the source of truth.
             # Services using Custos are the source of truth.
             try:
                 # Convert user_id string to UUID
-                user_uuid = UUID(user_id)
                 role_uuid = cast(UUID, role.id)
 
                 # Check if membership already exists
                 existing_membership = (
                     self.membership_service.get_membership_by_user_and_role(
-                        user_uuid, role_uuid
+                        user_id, role_uuid
                     )
                 )
 
                 if not existing_membership:
+                    # We need to fetch the user from Identies. Users in custos
+                    # are being used as a cache for Identies users.
+                    # They might might have inconsistent data.
+                    user = self.fetch_user(user_id)
+
                     # Create new membership
                     membership_create = MembershipCreate(
-                        user_id=user_uuid,
+                        user_id=user.id,
                         role_id=role_uuid,
                     )
                     self.membership_service.create_membership(membership_create)
                     self.logger.info(
-                        f"Membership created: user_id={user_uuid}, role_id={role_uuid}"
+                        f"Membership created: user_id={user_id}, role_id={role_uuid}"
                     )
+
+                    # Assign role
+                    success = self.casbin_service.assign_role(
+                        user_id=user_id,
+                        role=role_identifier,
+                        domain=domain,
+                        resource=resource,
+                    )
+
+                    if not success:
+                        raise ValueError(
+                            "Failed to assign role. Role may already exist or be invalid."
+                        )
                 else:
                     self.logger.debug(
-                        f"Membership already exists: user_id={user_uuid}, role_id={role_uuid}"
+                        f"Membership already exists: user_id={user_id}, role_id={role_uuid}"
                     )
             except ValueError as e:
                 # Handle invalid UUID format
@@ -116,8 +120,7 @@ class CreateBindCommand:
                 # Don't fail the entire operation if membership creation fails
                 # The Casbin assignment was successful
             except Exception as e:
-                # Log but don't fail - Casbin assignment was successful
-                self.logger.error(f"Failed to create membership record: {str(e)}")
+                raise ValueError(f"Failed to create membership record: {str(e)}")
 
             response = RoleAssignmentResponse(
                 success=True,
@@ -170,7 +173,7 @@ class CreateBindCommand:
 
     def fetch_user(
         self,
-        user_id: str,
+        user_id: UUID,
     ) -> User:
         """
         Fetch a user from Identies.
@@ -201,7 +204,7 @@ class CreateBindCommand:
             id=identies_user.id,
             email=identies_user.email,
             username=identies_user.username,
-            service_account=user.service_account,
+            service_account=identies_user.service_account,
             first_name=identies_user.first_name,
             last_name=identies_user.last_name,
             avatar_url=identies_user.avatar_url,

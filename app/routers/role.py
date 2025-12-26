@@ -22,7 +22,7 @@ from app.commands.role.create_role_command import CreateRoleCommand
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
 from app.commands.role.update_role_command import UpdateRoleCommand
 from app.commands.role.delete_role_command import DeleteRoleCommand
-from app.commands.bind.create_bind_command import CreateBindCommand
+from app.commands.binding.create_binding_command import CreateBindingCommand
 from app.commands.permission.create_permission_command import CreatePermissionCommand
 from app.commands.policy.create_policy_command import CreatePolicyCommand
 from app.schemas.permission import PermissionCreate
@@ -58,22 +58,14 @@ async def create_role_binding(
     This endpoint creates a role binding, optionally scoped to a specific
     domain for multi-tenancy support. Uses role_id to look up the role.
     """
-    try:
-        command = CreateBindCommand(db)
-        response = command.execute(
-            role=role,
-            user_id=request.user_id,
-            domain=request.domain,
-            resource=request.resource,
-        )
-        return response
-    except ValueError as e:
-        # Handle validation errors (e.g., role assignment failed)
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Handle unexpected errors
-        logger.error(f"Failed to create role binding: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create role binding")
+    command = CreateBindingCommand(db)
+    response = command.execute(
+        role=role,
+        user_id=request.user_id,
+        domain=request.domain,
+        resource=request.resource,
+    )
+    return response
 
 
 @router.post("/batch", response_model=list[Role], status_code=201)
@@ -101,6 +93,42 @@ def create_roles_batch(
         raise HTTPException(
             status_code=500, detail=f"Failed to create roles batch: {str(e)}"
         )
+
+
+@router.post("/{role_id}/policies", response_model=RoleBindResponse)
+def bind_role(
+    bind_data: RoleBindRequest,
+    role: Role = Depends(get_role_by_id),
+    db: Session = Depends(get_db),
+) -> RoleBindResponse:
+    """
+    Bind a role to a domain by creating policies for all permissions associated with the role.
+
+    This endpoint creates Casbin policies for each permission associated with the role
+    in the specified domain. The role_id is taken from the URL path, not the request body.
+    Returns the binding result with statistics on policies added.
+    """
+    try:
+        command = CreatePolicyCommand(db)
+        result = command.execute(role.id, bind_data.domain)
+        logger.info(
+            f"Bound role {role.id} to domain '{bind_data.domain}': "
+            f"{result['policies_added']}/{result['total_permissions']} policies added"
+        )
+        return RoleBindResponse(**result)
+    except ValueError as e:
+        # Handle validation errors (e.g., role not found)
+        error_message = str(e)
+        if "not found" in error_message.lower():
+            raise HTTPException(status_code=404, detail=error_message)
+        else:
+            raise HTTPException(status_code=400, detail=error_message)
+    except Exception as e:
+        # Handle unexpected errors
+        logger.error(
+            f"Failed to bind role {role.id} to domain '{bind_data.domain}': {str(e)}"
+        )
+        raise HTTPException(status_code=500, detail="Failed to bind role")
 
 
 @router.get("/", response_model=Page[Role])
@@ -274,39 +302,3 @@ def create_role_permission(
         # Handle unexpected errors
         logger.error(f"Failed to create permission: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create permission")
-
-
-@router.post("/{role_id}/bind", response_model=RoleBindResponse)
-def bind_role(
-    bind_data: RoleBindRequest,
-    role: Role = Depends(get_role_by_id),
-    db: Session = Depends(get_db),
-) -> RoleBindResponse:
-    """
-    Bind a role to a domain by creating policies for all permissions associated with the role.
-
-    This endpoint creates Casbin policies for each permission associated with the role
-    in the specified domain. The role_id is taken from the URL path, not the request body.
-    Returns the binding result with statistics on policies added.
-    """
-    try:
-        command = CreatePolicyCommand(db)
-        result = command.execute(role.id, bind_data.domain)
-        logger.info(
-            f"Bound role {role.id} to domain '{bind_data.domain}': "
-            f"{result['policies_added']}/{result['total_permissions']} policies added"
-        )
-        return RoleBindResponse(**result)
-    except ValueError as e:
-        # Handle validation errors (e.g., role not found)
-        error_message = str(e)
-        if "not found" in error_message.lower():
-            raise HTTPException(status_code=404, detail=error_message)
-        else:
-            raise HTTPException(status_code=400, detail=error_message)
-    except Exception as e:
-        # Handle unexpected errors
-        logger.error(
-            f"Failed to bind role {role.id} to domain '{bind_data.domain}': {str(e)}"
-        )
-        raise HTTPException(status_code=500, detail="Failed to bind role")
