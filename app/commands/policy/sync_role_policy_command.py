@@ -5,14 +5,11 @@ from uuid import UUID
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 
-from app.models.role import Role
 from app.services.role_service import RoleService
-from app.services.casbin_service import CasbinService
-from app.events.policy_events import build_policy_created_event
-from tessera_sdk.events.nats_router import NatsEventPublisher
+from app.services.casbin_service import get_casbin_service
 
 
-class CreatePolicyCommand:
+class SyncRolePolicyCommand:
     """
     Command to create policies for a role in a domain.
     Iterates through all permissions associated with the role and adds them as policies.
@@ -21,14 +18,10 @@ class CreatePolicyCommand:
     def __init__(
         self,
         db: Session,
-        nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
         self.role_service = RoleService(db)
-        self.casbin_service = CasbinService()
-        self.nats_publisher = (
-            nats_publisher if nats_publisher is not None else NatsEventPublisher()
-        )
+        self.casbin_service = get_casbin_service()
         self.logger = logging.getLogger(__name__)
 
     def execute(self, role_id: UUID, domain: str) -> Dict[str, Any]:
@@ -86,14 +79,7 @@ class CreatePolicyCommand:
                     self.logger.debug(
                         f"Policy added: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
                     )
-                    # Publish policy created event
-                    self._publish_policy_created_event(
-                        role,
-                        domain,
-                        permission.object,
-                        permission.action,
-                        role.identifier,
-                    )
+
                 else:
                     policies_failed += 1
                     self.logger.warning(
@@ -125,23 +111,3 @@ class CreatePolicyCommand:
                 f"Failed to create policies for role {role_id} in domain {domain}: {e}"
             )
             raise Exception(f"Failed to create policies: {str(e)}")
-
-    def _publish_policy_created_event(
-        self, role: Role, domain: str, resource: str, action: str, role_id: str
-    ) -> None:
-        """
-        Publish a policy created event.
-
-        Args:
-            role_name: The name of the role
-            domain: The domain/tenant for the policy
-            resource: The resource object
-            action: The action allowed
-            role_id: The role ID
-        """
-        event = build_policy_created_event(role, domain, resource, action, role_id)
-        if self.nats_publisher is not None:
-            try:
-                self.nats_publisher.publish_sync(event, event.event_type)
-            except Exception:  # pragma: no cover - defensive logging
-                self.logger.exception("Failed to publish policy-created event to NATS")

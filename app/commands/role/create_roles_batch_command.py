@@ -14,6 +14,8 @@ from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
 from app.events.role_events import build_roles_batch_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher  # type: ignore
+from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
+from app.services.casbin_service import GLOBAL_DOMAIN
 
 
 class CreateRolesBatchCommand:
@@ -30,6 +32,7 @@ class CreateRolesBatchCommand:
         self.db = db
         self.role_service = RoleService(db)
         self.permission_service = PermissionService(db)
+        self.sync_role_policy_command = SyncRolePolicyCommand(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -103,8 +106,7 @@ class CreateRolesBatchCommand:
             # Refresh all roles and permissions to get updated timestamps
             for role in created_roles:
                 self.db.refresh(role)
-            for role, permission in created_permissions:
-                self.db.refresh(permission)
+                self.sync_role_policy_command.execute(role.id, GLOBAL_DOMAIN)
 
             # Publish events for all created roles and permissions
             self._publish_events(created_roles, created_permissions)

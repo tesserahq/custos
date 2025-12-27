@@ -130,6 +130,16 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
+            "domain",
+            sa.String,
+            nullable=True,
+        ),
+        sa.Column(
+            "domain_metadata",
+            postgresql.JSONB,
+            nullable=True,
+        ),
+        sa.Column(
             "created_at", sa.DateTime, nullable=False, server_default=sa.text("now()")
         ),
         sa.Column(

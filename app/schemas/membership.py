@@ -14,6 +14,12 @@ class MembershipBase(BaseModel):
     role_id: UUID
     """Role ID. Required field."""
 
+    domain: Optional[str] = None
+    """Domain/tenant for the membership. Optional field."""
+
+    domain_metadata: Optional[dict] = None
+    """Metadata for the domain. Optional field."""
+
 
 class MembershipCreate(MembershipBase):
     """Schema for creating a new membership. Inherits all fields from MembershipBase."""

@@ -11,6 +11,7 @@ from app.services.membership_service import MembershipService
 from app.schemas.authorization import RoleAssignmentResponse
 from app.events.bind_events import build_bind_deleted_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
+from app.services.casbin_service import get_casbin_service
 
 
 class DeleteBindingCommand:
@@ -25,7 +26,7 @@ class DeleteBindingCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.casbin_service = CasbinService()
+        self.casbin_service = get_casbin_service()
         self.membership_service = MembershipService(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()

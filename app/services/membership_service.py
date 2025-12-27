@@ -38,13 +38,17 @@ class MembershipService:
         )
 
     def get_membership_by_user_and_role(
-        self, user_id: UUID, role_id: UUID
+        self, user_id: UUID, role_id: UUID, domain: Optional[str] = None
     ) -> Optional[Membership]:
         """Get a membership by user ID and role ID with user relationship loaded."""
         return (
             self.db.query(Membership)
             .options(joinedload(Membership.user))
-            .filter(Membership.user_id == user_id, Membership.role_id == role_id)
+            .filter(
+                Membership.user_id == user_id,
+                Membership.role_id == role_id,
+                Membership.domain == domain,
+            )
             .first()
         )
 

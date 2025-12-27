@@ -1,12 +1,12 @@
 import pytest
 from uuid import uuid4
 from unittest.mock import patch
-from app.commands.policy.create_policy_command import CreatePolicyCommand
+from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.models.permission import Permission
 
 
-class TestCreatePolicyCommand:
-    """Test cases for CreatePolicyCommand."""
+class TestSyncRolePolicyCommand:
+    """Test cases for SyncRolePolicyCommand."""
 
     def test_execute_success(self, db, setup_role, faker):
         """Test successful policy creation for a role with permissions."""
@@ -21,7 +21,7 @@ class TestCreatePolicyCommand:
             db.add(perm)
         db.commit()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
         result = command.execute(setup_role.id, domain)
 
         # Assertions
@@ -46,7 +46,7 @@ class TestCreatePolicyCommand:
         non_existent_role_id = uuid4()
         domain = faker.word().lower()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
 
         with pytest.raises(ValueError) as exc_info:
             command.execute(non_existent_role_id, domain)
@@ -57,7 +57,7 @@ class TestCreatePolicyCommand:
         """Test creating policies for a role with no permissions."""
         domain = faker.word().lower()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
         result = command.execute(setup_role.id, domain)
 
         # Assertions
@@ -85,7 +85,7 @@ class TestCreatePolicyCommand:
             db.add(perm)
         db.commit()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
         result = command.execute(setup_role.id, domain)
 
         # Assertions
@@ -105,7 +105,7 @@ class TestCreatePolicyCommand:
             db.add(perm)
         db.commit()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
 
         # First execution
         result1 = command.execute(setup_role.id, domain)
@@ -129,7 +129,7 @@ class TestCreatePolicyCommand:
             db.add(perm)
         db.commit()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
 
         # Mock add_policy to fail for some policies
         # Use the command's casbin_service instance
@@ -168,7 +168,7 @@ class TestCreatePolicyCommand:
             db.add(perm)
         db.commit()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
 
         # Mock add_policy to fail for 2 policies (8/10 = 80% success)
         # Use the command's casbin_service instance
@@ -206,7 +206,7 @@ class TestCreatePolicyCommand:
             db.add(perm)
         db.commit()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
 
         # Create policies for domain1
         result1 = command.execute(setup_role.id, domain1)
@@ -243,7 +243,7 @@ class TestCreatePolicyCommand:
             db.add(perm)
         db.commit()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
 
         # Mock role_service to raise an exception
         with patch.object(
@@ -259,7 +259,7 @@ class TestCreatePolicyCommand:
         non_existent_role_id = uuid4()
         domain = faker.word().lower()
 
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
 
         with pytest.raises(ValueError) as exc_info:
             command.execute(non_existent_role_id, domain)
@@ -287,7 +287,7 @@ class TestCreatePolicyCommand:
         mock_publisher = Mock()
         mock_publisher.publish_sync = Mock()
 
-        command = CreatePolicyCommand(db, nats_publisher=mock_publisher)
+        command = SyncRolePolicyCommand(db, nats_publisher=mock_publisher)
         result = command.execute(setup_role.id, domain)
 
         # Verify events were published (one per policy created)
@@ -309,7 +309,7 @@ class TestCreatePolicyCommand:
             db.add(perm)
         db.commit()
 
-        command = CreatePolicyCommand(db, nats_publisher=None)
+        command = SyncRolePolicyCommand(db, nats_publisher=None)
         result = command.execute(setup_role.id, domain)
 
         # Assertions
@@ -334,7 +334,7 @@ class TestCreatePolicyCommand:
         mock_publisher = Mock()
         mock_publisher.publish_sync = Mock(side_effect=Exception("NATS error"))
 
-        command = CreatePolicyCommand(db, nats_publisher=mock_publisher)
+        command = SyncRolePolicyCommand(db, nats_publisher=mock_publisher)
 
         # Should still succeed even if event publishing fails
         result = command.execute(setup_role.id, domain)

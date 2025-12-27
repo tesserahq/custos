@@ -1,4 +1,4 @@
 # Policy commands package
-from .create_policy_command import CreatePolicyCommand
+from .sync_role_policy_command import SyncRolePolicyCommand
 
-__all__ = ["CreatePolicyCommand"]
+__all__ = ["SyncRolePolicyCommand"]

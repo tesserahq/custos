@@ -3,20 +3,19 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
-from app.services.casbin_service import CasbinService
+from app.services.casbin_service import get_casbin_service
 from app.models.user import User
 from app.core.logging_config import get_logger
 from typing import List, Optional
 import re
-
-GLOBAL_DOMAIN = "*"
+from app.services.casbin_service import GLOBAL_DOMAIN
 
 
 # 2. RBAC Middleware
 class RBACMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, skip_paths: Optional[List[str]] = None):
         super().__init__(app)
-        self.casbin_service = CasbinService()
+        self.casbin_service = get_casbin_service()
         self.logger = get_logger()
         self.skip_paths = skip_paths or []
 
@@ -77,7 +76,49 @@ class RBACMiddleware(BaseHTTPMiddleware):
         segments = [s for s in path.split("/") if s]
         if not segments:
             return "root"
-        return self._singularize(segments[0])
+
+        # Special case: if the path ends with "batch", use the parent resource
+        # e.g., "/roles/batch" -> "role"
+        if segments[-1] == "batch" and len(segments) > 1:
+            return self._singularize(segments[-2])
+
+        # Check if the last segment looks like an ID (UUID format)
+        # If it is, use the second-to-last segment as the resource
+        # e.g., "/roles/custos-admin/bindings" -> "binding"
+        # e.g., "/roles/123e4567-e89b-12d3-a456-426614174000" -> "role"
+        last_segment = segments[-1]
+        if self._looks_like_id(last_segment) and len(segments) > 1:
+            # Last segment is an ID, use the second-to-last segment
+            return self._singularize(segments[-2])
+        else:
+            # Last segment is the resource name
+            return self._singularize(last_segment)
+
+    def _looks_like_id(self, segment: str) -> bool:
+        """
+        Check if a path segment looks like an ID (UUID format).
+        UUIDs can be in formats like:
+        - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (with dashes)
+        - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (without dashes, 32 hex chars)
+        """
+        if not segment:
+            return False
+
+        # UUID with dashes: 8-4-4-4-12 hex characters
+        uuid_with_dashes = re.match(
+            r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            segment,
+            re.IGNORECASE,
+        )
+        if uuid_with_dashes:
+            return True
+
+        # UUID without dashes: 32 hex characters
+        uuid_without_dashes = re.match(r"^[0-9a-f]{32}$", segment, re.IGNORECASE)
+        if uuid_without_dashes:
+            return True
+
+        return False
 
     def _singularize(self, word: str) -> str:
         if not word:

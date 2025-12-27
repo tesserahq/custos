@@ -18,6 +18,7 @@ from tessera_sdk import IdentiesClient
 from tessera_sdk.utils.m2m_token import M2MTokenClient
 from app.config import get_settings
 from app.schemas.user import UserOnboard
+from app.services.casbin_service import get_casbin_service
 
 
 class CreateBindingCommand:
@@ -33,7 +34,7 @@ class CreateBindingCommand:
     ):
         self.db = db
         self.user_service = UserService(db)
-        self.casbin_service = CasbinService()
+        self.casbin_service = get_casbin_service()
         self.membership_service = MembershipService(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
@@ -46,6 +47,7 @@ class CreateBindingCommand:
         role: Role,
         user_id: UUID,
         domain: Optional[str] = None,
+        domain_metadata: Optional[dict] = None,
         resource: Optional[str] = None,
     ) -> RoleAssignmentResponse:
         """
@@ -76,7 +78,7 @@ class CreateBindingCommand:
                 # Check if membership already exists
                 existing_membership = (
                     self.membership_service.get_membership_by_user_and_role(
-                        user_id, role_uuid
+                        user_id, role_uuid, domain
                     )
                 )
 
@@ -90,6 +92,8 @@ class CreateBindingCommand:
                     membership_create = MembershipCreate(
                         user_id=user.id,
                         role_id=role_uuid,
+                        domain=domain,
+                        domain_metadata=domain_metadata,
                     )
                     self.membership_service.create_membership(membership_create)
                     self.logger.info(
