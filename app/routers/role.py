@@ -24,31 +24,22 @@ from app.commands.role.update_role_command import UpdateRoleCommand
 from app.commands.role.delete_role_command import DeleteRoleCommand
 from app.commands.binding.create_binding_command import CreateBindingCommand
 from app.commands.permission.create_permission_command import CreatePermissionCommand
-from app.commands.policy.create_policy_command import CreatePolicyCommand
+from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.schemas.permission import PermissionCreate
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from app.schemas.authorization import RoleAssignmentRequest, RoleAssignmentResponse
 from app.routers.utils.dependencies import get_role_by_id
-from pydantic import BaseModel, Field
+from app.schemas.binding import BindingRequest
+
 
 router = APIRouter(prefix="/roles", tags=["Role"])
 logger = get_logger()
 
 
-class RoleBindingRequest(BaseModel):
-    """Request model for role bindings."""
-
-    user_id: str = Field(..., description="The ID of the user")
-    domain: Optional[str] = Field(None, description="The domain/tenant for the role")
-    resource: Optional[str] = Field(
-        None, description="The resource the role applies to"
-    )
-
-
 @router.post("/{role_id}/bindings", response_model=RoleAssignmentResponse)
 async def create_role_binding(
-    request: RoleBindingRequest,
+    request: BindingRequest,
     role: RoleModel = Depends(get_role_by_id),
     db: Session = Depends(get_db),
 ) -> RoleAssignmentResponse:
@@ -63,6 +54,7 @@ async def create_role_binding(
         role=role,
         user_id=request.user_id,
         domain=request.domain,
+        domain_metadata=request.domain_metadata,
         resource=request.resource,
     )
     return response
@@ -109,7 +101,7 @@ def bind_role(
     Returns the binding result with statistics on policies added.
     """
     try:
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
         result = command.execute(role.id, bind_data.domain)
         logger.info(
             f"Bound role {role.id} to domain '{bind_data.domain}': "
@@ -128,7 +120,7 @@ def bind_role(
         logger.error(
             f"Failed to bind role {role.id} to domain '{bind_data.domain}': {str(e)}"
         )
-        raise HTTPException(status_code=500, detail="Failed to bind role")
+        raise HTTPException(status_code=500, detail=f"Failed to bind role: {str(e)}")
 
 
 @router.get("/", response_model=Page[Role])

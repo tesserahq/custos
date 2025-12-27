@@ -412,6 +412,7 @@ class TestRoleRouter:
         domain = faker.word().lower()
         bind_data = {"domain": domain}
         response = client.post(f"/roles/{setup_role.id}/policies", json=bind_data)
+        print(response.json())
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True

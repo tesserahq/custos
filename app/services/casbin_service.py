@@ -5,6 +5,14 @@ from casbin_sqlalchemy_adapter import Adapter
 from sqlalchemy import create_engine
 from app.config import get_settings
 from app.core.logging_config import get_logger
+from functools import lru_cache
+
+GLOBAL_DOMAIN = "*"
+
+
+@lru_cache()
+def get_casbin_service():
+    return CasbinService()
 
 
 class CasbinService:
@@ -32,6 +40,7 @@ class CasbinService:
 
             # Create enforcer
             self.enforcer = casbin.Enforcer(model_path, adapter)
+            self.enforcer.enable_auto_save(True)
 
             # Load policies
             self.enforcer.load_policy()

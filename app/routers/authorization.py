@@ -7,7 +7,7 @@ from app.schemas.authorization import (
     PermissionRequest,
     PermissionResponse,
 )
-from app.services.casbin_service import CasbinService
+from app.services.casbin_service import get_casbin_service
 from app.core.logging_config import get_logger
 
 router = APIRouter(prefix="/authorization", tags=["authorization"])
@@ -22,7 +22,7 @@ async def authorize(request: AuthorizationRequest) -> AuthorizationResponse:
     This endpoint evaluates authorization using Casbin policies and returns
     a clear allow/deny decision with context.
     """
-    casbin_service = CasbinService()
+    casbin_service = get_casbin_service()
     # Perform authorization check
     allowed = casbin_service.authorize(
         user_id=request.user_id,
@@ -62,7 +62,7 @@ async def remove_role(request: RoleAssignmentRequest) -> RoleAssignmentResponse:
     """
 
     # Remove role
-    casbin_service = CasbinService()
+    casbin_service = get_casbin_service()
     success = casbin_service.remove_role(
         user_id=request.user_id, role=request.role, domain=request.domain
     )
@@ -98,7 +98,7 @@ async def get_permissions(request: PermissionRequest) -> PermissionResponse:
     This endpoint returns all permissions and roles assigned to a user,
     optionally filtered by domain and resource.
     """
-    casbin_service = CasbinService()
+    casbin_service = get_casbin_service()
     # Get user roles
     roles = casbin_service.get_user_roles(
         user_id=request.user_id, domain=request.domain

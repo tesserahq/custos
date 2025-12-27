@@ -13,12 +13,12 @@ roles:
         - delete
         - create
         - assign
-      bindings:
+      binding:
         - read
         - update
         - delete
         - create
-      memberships:
+      membership:
         - read
         - delete
         - create

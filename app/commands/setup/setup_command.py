@@ -9,7 +9,7 @@ import yaml
 from app.schemas.role import RoleBatchItem, PermissionItem
 from app.models.role import Role
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
-from app.commands.policy.create_policy_command import CreatePolicyCommand
+from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.commands.binding.create_binding_command import CreateBindingCommand
 from app.services.user_service import UserService
 from app.config import get_settings
@@ -197,12 +197,11 @@ class SetupCommand:
                     f"Super user with email '{email}' not found in database. "
                     "Please ensure the user exists before running setup."
                 )
-            # Use external_id if available, otherwise use email as user identifier
             super_users.append((user, user.id))
             self.logger.info(f"Found super user: {email} (user_id: {user.id})")
 
         # Bind each role and assign to super users
-        policy_command = CreatePolicyCommand(self.db, self.nats_publisher)
+        policy_command = SyncRolePolicyCommand(self.db)
 
         for role in created_roles:
             # Bind the role (create policies)
