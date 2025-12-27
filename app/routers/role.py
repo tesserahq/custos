@@ -101,7 +101,7 @@ def bind_role(
     Returns the binding result with statistics on policies added.
     """
     try:
-        command = CreatePolicyCommand(db)
+        command = SyncRolePolicyCommand(db)
         result = command.execute(role.id, bind_data.domain)
         logger.info(
             f"Bound role {role.id} to domain '{bind_data.domain}': "
@@ -120,7 +120,7 @@ def bind_role(
         logger.error(
             f"Failed to bind role {role.id} to domain '{bind_data.domain}': {str(e)}"
         )
-        raise HTTPException(status_code=500, detail="Failed to bind role")
+        raise HTTPException(status_code=500, detail=f"Failed to bind role: {str(e)}")
 
 
 @router.get("/", response_model=Page[Role])
