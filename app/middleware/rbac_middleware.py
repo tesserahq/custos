@@ -158,7 +158,7 @@ class RBACMiddleware(BaseHTTPMiddleware):
         return {
             "GET": "read",
             "POST": "create",
-            "PUT": "write",
-            "PATCH": "write",
+            "PUT": "update",
+            "PATCH": "update",
             "DELETE": "delete",
         }.get(method, "read")
