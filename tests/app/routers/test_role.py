@@ -214,7 +214,7 @@ class TestRoleRouter:
 
     def test_create_roles_batch_success(self, client, faker):
         """Test creating multiple roles with permissions in batch."""
-        batch_data = [
+        roles_data = [
             {
                 "name": faker.word().capitalize() + "Collaborator",
                 "description": "A collaborator role",
@@ -233,6 +233,7 @@ class TestRoleRouter:
                 ],
             },
         ]
+        batch_data = {"resync": False, "roles": roles_data}
         response = client.post("/roles/batch", json=batch_data)
         assert response.status_code == 201
         data = response.json()
@@ -241,15 +242,15 @@ class TestRoleRouter:
 
         # Verify first role
         role1 = data[0]
-        assert role1["name"] == batch_data[0]["name"]
-        assert role1["description"] == batch_data[0]["description"]
+        assert role1["name"] == roles_data[0]["name"]
+        assert role1["description"] == roles_data[0]["description"]
         assert "id" in role1
         assert "created_at" in role1
 
         # Verify second role
         role2 = data[1]
-        assert role2["name"] == batch_data[1]["name"]
-        assert role2["description"] == batch_data[1]["description"]
+        assert role2["name"] == roles_data[1]["name"]
+        assert role2["description"] == roles_data[1]["description"]
         assert "id" in role2
 
         # Verify permissions were created
@@ -267,7 +268,7 @@ class TestRoleRouter:
 
     def test_create_roles_batch_duplicate_names_in_batch(self, client, faker):
         """Test creating batch with duplicate role names."""
-        batch_data = [
+        roles_data = [
             {
                 "name": "DuplicateRole",
                 "description": "First role",
@@ -281,6 +282,7 @@ class TestRoleRouter:
                 "permissions": [{"object": "test", "action": "write"}],
             },
         ]
+        batch_data = {"resync": False, "roles": roles_data}
         response = client.post("/roles/batch", json=batch_data)
         assert response.status_code == 400
         data = response.json()
@@ -288,7 +290,8 @@ class TestRoleRouter:
 
     def test_create_roles_batch_empty_list(self, client):
         """Test creating batch with empty list."""
-        response = client.post("/roles/batch", json=[])
+        batch_data = {"resync": False, "roles": []}
+        response = client.post("/roles/batch", json=batch_data)
         assert response.status_code == 201
         data = response.json()
         assert isinstance(data, list)
@@ -296,7 +299,7 @@ class TestRoleRouter:
 
     def test_create_roles_batch_no_permissions(self, client, faker):
         """Test creating batch with roles that have no permissions."""
-        batch_data = [
+        roles_data = [
             {
                 "name": faker.word().capitalize() + "Role",
                 "identifier": faker.uuid4(),
@@ -304,11 +307,12 @@ class TestRoleRouter:
                 "permissions": [],
             },
         ]
+        batch_data = {"resync": False, "roles": roles_data}
         response = client.post("/roles/batch", json=batch_data)
         assert response.status_code == 201
         data = response.json()
         assert len(data) == 1
-        assert data[0]["name"] == batch_data[0]["name"]
+        assert data[0]["name"] == roles_data[0]["name"]
 
         # Verify no permissions were created
         role_id = data[0]["id"]
@@ -319,18 +323,19 @@ class TestRoleRouter:
 
     def test_create_roles_batch_missing_required_fields(self, client):
         """Test creating batch with missing required fields."""
-        batch_data = [
+        roles_data = [
             {
                 "description": "Role without name",
                 "permissions": [],
             },
         ]
+        batch_data = {"resync": False, "roles": roles_data}
         response = client.post("/roles/batch", json=batch_data)
         assert response.status_code == 422  # Validation error
 
     def test_create_roles_batch_invalid_permission_format(self, client, faker):
         """Test creating batch with invalid permission format."""
-        batch_data = [
+        roles_data = [
             {
                 "name": faker.word().capitalize() + "Role",
                 "description": "Role with invalid permission",
@@ -340,14 +345,15 @@ class TestRoleRouter:
                 ],
             },
         ]
+        batch_data = {"resync": False, "roles": roles_data}
         response = client.post("/roles/batch", json=batch_data)
         assert response.status_code == 422  # Validation error
 
     def test_create_roles_batch_large_batch(self, client, faker):
         """Test creating a large batch of roles."""
-        batch_data = []
+        roles_data = []
         for i in range(5):
-            batch_data.append(
+            roles_data.append(
                 {
                     "name": faker.word().capitalize() + f"Role{i}",
                     "description": f"Role {i}",
@@ -359,6 +365,7 @@ class TestRoleRouter:
                 }
             )
 
+        batch_data = {"resync": False, "roles": roles_data}
         response = client.post("/roles/batch", json=batch_data)
         assert response.status_code == 201
         data = response.json()
@@ -366,7 +373,7 @@ class TestRoleRouter:
 
         # Verify all roles were created
         for i, role in enumerate(data):
-            assert role["name"] == batch_data[i]["name"]
+            assert role["name"] == roles_data[i]["name"]
             # Verify permissions
             perm_response = client.get(f"/roles/{role['id']}/permissions")
             assert perm_response.status_code == 200

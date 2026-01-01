@@ -11,6 +11,7 @@ from app.schemas.role import (
     RoleCreate,
     RoleUpdate,
     RoleBatchItem,
+    RoleBatchRequest,
     RoleBindRequest,
     RoleBindResponse,
 )
@@ -62,18 +63,22 @@ async def create_role_binding(
 
 @router.post("/batch", response_model=list[Role], status_code=201)
 def create_roles_batch(
-    roles_data: list[RoleBatchItem], db: Session = Depends(get_db)
+    request: RoleBatchRequest,
+    db: Session = Depends(get_db),
 ) -> list[Role]:
     """
     Create multiple roles with their permissions in a single batch operation.
 
-    Accepts a list of roles, each with its associated permissions.
+    Accepts a request with resync flag and a list of roles, each with its associated permissions.
     Returns the created roles with a 201 status code.
     If any role or permission creation fails, all changes are rolled back atomically.
+
+    Args:
+        request: Batch request containing resync flag and list of roles with permissions to create
     """
     try:
         command = CreateRolesBatchCommand(db)
-        created_roles = command.execute(roles_data)
+        created_roles = command.execute(request.roles, resync=request.resync)
         logger.info(f"Created {len(created_roles)} roles in batch")
         return [Role.model_validate(role) for role in created_roles]
     except ValueError as e:

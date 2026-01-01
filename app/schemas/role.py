@@ -83,6 +83,17 @@ class RoleBatchItem(BaseModel):
     """List of permissions for this role. Required field."""
 
 
+class RoleBatchRequest(BaseModel):
+    """Schema for batch role creation request."""
+
+    resync: bool = False
+    """If True, sync role policies for all roles (new and existing).
+    If False, only sync policies for newly created roles. Defaults to False."""
+
+    roles: List[RoleBatchItem]
+    """List of roles with permissions to create. Required field."""
+
+
 class RoleBindRequest(BaseModel):
     """Schema for binding a role to a domain by creating policies."""
 

@@ -42,3 +42,30 @@ roles:
         - update
         - delete
         - create
+  orcha_admin:
+    name: "Orcha Admin"
+    identifier: "orcha-admin"
+    description: "Orcha admin role with full permissions to manage Orcha and more"
+    permissions:
+      event_type:
+        - read
+        - create
+      event:
+        - read
+        - delete
+      category:
+        - read
+      source:
+        - read
+        - create
+        - delete
+        - update
+      settings:
+        - read
+      user:
+        - read
+      workflow:
+        - read
+        - update
+        - delete
+        - create

@@ -38,12 +38,16 @@ class CreateRolesBatchCommand:
         )
         self.logger = logging.getLogger(__name__)
 
-    def execute(self, roles_data: List[RoleBatchItem]) -> List[Role]:
+    def execute(
+        self, roles_data: List[RoleBatchItem], resync: bool = False
+    ) -> List[Role]:
         """
         Execute the command to create multiple roles with permissions.
 
         Args:
             roles_data: List of role data with permissions to create
+            resync: If True, sync role policies for all roles (new and existing).
+                    If False, only sync policies for newly created roles. Defaults to False.
 
         Returns:
             List[Role]: The created roles
@@ -52,6 +56,7 @@ class CreateRolesBatchCommand:
             ValueError: If any role name already exists or permission already exists
         """
         created_roles = []
+        newly_created_roles = []  # Track roles that were just created
         created_permissions = []  # Store (role, permission) tuples for event publishing
 
         try:
@@ -62,6 +67,7 @@ class CreateRolesBatchCommand:
             for role_item in roles_data:
                 # Check if role identifier already exists
                 role = self.role_service.get_role_by_identifier(role_item.identifier)
+                is_new_role = False
 
                 if not role:
                     # Create role using service (add to session, don't commit yet)
@@ -72,6 +78,7 @@ class CreateRolesBatchCommand:
                     )
                     role = self.role_service.add_role(role_create)
                     self.db.flush()  # Flush to get the role ID without committing
+                    is_new_role = True
 
                 # Get the role ID as UUID (after flush, id is populated)
                 role_id = cast(UUID, role.id)
@@ -99,6 +106,8 @@ class CreateRolesBatchCommand:
                         created_permissions.append((role, db_permission))
 
                 created_roles.append(role)
+                if is_new_role:
+                    newly_created_roles.append(role)
 
             # Commit all changes in a single transaction
             self.db.commit()
@@ -106,7 +115,13 @@ class CreateRolesBatchCommand:
             # Refresh all roles and permissions to get updated timestamps
             for role in created_roles:
                 self.db.refresh(role)
-                self.sync_role_policy_command.execute(role.id, GLOBAL_DOMAIN)
+
+            # Sync role policies based on resync flag
+            roles_to_sync = created_roles if resync else newly_created_roles
+            for role in roles_to_sync:
+                self.sync_role_policy_command.execute(
+                    cast(UUID, role.id), GLOBAL_DOMAIN
+                )
 
             # Publish events for all created roles and permissions
             self._publish_events(created_roles, created_permissions)

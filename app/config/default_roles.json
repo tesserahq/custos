@@ -1,0 +1,284 @@
+[
+  {
+    "name": "Owner",
+    "identifier": "owner",
+    "description": "Owner role with full permissions to manage the account",
+    "permissions": [
+      { "object": "user_info", "action": "read" },
+
+      { "object": "user", "action": "read" },
+      { "object": "user", "action": "update" },
+
+      { "object": "api_key", "action": "read" },
+      { "object": "api_key", "action": "update" },
+      { "object": "api_key", "action": "delete" },
+      { "object": "api_key", "action": "create" },
+
+      { "object": "account", "action": "read" },
+      { "object": "account", "action": "update" },
+      { "object": "account", "action": "delete" },
+      { "object": "account", "action": "create" },
+
+      { "object": "person", "action": "read" },
+      { "object": "person", "action": "update" },
+      { "object": "person", "action": "delete" },
+      { "object": "person", "action": "create" },
+
+      { "object": "birth_certificate", "action": "read" },
+      { "object": "birth_certificate", "action": "update" },
+      { "object": "birth_certificate", "action": "delete" },
+      { "object": "birth_certificate", "action": "create" },
+
+      { "object": "driver_license", "action": "read" },
+      { "object": "driver_license", "action": "update" },
+      { "object": "driver_license", "action": "delete" },
+      { "object": "driver_license", "action": "create" },
+
+      { "object": "passport", "action": "read" },
+      { "object": "passport", "action": "update" },
+      { "object": "passport", "action": "delete" },
+      { "object": "passport", "action": "create" },
+
+      { "object": "social_security_number", "action": "read" },
+      { "object": "social_security_number", "action": "update" },
+      { "object": "social_security_number", "action": "delete" },
+      { "object": "social_security_number", "action": "create" },
+
+      { "object": "insurance", "action": "read" },
+      { "object": "insurance", "action": "update" },
+      { "object": "insurance", "action": "delete" },
+      { "object": "insurance", "action": "create" },
+
+      { "object": "will", "action": "read" },
+      { "object": "will", "action": "update" },
+      { "object": "will", "action": "delete" },
+      { "object": "will", "action": "create" },
+
+      { "object": "pet", "action": "read" },
+      { "object": "pet", "action": "update" },
+      { "object": "pet", "action": "delete" },
+      { "object": "pet", "action": "create" },
+
+      { "object": "real_estate", "action": "read" },
+      { "object": "real_estate", "action": "update" },
+      { "object": "real_estate", "action": "delete" },
+      { "object": "real_estate", "action": "create" },
+
+      { "object": "contact", "action": "read" },
+      { "object": "contact", "action": "update" },
+      { "object": "contact", "action": "delete" },
+      { "object": "contact", "action": "create" },
+
+      { "object": "vehicle", "action": "read" },
+      { "object": "vehicle", "action": "update" },
+      { "object": "vehicle", "action": "delete" },
+      { "object": "vehicle", "action": "create" },
+
+      { "object": "online_account", "action": "read" },
+      { "object": "online_account", "action": "update" },
+      { "object": "online_account", "action": "delete" },
+      { "object": "online_account", "action": "create" },
+
+      { "object": "reminder", "action": "read" },
+      { "object": "reminder", "action": "update" },
+      { "object": "reminder", "action": "delete" },
+      { "object": "reminder", "action": "create" },
+
+      { "object": "resource_file", "action": "read" },
+      { "object": "resource_file", "action": "update" },
+      { "object": "resource_file", "action": "delete" },
+      { "object": "resource_file", "action": "create" },
+
+      { "object": "invitation", "action": "read" },
+      { "object": "invitation", "action": "update" },
+      { "object": "invitation", "action": "delete" },
+      { "object": "invitation", "action": "create" },
+      { "object": "invitation", "action": "accept" },
+      { "object": "invitation", "action": "decline" },
+
+      { "object": "membership", "action": "read" },
+      { "object": "membership", "action": "update" },
+      { "object": "membership", "action": "delete" },
+      { "object": "membership", "action": "create" },
+
+      { "object": "app_setting", "action": "read" },
+      { "object": "app_setting", "action": "update" },
+      { "object": "app_setting", "action": "delete" },
+      { "object": "app_setting", "action": "create" }
+    ]
+  },
+  {
+    "name": "Collaborator",
+    "identifier": "collaborator",
+    "description": "Collaborator role with limited permissions to manage the account",
+    "permissions": [
+      { "object": "user_info", "action": "read" },
+
+      { "object": "user", "action": "read" },
+      { "object": "user", "action": "update" },
+
+      { "object": "api_key", "action": "read" },
+      { "object": "api_key", "action": "update" },
+      { "object": "api_key", "action": "delete" },
+      { "object": "api_key", "action": "create" },
+
+      { "object": "account", "action": "read" },
+      { "object": "account", "action": "create" },
+
+      { "object": "person", "action": "read" },
+      { "object": "person", "action": "update" },
+      { "object": "person", "action": "delete" },
+      { "object": "person", "action": "create" },
+
+      { "object": "birth_certificate", "action": "read" },
+      { "object": "birth_certificate", "action": "update" },
+      { "object": "birth_certificate", "action": "delete" },
+      { "object": "birth_certificate", "action": "create" },
+
+      { "object": "drivers_license", "action": "read" },
+      { "object": "drivers_license", "action": "update" },
+      { "object": "drivers_license", "action": "delete" },
+      { "object": "drivers_license", "action": "create" },
+
+      { "object": "passport", "action": "read" },
+      { "object": "passport", "action": "update" },
+      { "object": "passport", "action": "delete" },
+      { "object": "passport", "action": "create" },
+
+      { "object": "social_security", "action": "read" },
+      { "object": "social_security", "action": "update" },
+      { "object": "social_security", "action": "delete" },
+      { "object": "social_security", "action": "create" },
+
+      { "object": "insurance", "action": "read" },
+      { "object": "insurance", "action": "update" },
+      { "object": "insurance", "action": "delete" },
+      { "object": "insurance", "action": "create" },
+
+      { "object": "will", "action": "read" },
+      { "object": "will", "action": "update" },
+      { "object": "will", "action": "delete" },
+      { "object": "will", "action": "create" },
+
+      { "object": "pet", "action": "read" },
+      { "object": "pet", "action": "update" },
+      { "object": "pet", "action": "delete" },
+      { "object": "pet", "action": "create" },
+
+      { "object": "real_estate", "action": "read" },
+      { "object": "real_estate", "action": "update" },
+      { "object": "real_estate", "action": "delete" },
+      { "object": "real_estate", "action": "create" },
+
+      { "object": "contact", "action": "read" },
+      { "object": "contact", "action": "update" },
+      { "object": "contact", "action": "delete" },
+      { "object": "contact", "action": "create" },
+
+      { "object": "vehicle", "action": "read" },
+      { "object": "vehicle", "action": "update" },
+      { "object": "vehicle", "action": "delete" },
+      { "object": "vehicle", "action": "create" },
+
+      { "object": "online_account", "action": "read" },
+      { "object": "online_account", "action": "update" },
+      { "object": "online_account", "action": "delete" },
+      { "object": "online_account", "action": "create" },
+
+      { "object": "reminder", "action": "read" },
+      { "object": "reminder", "action": "update" },
+      { "object": "reminder", "action": "delete" },
+      { "object": "reminder", "action": "create" },
+
+      { "object": "resource_file", "action": "read" },
+      { "object": "resource_file", "action": "update" },
+      { "object": "resource_file", "action": "delete" },
+      { "object": "resource_file", "action": "create" },
+
+      { "object": "invitation", "action": "read" },
+      { "object": "invitation", "action": "update" },
+      { "object": "invitation", "action": "delete" },
+      { "object": "invitation", "action": "create" },
+
+      { "object": "membership", "action": "read" },
+      { "object": "membership", "action": "update" },
+      { "object": "membership", "action": "delete" },
+      { "object": "membership", "action": "create" },
+
+      { "object": "app_setting", "action": "read" },
+      { "object": "app_setting", "action": "update" },
+      { "object": "app_setting", "action": "delete" },
+      { "object": "app_setting", "action": "create" }
+    ]
+  },
+  {
+    "name": "Custos Admin",
+    "identifier": "custos-admin",
+    "description": "RBAC admin role with full permissions to manage roles and permissions",
+    "permissions": [
+      { "object": "role", "action": "read" },
+      { "object": "role", "action": "update" },
+      { "object": "role", "action": "delete" },
+      { "object": "role", "action": "create" },
+      { "object": "role", "action": "assign" },
+
+      { "object": "binding", "action": "read" },
+      { "object": "binding", "action": "update" },
+      { "object": "binding", "action": "delete" },
+      { "object": "binding", "action": "create" },
+
+      { "object": "membership", "action": "read" },
+      { "object": "membership", "action": "delete" },
+      { "object": "membership", "action": "create" },
+
+      { "object": "permission", "action": "read" },
+      { "object": "permission", "action": "update" },
+      { "object": "permission", "action": "delete" },
+      { "object": "permission", "action": "create" }
+    ]
+  },
+  {
+    "name": "Identies Admin",
+    "identifier": "identies-admin",
+    "description": "Identies admin role with full permissions to manage Service accounts and more",
+    "permissions": [
+      { "object": "service_account", "action": "read" },
+      { "object": "service_account", "action": "update" },
+      { "object": "service_account", "action": "delete" },
+      { "object": "service_account", "action": "create" },
+
+      { "object": "api_key", "action": "read" },
+      { "object": "api_key", "action": "update" },
+      { "object": "api_key", "action": "delete" },
+      { "object": "api_key", "action": "create" }
+    ]
+  },
+  {
+    "name": "Orcha Admin",
+    "identifier": "orcha-admin",
+    "description": "Orcha admin role with full permissions to manage Orcha and more",
+    "permissions": [
+      { "object": "event_type", "action": "read" },
+      { "object": "event_type", "action": "create" },
+
+      { "object": "event", "action": "read" },
+      { "object": "event", "action": "delete" },
+
+      { "object": "category", "action": "read" },
+
+      { "object": "source", "action": "read" },
+      { "object": "source", "action": "create" },
+      { "object": "source", "action": "delete" },
+      { "object": "source", "action": "update" },
+
+      { "object": "settings", "action": "read" },
+
+      { "object": "user", "action": "read" },
+
+      { "object": "workflow", "action": "read" },
+      { "object": "workflow", "action": "update" },
+      { "object": "workflow", "action": "delete" },
+      { "object": "workflow", "action": "create" }
+    ]
+  }
+]
