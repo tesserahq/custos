@@ -651,14 +651,14 @@ idna = ">=2.0.0"
 
 [[package]]
 name = "faker"
-version = "39.0.0"
+version = "39.1.0"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "faker-39.0.0-py3-none-any.whl", hash = "sha256:c72f1fca8f1a24b8da10fcaa45739135a19772218ddd61b86b7ea1b8c790dce7"},
-    {file = "faker-39.0.0.tar.gz", hash = "sha256:ddae46d3b27e01cea7894651d687b33bcbe19a45ef044042c721ceac6d3da0ff"},
+    {file = "faker-39.1.0-py3-none-any.whl", hash = "sha256:c86673bb06a1244b9555f1a773465e553a9be44e2d14a8fa6a834ce95f5f7b46"},
+    {file = "faker-39.1.0.tar.gz", hash = "sha256:35d40738093a62158f349f4996115680ca591d9789f24c99a4afa522a1dd4018"},
 ]
 
 [package.dependencies]
@@ -746,14 +746,14 @@ tortoise = ["tortoise-orm (>=0.22.0)"]
 
 [[package]]
 name = "faststream"
-version = "0.6.4"
+version = "0.6.5"
 description = "FastStream: the simplest way to work with a messaging queues"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "faststream-0.6.4-py3-none-any.whl", hash = "sha256:e00306208659c40ed0c6782e93d4536ad9ef320d0a5fb507d4dcd4f2a07eb2f9"},
-    {file = "faststream-0.6.4.tar.gz", hash = "sha256:e7f0d8e8ccfa3f9014072166f7993cf5d178f57c7daf79fcf37f5ba0e6a3cc68"},
+    {file = "faststream-0.6.5-py3-none-any.whl", hash = "sha256:714b13b84cdbe2bdcf0b2b8a5e2b04648cb7683784a5297d445adfee9f2b4f7e"},
+    {file = "faststream-0.6.5.tar.gz", hash = "sha256:ddef9e85631edf1aba87e81c8886067bd94ee752f41a09f1d1cd6f75f7e4fade"},
 ]
 
 [package.dependencies]
@@ -763,7 +763,7 @@ nats-py = {version = ">=2.12.0,<=3.0.0", optional = true, markers = "extra == \"
 typing-extensions = ">=4.12.0"
 
 [package.extras]
-cli = ["typer (>=0.9,!=0.12,<=0.20.0)", "watchfiles (>=0.15.0,<1.2.0)"]
+cli = ["typer (>=0.9,!=0.12,<=0.20.1)", "watchfiles (>=0.15.0,<1.2.0)"]
 confluent = ["confluent-kafka (>=2,!=2.8.1,<3) ; python_full_version < \"3.13.0\"", "confluent-kafka (>=2.6,!=2.8.1,<3) ; python_full_version >= \"3.13.0\""]
 kafka = ["aiokafka (>=0.9,<0.13)"]
 nats = ["nats-py (>=2.12.0,<=3.0.0)"]
@@ -1364,6 +1364,27 @@ opentelemetry-api = ">=1.12,<2.0"
 opentelemetry-instrumentation = "0.60b1"
 
 [[package]]
+name = "opentelemetry-instrumentation-requests"
+version = "0.60b1"
+description = "OpenTelemetry requests instrumentation"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "opentelemetry_instrumentation_requests-0.60b1-py3-none-any.whl", hash = "sha256:eec9fac3fab84737f663a2e08b12cb095b4bd67643b24587a8ecfa3cf4d0ca4c"},
+    {file = "opentelemetry_instrumentation_requests-0.60b1.tar.gz", hash = "sha256:9a1063c16c44a3ba6e81870c4fa42a0fac3ecef5a4d60a11d0976eec9046f3d4"},
+]
+
+[package.dependencies]
+opentelemetry-api = ">=1.12,<2.0"
+opentelemetry-instrumentation = "0.60b1"
+opentelemetry-semantic-conventions = "0.60b1"
+opentelemetry-util-http = "0.60b1"
+
+[package.extras]
+instruments = ["requests (>=2.0,<3.0)"]
+
+[[package]]
 name = "opentelemetry-instrumentation-sqlalchemy"
 version = "0.60b1"
 description = "OpenTelemetry SQLAlchemy instrumentation"
@@ -1616,14 +1637,14 @@ files = [
 
 [[package]]
 name = "pycasbin"
-version = "2.7.0"
+version = "2.7.1"
 description = "An authorization library that supports access control models like ACL, RBAC, ABAC in Python"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "pycasbin-2.7.0-py3-none-any.whl", hash = "sha256:01bd6150cee67d863ba740228503ff539f8ccb092858bd49bd6ed7c661b888d9"},
-    {file = "pycasbin-2.7.0.tar.gz", hash = "sha256:533806c6b6139ee14b2a1cb1146202dca34ded807de23105d6718edc9ebdfa99"},
+    {file = "pycasbin-2.7.1-py3-none-any.whl", hash = "sha256:4962361b9f0ebae4255e2df50667fcf9cf4142b37906360fd15231d86ecf837d"},
+    {file = "pycasbin-2.7.1.tar.gz", hash = "sha256:e1d93742973ffe9b0bd8e921561f6f06d4a7c0c3a49fd1fbba85cd7a59b0d851"},
 ]
 
 [package.dependencies]
@@ -2303,6 +2324,7 @@ develop = false
 cryptography = "^46.0.3"
 faststream = {version = "^0.6.3", extras = ["nats"]}
 jinja2 = "^3.1.6"
+opentelemetry-instrumentation-requests = "^0.60b1"
 opentelemetry-instrumentation-sqlalchemy = "^0.60b1"
 opentelemetry-sdk = "^1.39.1"
 pydantic = {version = "^2.12.4", extras = ["email"]}
@@ -2317,7 +2339,7 @@ urllib3 = ">=1.26.0"
 type = "git"
 url = "https://github.com/tesserahq/tessera-sdk-py.git"
 reference = "main"
-resolved_reference = "ff7af35cfda87a098b19b4c9bd78ca122d2ed03b"
+resolved_reference = "8b46b44df312d56c0a9a7bf8c709e3b715d44c2e"
 
 [[package]]
 name = "typing-extensions"
