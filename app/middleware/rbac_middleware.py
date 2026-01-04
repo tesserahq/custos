@@ -10,6 +10,8 @@ from typing import List, Optional
 import re
 from app.services.casbin_service import GLOBAL_DOMAIN
 
+PREFIX = "custos"
+
 
 # 2. RBAC Middleware
 class RBACMiddleware(BaseHTTPMiddleware):
@@ -57,7 +59,7 @@ class RBACMiddleware(BaseHTTPMiddleware):
 
         allowed = self.casbin_service.authorize(
             user_id=str(user.id),
-            resource=resource,
+            resource=f"{PREFIX}.{resource}",
             action=action,
             domain=GLOBAL_DOMAIN,
         )
