@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from uuid import UUID
 from app.db import get_db
@@ -9,6 +9,7 @@ from app.core.logging_config import get_logger
 from app.commands.binding.delete_binding_command import DeleteBindingCommand
 from app.routers.utils.dependencies import get_membership_by_id
 from app.models.role import Role as RoleModel
+from app.models.user import User
 
 router = APIRouter(prefix="/memberships", tags=["Membership"])
 logger = get_logger()
@@ -28,6 +29,7 @@ def get_membership(
 
 @router.delete("/{membership_id}", status_code=204)
 def delete_membership(
+    request: Request,
     membership: Membership = Depends(get_membership_by_id),
     db: Session = Depends(get_db),
 ) -> None:
@@ -35,8 +37,21 @@ def delete_membership(
     Delete a membership by ID.
 
     This will also remove the role binding from Casbin.
-    Returns 204 No Content on success. Raises 404 if the membership is not found.
+    Users cannot delete their own membership - someone else must remove them from a role.
+
+    Returns 204 No Content on success. Raises 403 if attempting to delete own membership.
+    Raises 404 if the membership is not found.
     """
+    # Get the current user from request state (set by authentication middleware)
+    current_user: User = request.state.user
+
+    # Prevent users from removing themselves from a role
+    if membership.user_id == current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot remove yourself from a role. Another user must do it for you.",
+        )
+
     try:
         # Get the role to pass to DeleteBindingCommand
         role_service = RoleService(db)
