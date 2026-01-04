@@ -1,217 +1,5 @@
 [
   {
-    "name": "Owner",
-    "identifier": "owner",
-    "description": "Owner role with full permissions to manage the account",
-    "permissions": [
-      { "object": "linden.user_info", "action": "read" },
-
-      { "object": "linden.user", "action": "read" },
-      { "object": "linden.user", "action": "update" },
-
-      { "object": "linden.api_key", "action": "read" },
-      { "object": "linden.api_key", "action": "update" },
-      { "object": "linden.api_key", "action": "delete" },
-      { "object": "linden.api_key", "action": "create" },
-
-      { "object": "linden.account", "action": "read" },
-      { "object": "linden.account", "action": "update" },
-      { "object": "linden.account", "action": "delete" },
-      { "object": "linden.account", "action": "create" },
-
-      { "object": "linden.person", "action": "read" },
-      { "object": "linden.person", "action": "update" },
-      { "object": "linden.person", "action": "delete" },
-      { "object": "linden.person", "action": "create" },
-
-      { "object": "linden.birth_certificate", "action": "read" },
-      { "object": "linden.birth_certificate", "action": "update" },
-      { "object": "linden.birth_certificate", "action": "delete" },
-      { "object": "linden.birth_certificate", "action": "create" },
-
-      { "object": "linden.driver_license", "action": "read" },
-      { "object": "linden.driver_license", "action": "update" },
-      { "object": "linden.driver_license", "action": "delete" },
-      { "object": "linden.driver_license", "action": "create" },
-
-      { "object": "passport", "action": "read" },
-      { "object": "linden.passport", "action": "update" },
-      { "object": "linden.passport", "action": "delete" },
-      { "object": "linden.passport", "action": "create" },
-
-      { "object": "linden.social_security_number", "action": "read" },
-      { "object": "linden.social_security_number", "action": "update" },
-      { "object": "linden.social_security_number", "action": "delete" },
-      { "object": "linden.social_security_number", "action": "create" },
-
-      { "object": "linden.insurance", "action": "read" },
-      { "object": "linden.insurance", "action": "update" },
-      { "object": "linden.insurance", "action": "delete" },
-      { "object": "linden.insurance", "action": "create" },
-
-      { "object": "linden.will", "action": "read" },
-      { "object": "linden.will", "action": "update" },
-      { "object": "linden.will", "action": "delete" },
-      { "object": "linden.will", "action": "create" },
-
-      { "object": "linden.pet", "action": "read" },
-      { "object": "linden.pet", "action": "update" },
-      { "object": "linden.pet", "action": "delete" },
-      { "object": "linden.pet", "action": "create" },
-
-      { "object": "linden.real_estate", "action": "read" },
-      { "object": "linden.real_estate", "action": "update" },
-      { "object": "linden.real_estate", "action": "delete" },
-      { "object": "linden.real_estate", "action": "create" },
-
-      { "object": "linden.contact", "action": "read" },
-      { "object": "linden.contact", "action": "update" },
-      { "object": "linden.contact", "action": "delete" },
-      { "object": "linden.contact", "action": "create" },
-
-      { "object": "linden.vehicle", "action": "read" },
-      { "object": "linden.vehicle", "action": "update" },
-      { "object": "linden.vehicle", "action": "delete" },
-      { "object": "linden.vehicle", "action": "create" },
-
-      { "object": "linden.online_account", "action": "read" },
-      { "object": "linden.online_account", "action": "update" },
-      { "object": "linden.online_account", "action": "delete" },
-      { "object": "linden.online_account", "action": "create" },
-
-      { "object": "linden.reminder", "action": "read" },
-      { "object": "linden.reminder", "action": "update" },
-      { "object": "linden.reminder", "action": "delete" },
-      { "object": "linden.reminder", "action": "create" },
-
-      { "object": "linden.resource_file", "action": "read" },
-      { "object": "linden.resource_file", "action": "update" },
-      { "object": "linden.resource_file", "action": "delete" },
-      { "object": "linden.resource_file", "action": "create" },
-
-      { "object": "linden.invitation", "action": "read" },
-      { "object": "linden.invitation", "action": "update" },
-      { "object": "linden.invitation", "action": "delete" },
-      { "object": "linden.invitation", "action": "create" },
-      { "object": "linden.invitation", "action": "accept" },
-      { "object": "linden.invitation", "action": "decline" },
-
-      { "object": "linden.membership", "action": "read" },
-      { "object": "linden.membership", "action": "update" },
-      { "object": "linden.membership", "action": "delete" },
-      { "object": "linden.membership", "action": "create" },
-
-      { "object": "linden.app_setting", "action": "read" },
-      { "object": "linden.app_setting", "action": "update" },
-      { "object": "linden.app_setting", "action": "delete" },
-      { "object": "linden.app_setting", "action": "create" }
-    ]
-  },
-  {
-    "name": "Collaborator",
-    "identifier": "collaborator",
-    "description": "Collaborator role with limited permissions to manage the account",
-    "permissions": [
-      { "object": "linden.user_info", "action": "read" },
-
-      { "object": "linden.user", "action": "read" },
-      { "object": "linden.user", "action": "update" },
-
-      { "object": "linden.api_key", "action": "read" },
-      { "object": "linden.api_key", "action": "update" },
-      { "object": "linden.api_key", "action": "delete" },
-      { "object": "linden.api_key", "action": "create" },
-
-      { "object": "linden.account", "action": "read" },
-      { "object": "linden.account", "action": "create" },
-
-      { "object": "linden.person", "action": "read" },
-      { "object": "linden.person", "action": "update" },
-      { "object": "linden.person", "action": "delete" },
-      { "object": "linden.person", "action": "create" },
-
-      { "object": "linden.birth_certificate", "action": "read" },
-      { "object": "linden.birth_certificate", "action": "update" },
-      { "object": "linden.birth_certificate", "action": "delete" },
-      { "object": "linden.birth_certificate", "action": "create" },
-
-      { "object": "linden.drivers_license", "action": "read" },
-      { "object": "linden.drivers_license", "action": "update" },
-      { "object": "linden.drivers_license", "action": "delete" },
-      { "object": "linden.drivers_license", "action": "create" },
-
-      { "object": "linden.passport", "action": "read" },
-      { "object": "linden.passport", "action": "update" },
-      { "object": "linden.passport", "action": "delete" },
-      { "object": "linden.passport", "action": "create" },
-
-      { "object": "linden.social_security", "action": "read" },
-      { "object": "linden.social_security", "action": "update" },
-      { "object": "linden.social_security", "action": "delete" },
-      { "object": "linden.social_security", "action": "create" },
-
-      { "object": "linden.insurance", "action": "read" },
-      { "object": "linden.insurance", "action": "update" },
-      { "object": "linden.insurance", "action": "delete" },
-      { "object": "linden.insurance", "action": "create" },
-
-      { "object": "linden.will", "action": "read" },
-      { "object": "linden.will", "action": "update" },
-      { "object": "linden.will", "action": "delete" },
-      { "object": "linden.will", "action": "create" },
-
-      { "object": "linden.pet", "action": "read" },
-      { "object": "linden.pet", "action": "update" },
-      { "object": "linden.pet", "action": "delete" },
-      { "object": "linden.pet", "action": "create" },
-
-      { "object": "linden.real_estate", "action": "read" },
-      { "object": "linden.real_estate", "action": "update" },
-      { "object": "linden.real_estate", "action": "delete" },
-      { "object": "linden.real_estate", "action": "create" },
-
-      { "object": "linden.contact", "action": "read" },
-      { "object": "linden.contact", "action": "update" },
-      { "object": "linden.contact", "action": "delete" },
-      { "object": "linden.contact", "action": "create" },
-
-      { "object": "linden.vehicle", "action": "read" },
-      { "object": "linden.vehicle", "action": "update" },
-      { "object": "linden.vehicle", "action": "delete" },
-      { "object": "linden.vehicle", "action": "create" },
-
-      { "object": "linden.online_account", "action": "read" },
-      { "object": "linden.online_account", "action": "update" },
-      { "object": "linden.online_account", "action": "delete" },
-      { "object": "linden.online_account", "action": "create" },
-
-      { "object": "linden.reminder", "action": "read" },
-      { "object": "linden.reminder", "action": "update" },
-      { "object": "linden.reminder", "action": "delete" },
-      { "object": "linden.reminder", "action": "create" },
-
-      { "object": "linden.resource_file", "action": "read" },
-      { "object": "linden.resource_file", "action": "update" },
-      { "object": "linden.resource_file", "action": "delete" },
-      { "object": "linden.resource_file", "action": "create" },
-
-      { "object": "linden.invitation", "action": "read" },
-      { "object": "linden.invitation", "action": "update" },
-      { "object": "linden.invitation", "action": "delete" },
-      { "object": "linden.invitation", "action": "create" },
-
-      { "object": "linden.membership", "action": "read" },
-      { "object": "linden.membership", "action": "update" },
-      { "object": "linden.membership", "action": "delete" },
-      { "object": "linden.membership", "action": "create" },
-
-      { "object": "linden.app_setting", "action": "read" },
-      { "object": "linden.app_setting", "action": "update" },
-      { "object": "linden.app_setting", "action": "delete" },
-      { "object": "linden.app_setting", "action": "create" }
-    ]
-  },
-  {
     "name": "Custos Admin",
     "identifier": "custos-admin",
     "description": "RBAC admin role with full permissions to manage roles and permissions",
@@ -251,6 +39,24 @@
       { "object": "identies.api_key", "action": "update" },
       { "object": "identies.api_key", "action": "delete" },
       { "object": "identies.api_key", "action": "create" }
+
+      { "object": "identies.access_rule", "action": "read" },
+      { "object": "identies.access_rule", "action": "update" },
+      { "object": "identies.access_rule", "action": "delete" },
+      { "object": "identies.access_rule", "action": "create" }
+
+      { "object": "identies.user", "action": "read" },
+      { "object": "identies.user", "action": "update" },
+      { "object": "identies.user", "action": "delete" },
+      { "object": "identies.user", "action": "create" },
+
+      { "object": "identies.self", "action": "read" },
+      { "object": "identies.self", "action": "update" },
+
+      { "object": "identies.self.api_key", "action": "read" },
+      { "object": "identies.self.api_key", "action": "update" },
+      { "object": "identies.self.api_key", "action": "delete" },
+      { "object": "identies.self.api_key", "action": "create" }
     ]
   },
   {
