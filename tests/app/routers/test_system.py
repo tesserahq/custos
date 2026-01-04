@@ -22,7 +22,7 @@ class TestSystemRouter:
 
     @patch("app.commands.setup.setup_command.get_settings")
     def test_setup_system_with_default_path(self, mock_get_settings, client, db, faker):
-        """Test POST /system/setup with default YAML file path."""
+        """Test POST /system/setup with default JSON file path."""
         # Create a super user first
         self._create_super_user(db, "admin@example.com", faker)
 
@@ -57,19 +57,6 @@ class TestSystemRouter:
         mock_settings = Mock()
         mock_settings.get_super_user_emails.return_value = ["admin@example.com"]
         mock_get_settings.return_value = mock_settings
-        # Create a test YAML file
-        yaml_content = """
-roles:
-  test_role:
-    name: "Test Role"
-    identifier: "test_role_setup"
-    description: "A test role for setup"
-    permissions:
-      role:
-        - read
-"""
-        yaml_file = tmp_path / "test_roles.yaml"
-        yaml_file.write_text(yaml_content)
 
         # Try with empty body (should use default path or fail)
         response = client.post("/system/setup", json={})
@@ -81,7 +68,7 @@ roles:
     def test_setup_system_with_custom_path(
         self, mock_get_settings, client, tmp_path, db, faker
     ):
-        """Test POST /system/setup with custom YAML file path."""
+        """Test POST /system/setup with custom JSON file path."""
         # Create a super user first
         self._create_super_user(db, "admin@example.com", faker)
 
@@ -89,24 +76,25 @@ roles:
         mock_settings = Mock()
         mock_settings.get_super_user_emails.return_value = ["admin@example.com"]
         mock_get_settings.return_value = mock_settings
-        # Create a test YAML file
-        yaml_content = """
-roles:
-  custom_role:
-    name: "Custom Role"
-    identifier: "custom_role_test"
-    description: "A custom role"
-    permissions:
-      role:
-        - read
-        - write
-      permission:
-        - read
-"""
-        yaml_file = tmp_path / "custom_roles.yaml"
-        yaml_file.write_text(yaml_content)
+        # Create a test JSON file
+        import json
 
-        request_data = {"yaml_file_path": str(yaml_file)}
+        json_content = [
+            {
+                "name": "Custom Role",
+                "identifier": "custom_role_test",
+                "description": "A custom role",
+                "permissions": [
+                    {"object": "role", "action": "read"},
+                    {"object": "role", "action": "write"},
+                    {"object": "permission", "action": "read"},
+                ],
+            }
+        ]
+        json_file = tmp_path / "custom_roles.json"
+        json_file.write_text(json.dumps(json_content))
+
+        request_data = {"json_file_path": str(json_file)}
         response = client.post("/system/setup", json=request_data)
 
         assert response.status_code == 201
@@ -125,40 +113,42 @@ roles:
         mock_settings = Mock()
         mock_settings.get_super_user_emails.return_value = ["admin@example.com"]
         mock_get_settings.return_value = mock_settings
-        request_data = {"yaml_file_path": "/nonexistent/path/roles.yaml"}
+        request_data = {"json_file_path": "/nonexistent/path/roles.json"}
         response = client.post("/system/setup", json=request_data)
 
         assert response.status_code == 404
-        assert "YAML file not found" in response.json()["detail"]
+        assert "JSON file not found" in response.json()["detail"]
 
     @patch("app.commands.setup.setup_command.get_settings")
-    def test_setup_system_invalid_yaml(self, mock_get_settings, client, tmp_path):
-        """Test POST /system/setup with invalid YAML structure."""
+    def test_setup_system_invalid_json(self, mock_get_settings, client, tmp_path):
+        """Test POST /system/setup with invalid JSON structure."""
         # Mock settings (no user needed, will fail before binding)
         mock_settings = Mock()
         mock_settings.get_super_user_emails.return_value = ["admin@example.com"]
         mock_get_settings.return_value = mock_settings
-        # Create YAML file with missing required fields
-        yaml_content = """
-roles:
-  invalid_role:
-    name: "Invalid Role"
-    # Missing identifier field
-"""
-        yaml_file = tmp_path / "invalid_roles.yaml"
-        yaml_file.write_text(yaml_content)
+        # Create JSON file with missing required fields
+        import json
 
-        request_data = {"yaml_file_path": str(yaml_file)}
+        json_content = [
+            {
+                "name": "Invalid Role"
+                # Missing identifier field
+            }
+        ]
+        json_file = tmp_path / "invalid_roles.json"
+        json_file.write_text(json.dumps(json_content))
+
+        request_data = {"json_file_path": str(json_file)}
         response = client.post("/system/setup", json=request_data)
 
         assert response.status_code == 400
-        assert "missing required field" in response.json()["detail"].lower()
+        assert "field required" in response.json()["detail"].lower()
 
     @patch("app.commands.setup.setup_command.get_settings")
     def test_setup_system_multiple_roles(
         self, mock_get_settings, client, tmp_path, db, faker
     ):
-        """Test POST /system/setup with multiple roles in YAML."""
+        """Test POST /system/setup with multiple roles in JSON."""
         # Create a super user first
         self._create_super_user(db, "admin@example.com", faker)
 
@@ -166,26 +156,27 @@ roles:
         mock_settings = Mock()
         mock_settings.get_super_user_emails.return_value = ["admin@example.com"]
         mock_get_settings.return_value = mock_settings
-        yaml_content = """
-roles:
-  admin:
-    name: "Admin Role"
-    identifier: "admin_test"
-    permissions:
-      role:
-        - read
-        - write
-  viewer:
-    name: "Viewer Role"
-    identifier: "viewer_test"
-    permissions:
-      role:
-        - read
-"""
-        yaml_file = tmp_path / "multiple_roles.yaml"
-        yaml_file.write_text(yaml_content)
+        import json
 
-        request_data = {"yaml_file_path": str(yaml_file)}
+        json_content = [
+            {
+                "name": "Admin Role",
+                "identifier": "admin_test",
+                "permissions": [
+                    {"object": "role", "action": "read"},
+                    {"object": "role", "action": "write"},
+                ],
+            },
+            {
+                "name": "Viewer Role",
+                "identifier": "viewer_test",
+                "permissions": [{"object": "role", "action": "read"}],
+            },
+        ]
+        json_file = tmp_path / "multiple_roles.json"
+        json_file.write_text(json.dumps(json_content))
+
+        request_data = {"json_file_path": str(json_file)}
         response = client.post("/system/setup", json=request_data)
 
         assert response.status_code == 201

@@ -8,9 +8,9 @@ from app.schemas.role import Role
 class SetupRequest(BaseModel):
     """Request model for system setup endpoint."""
 
-    yaml_file_path: Optional[str] = Field(
+    json_file_path: Optional[str] = Field(
         None,
-        description="Optional path to YAML file. If not provided, uses default_roles.yaml",
+        description="Optional path to JSON file. If not provided, uses default_roles.json",
     )
 
 

@@ -18,25 +18,25 @@ def setup_system(
     request: Optional[SetupRequest] = Body(None), db: Session = Depends(get_db)
 ) -> SetupResponse:
     """
-    Import roles and permissions from YAML configuration file.
+    Import roles and permissions from JSON configuration file.
 
-    This endpoint reads the default_roles.yaml file (or a custom path if provided)
+    This endpoint reads the default_roles.json file (or a custom path if provided)
     and imports all defined roles and permissions into the system.
 
     Args:
-        request: Optional request body with yaml_file_path. If None or empty, uses default path.
+        request: Optional request body with json_file_path. If None or empty, uses default path.
 
     Returns:
         SetupResponse with details about the created roles.
     """
     try:
-        # Get the YAML file path from request, or None to use default
-        yaml_file_path = (
-            request.yaml_file_path if request and request.yaml_file_path else None
+        # Get the JSON file path from request, or None to use default
+        json_file_path = (
+            request.json_file_path if request and request.json_file_path else None
         )
 
         command = SetupCommand(db, nats_publisher=None)
-        created_roles = command.execute(yaml_file_path)
+        created_roles = command.execute(json_file_path)
 
         logger.info(f"System setup completed: {len(created_roles)} roles created")
 

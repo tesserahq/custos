@@ -1,12 +1,12 @@
-"""Command to setup system by importing roles and permissions from YAML configuration files."""
+"""Command to setup system by importing roles and permissions from JSON configuration files."""
 
+import json
 import logging
 import os
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from sqlalchemy.orm import Session
-import yaml
 
-from app.schemas.role import RoleBatchItem, PermissionItem
+from app.schemas.role import RoleBatchItem
 from app.models.role import Role
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
 from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
@@ -18,8 +18,8 @@ from tessera_sdk.events.nats_router import NatsEventPublisher  # type: ignore
 
 class SetupCommand:
     """
-    Command to import roles and permissions from YAML configuration files.
-    Validates super_user_email configuration, loads YAML file, transforms data,
+    Command to import roles and permissions from JSON configuration files.
+    Validates super_user_email configuration, loads JSON file, transforms data,
     and creates roles using CreateRolesBatchCommand.
     """
 
@@ -40,12 +40,12 @@ class SetupCommand:
         self.logger = logging.getLogger(__name__)
         self.user_service = UserService(db)
 
-    def execute(self, yaml_file_path: Optional[str] = None) -> List[Role]:
+    def execute(self, json_file_path: Optional[str] = None) -> List[Role]:
         """
-        Execute the setup command to import roles from YAML file.
+        Execute the setup command to import roles from JSON file.
 
         Args:
-            yaml_file_path: Path to the YAML file. If None, uses default_roles.yaml
+            json_file_path: Path to the JSON file. If None, uses default_roles.json
                 from app/config directory.
 
         Returns:
@@ -53,8 +53,8 @@ class SetupCommand:
 
         Raises:
             ValueError: If super_user_email is not configured in settings
-            FileNotFoundError: If the YAML file doesn't exist
-            ValueError: If the YAML file is invalid or roles already exist
+            FileNotFoundError: If the JSON file doesn't exist
+            ValueError: If the JSON file is invalid or roles already exist
         """
         # Validate that super_user_email is configured
         settings = get_settings()
@@ -65,112 +65,42 @@ class SetupCommand:
                 "Please set the SUPER_USER_EMAIL environment variable."
             )
 
-        if yaml_file_path is None:
-            # Default to app/config/default_roles.yaml
-            yaml_file_path = os.path.join(
-                os.path.dirname(__file__), "..", "..", "config", "default_roles.yaml"
+        if json_file_path is None:
+            # Default to app/config/default_roles.json
+            json_file_path = os.path.join(
+                os.path.dirname(__file__), "..", "..", "config", "default_roles.json"
             )
 
         # Resolve to absolute path
-        yaml_file_path = os.path.abspath(yaml_file_path)
+        json_file_path = os.path.abspath(json_file_path)
 
-        if not os.path.exists(yaml_file_path):
-            raise FileNotFoundError(f"YAML file not found: {yaml_file_path}")
+        if not os.path.exists(json_file_path):
+            raise FileNotFoundError(f"JSON file not found: {json_file_path}")
 
-        self.logger.info(f"Loading roles from YAML file: {yaml_file_path}")
+        self.logger.info(f"Loading roles from JSON file: {json_file_path}")
 
-        # Load YAML file
-        with open(yaml_file_path, "r", encoding="utf-8") as f:
-            yaml_data = yaml.safe_load(f)
+        # Load JSON file
+        with open(json_file_path, "r", encoding="utf-8") as f:
+            json_data = json.load(f)
 
-        if not yaml_data or "roles" not in yaml_data:
-            raise ValueError("YAML file must contain a 'roles' key")
+        if not isinstance(json_data, list):
+            raise ValueError("JSON file must contain a list of roles")
 
-        # Transform YAML data into RoleBatchItem format
-        roles_data = self._transform_yaml_to_role_batch_items(yaml_data["roles"])
+        # Parse JSON data directly into RoleBatchItem format
+        roles_data = [RoleBatchItem.model_validate(role) for role in json_data]
 
         # Use CreateRolesBatchCommand to create roles
         command = CreateRolesBatchCommand(self.db, self.nats_publisher)
         created_roles = command.execute(roles_data)
 
         self.logger.info(
-            f"Successfully imported {len(created_roles)} roles from {yaml_file_path}"
+            f"Successfully imported {len(created_roles)} roles from {json_file_path}"
         )
 
         # Bind roles (create policies) and assign to super users
         self._bind_and_assign_roles(created_roles, super_user_emails)
 
         return created_roles
-
-    def _transform_yaml_to_role_batch_items(
-        self, roles_dict: Dict[str, Any]
-    ) -> List[RoleBatchItem]:
-        """
-        Transform YAML roles structure into RoleBatchItem list.
-
-        The YAML structure is:
-        ```yaml
-        roles:
-          role_key:
-            name: "Role Name"
-            identifier: "role_identifier"
-            description: "Role description"
-            permissions:
-              object1:
-                - action1
-                - action2
-              object2:
-                - action3
-        ```
-
-        This transforms to RoleBatchItem with flat PermissionItem list.
-
-        Args:
-            roles_dict: Dictionary of roles from YAML file
-
-        Returns:
-            List[RoleBatchItem]: Transformed role data ready for batch creation
-        """
-        roles_data = []
-
-        for role_key, role_config in roles_dict.items():
-            # Validate required fields
-            if "name" not in role_config:
-                raise ValueError(f"Role '{role_key}' is missing required field 'name'")
-            if "identifier" not in role_config:
-                raise ValueError(
-                    f"Role '{role_key}' is missing required field 'identifier'"
-                )
-
-            # Extract role fields
-            name = role_config["name"]
-            identifier = role_config["identifier"]
-            description = role_config.get("description")
-
-            # Transform permissions from nested structure to flat list
-            permissions = []
-            if "permissions" in role_config and role_config["permissions"]:
-                for object_name, actions in role_config["permissions"].items():
-                    if not isinstance(actions, list):
-                        raise ValueError(
-                            f"Role '{role_key}' permissions for object '{object_name}' "
-                            f"must be a list of actions"
-                        )
-                    for action in actions:
-                        permissions.append(
-                            PermissionItem(object=object_name, action=action)
-                        )
-
-            roles_data.append(
-                RoleBatchItem(
-                    name=name,
-                    identifier=identifier,
-                    description=description,
-                    permissions=permissions,
-                )
-            )
-
-        return roles_data
 
     def _bind_and_assign_roles(
         self, created_roles: List[Role], super_user_emails: List[str]

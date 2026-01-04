@@ -38,12 +38,12 @@
       { "object": "identies.api_key", "action": "read" },
       { "object": "identies.api_key", "action": "update" },
       { "object": "identies.api_key", "action": "delete" },
-      { "object": "identies.api_key", "action": "create" }
+      { "object": "identies.api_key", "action": "create" },
 
       { "object": "identies.access_rule", "action": "read" },
       { "object": "identies.access_rule", "action": "update" },
       { "object": "identies.access_rule", "action": "delete" },
-      { "object": "identies.access_rule", "action": "create" }
+      { "object": "identies.access_rule", "action": "create" },
 
       { "object": "identies.user", "action": "read" },
       { "object": "identies.user", "action": "update" },
