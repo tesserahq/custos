@@ -4,7 +4,7 @@
   <h1 align="center">Custos</h1>
   
   <p align="center">
-    The centralized authorization service for the Linden platform.
+    The centralized authorization service.
   </p>
 </p>
 
