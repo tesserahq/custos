@@ -4,6 +4,15 @@
 
 Custos is a centralized authorization service built on FastAPI that acts as the Policy Decision Point (PDP) for the platform. It uses a dual-storage architecture where PostgreSQL serves as the source of truth for role and permission management, while Casbin maintains a shadow copy optimized for fast authorization decisions.
 
+## Technology Stack
+
+- **Framework**: FastAPI (Python 3.11+)
+- **Database**: PostgreSQL with SQLAlchemy ORM
+- **Migrations**: Alembic
+- **Authentication**: OIDC (OpenID Connect) with JWT tokens
+- **Dependency Management**: Poetry
+- **Observability**: OpenTelemetry, Prometheus metrics, Rollbar error tracking
+
 ## Core Architecture Pattern: Shadow Copy
 
 Custos implements a **shadow copy pattern** between PostgreSQL and Casbin:

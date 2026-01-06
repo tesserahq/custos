@@ -12,7 +12,7 @@ Custos abstracts the internal authorization engine (Casbin) behind a clean, vers
 
 **Custos** (Latin): Guardian, protector, or watchman — reflecting the service's purpose to guard access to sensitive resources and enforce the rules that govern trust in the platform.
 
-## Core Responsibilities
+## Core Responsabilities
 
 - Centralize authorization decisions for all services
 - Enforce **role-based** and **resource-based access control**
