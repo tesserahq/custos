@@ -238,7 +238,7 @@ Check application logs to monitor the setup process and troubleshoot any issues.
 
 ## Related Documentation
 
-- [Role Management Guide](ROLE_MANAGEMENT_GUIDE.md)
+- [Role Management Guide](role_management_guide.md)
 - [Service Accounts](SERVICE_ACCOUNTS.md)
-- [Multi-Domain Role Management](MULTI_DOMAIN_ROLE_MANAGEMENT.md)
-- [Configuration Based Roles](CONFIGURATION_BASED_ROLES.md) 
+- [Multi-Domain Role Management](multi_domain_role_management.md)
+- [Configuration Based Roles](configuration_based_roles.md) 

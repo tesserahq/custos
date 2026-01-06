@@ -70,7 +70,7 @@
       { "object": "orcha.event", "action": "read" },
       { "object": "orcha.event", "action": "delete" },
 
-      { "object": "orcha.category", "action": "read" },
+      { "object": "orcha.node_category", "action": "read" },
 
       { "object": "orcha.source", "action": "read" },
       { "object": "orcha.source", "action": "create" },

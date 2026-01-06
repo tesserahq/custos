@@ -1,0 +1,8 @@
+site_name: Custos API Documentation
+site_description: Authorization service documentation for Custos
+
+nav:
+  - Home: index.md
+
+plugins:
+  - techdocs-core

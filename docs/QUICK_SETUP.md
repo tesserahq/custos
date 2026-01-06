@@ -77,4 +77,4 @@ After setup, you can:
 
 ## Full Documentation
 
-For detailed information, see [Setup Documentation](SETUP.md). 
+For detailed information, see [Setup Documentation](setup.md). 
