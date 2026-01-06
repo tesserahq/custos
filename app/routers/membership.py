@@ -1,14 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
-from uuid import UUID
 from app.db import get_db
-from app.services.membership_service import MembershipService
 from app.services.role_service import RoleService
 from app.schemas.membership import Membership
 from app.core.logging_config import get_logger
 from app.commands.binding.delete_binding_command import DeleteBindingCommand
 from app.routers.utils.dependencies import get_membership_by_id
-from app.models.role import Role as RoleModel
 from app.models.user import User
 
 router = APIRouter(prefix="/memberships", tags=["Membership"])

@@ -1,16 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from uuid import UUID
-from typing import Optional
 from app.db import get_db
 from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
-from app.services.membership_service import MembershipService
 from app.schemas.role import (
     Role,
     RoleCreate,
     RoleUpdate,
-    RoleBatchItem,
     RoleBatchRequest,
     RoleBindRequest,
     RoleBindResponse,
@@ -29,7 +25,7 @@ from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.schemas.permission import PermissionCreate
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
-from app.schemas.authorization import RoleAssignmentRequest, RoleAssignmentResponse
+from app.schemas.authorization import RoleAssignmentResponse
 from app.routers.utils.dependencies import get_role_by_id
 from app.schemas.binding import BindingRequest
 

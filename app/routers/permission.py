@@ -1,8 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from uuid import UUID
 from app.db import get_db
-from app.services.permission_service import PermissionService
 from app.schemas.permission import Permission, PermissionUpdate
 from app.core.logging_config import get_logger
 from app.commands.permission.update_permission_command import UpdatePermissionCommand

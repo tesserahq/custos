@@ -2,7 +2,7 @@
 
 import logging
 from uuid import UUID
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from sqlalchemy.orm import Session
 
 from app.services.role_service import RoleService

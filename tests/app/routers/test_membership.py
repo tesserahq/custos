@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch
 from uuid import uuid4
 from app.services.membership_service import MembershipService

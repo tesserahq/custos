@@ -6,7 +6,6 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.role import Role
-from app.services.casbin_service import CasbinService
 from app.services.membership_service import MembershipService
 from app.schemas.authorization import RoleAssignmentResponse
 from app.schemas.membership import MembershipCreate
