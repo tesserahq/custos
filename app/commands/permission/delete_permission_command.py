@@ -1,12 +1,14 @@
 """Command to delete a permission."""
 
 import logging
-from typing import Optional
+from typing import Optional, cast
 from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.permission import Permission
 from app.services.permission_service import PermissionService
+from app.services.casbin_service import GLOBAL_DOMAIN
+from app.commands.policy import DeletePermissionPolicyCommand
 from app.events.permission_events import build_permission_deleted_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 
@@ -43,10 +45,22 @@ class DeletePermissionCommand:
             ValueError: If permission doesn't exist
         """
         try:
-            # Get the permission before deleting it (for event publishing)
+            # Get the permission before deleting it (for event publishing and policy removal)
             permission = self.permission_service.get_permission(permission_id)
             if not permission:
                 raise ValueError(f"Permission with id {permission_id} not found")
+
+            # Remove policy for the permission in the global domain before deleting
+            try:
+                delete_policy_command = DeletePermissionPolicyCommand(self.db)
+                delete_policy_command.execute(cast(UUID, permission.id), GLOBAL_DOMAIN)
+            except Exception as e:
+                # Log the error but don't fail the permission deletion
+                # The policy may not exist or may have already been removed
+                self.logger.warning(
+                    f"Failed to remove policy for permission {permission.id}: {e}. "
+                    "Permission will still be deleted from database."
+                )
 
             # Delete permission
             success = self.permission_service.delete_permission(permission_id)

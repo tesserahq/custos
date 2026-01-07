@@ -1,5 +1,15 @@
 [
   {
+    "name": "Eventa Admin",
+    "identifier": "eventa-admin",
+    "description": "RBAC admin role with full permissions to manage Eventa and more",
+    "permissions": [
+      { "object": "eventa.event", "action": "read" },
+
+      { "object": "eventa.system.settings", "action": "read" }
+    ]
+  },
+  {
     "name": "Custos Admin",
     "identifier": "custos-admin",
     "description": "RBAC admin role with full permissions to manage roles and permissions",

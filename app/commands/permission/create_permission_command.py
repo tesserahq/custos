@@ -1,13 +1,16 @@
 """Command to create a permission."""
 
 import logging
-from typing import Optional
+from typing import Optional, cast
+from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.models.permission import Permission
 from app.schemas.permission import PermissionCreate
 from app.services.permission_service import PermissionService
+from app.services.casbin_service import GLOBAL_DOMAIN
+from app.commands.policy import AddPermissionPolicyCommand
 from app.events.permission_events import build_permission_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 
@@ -61,6 +64,18 @@ class CreatePermissionCommand:
 
             if not permission:
                 raise ValueError("Failed to create permission")
+
+            # Add policy for the permission in the global domain
+            try:
+                add_policy_command = AddPermissionPolicyCommand(self.db)
+                add_policy_command.execute(cast(UUID, permission.id), GLOBAL_DOMAIN)
+            except Exception as e:
+                # Log the error but don't fail the permission creation
+                # The policy can be synced later if needed
+                self.logger.warning(
+                    f"Failed to add policy for permission {permission.id}: {e}. "
+                    "Permission was created successfully but policy sync failed."
+                )
 
             # Publish permission created event if publisher is available
             self._publish_permission_created_event(permission)

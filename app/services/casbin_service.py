@@ -311,6 +311,42 @@ class CasbinService:
             self.logger.error(f"Failed to remove policy: {e}")
             return False
 
+    def remove_all_policies_for_role(self, role_identifier: str) -> int:
+        """
+        Remove all policies for a role across all domains.
+
+        Args:
+            role_identifier: The role identifier (subject in policies)
+
+        Returns:
+            int: Number of policies removed
+        """
+        try:
+            # Get all policies for this role before removing them (for counting)
+            # Policies are stored as [subject, domain, obj, action] where subject is role_identifier
+            all_policies = self.enforcer.get_filtered_policy(0, role_identifier)
+
+            if not all_policies:
+                return 0
+
+            # Remove all policies for this role using remove_filtered_policy
+            # This removes all policies where subject (index 0) matches role_identifier
+            removed = self.enforcer.remove_filtered_policy(0, role_identifier)
+
+            if removed:
+                return len(all_policies)
+            else:
+                self.logger.warning(
+                    f"Failed to remove policies for role '{role_identifier}'"
+                )
+                return 0
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to remove all policies for role {role_identifier}: {e}"
+            )
+            return 0
+
     def get_users_for_role(self, role: str, domain: Optional[str] = None) -> List[str]:
         """
         Get all users that have a specific role.

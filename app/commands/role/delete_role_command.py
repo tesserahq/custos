@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.role import Role
 from app.services.role_service import RoleService
+from app.commands.policy import DeleteRolePolicyCommand
 from app.events.role_events import build_role_deleted_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 
@@ -43,10 +44,22 @@ class DeleteRoleCommand:
             ValueError: If role doesn't exist
         """
         try:
-            # Get the role before deleting it (for event publishing)
+            # Get the role before deleting it (for event publishing and policy removal)
             role = self.role_service.get_role(role_id)
             if not role:
                 raise ValueError(f"Role with id {role_id} not found")
+
+            # Remove all policies for the role from Casbin before deleting
+            try:
+                delete_policy_command = DeleteRolePolicyCommand(self.db)
+                delete_policy_command.execute(role_id)
+            except Exception as e:
+                # Log the error but don't fail the role deletion
+                # The policies may not exist or may have already been removed
+                self.logger.warning(
+                    f"Failed to remove policies for role {role_id}: {e}. "
+                    "Role will still be deleted from database."
+                )
 
             # Delete role
             success = self.role_service.delete_role(role_id)
