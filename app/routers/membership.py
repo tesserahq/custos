@@ -40,10 +40,10 @@ def delete_membership(
     Raises 404 if the membership is not found.
     """
     # Get the current user from request state (set by authentication middleware)
-    current_user: User = request.state.user
+    deleted_by: User = request.state.user
 
     # Prevent users from removing themselves from a role
-    if membership.user_id == current_user.id:
+    if membership.user_id == deleted_by.id:
         raise HTTPException(
             status_code=403,
             detail="You cannot remove yourself from a role. Another user must do it for you.",
@@ -62,9 +62,10 @@ def delete_membership(
         command = DeleteMembershipCommand(db)
         response = command.execute(
             role=role,
-            user_id=str(membership.user_id),
+            user_id=membership.user_id,
             domain=None,  # Memberships don't store domain, so we remove globally
             resource=None,
+            deleted_by=deleted_by,
         )
 
         if not response.success:

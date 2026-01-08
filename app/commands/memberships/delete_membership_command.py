@@ -11,6 +11,8 @@ from app.schemas.authorization import RoleAssignmentResponse
 from app.events.membership_events import build_membership_deleted_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 from app.services.casbin_service import get_casbin_service
+from app.models.user import User
+from app.services.user_service import UserService
 
 
 class DeleteMembershipCommand:
@@ -27,6 +29,7 @@ class DeleteMembershipCommand:
         self.db = db
         self.casbin_service = get_casbin_service()
         self.membership_service = MembershipService(db)
+        self.user_service = UserService(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -35,9 +38,10 @@ class DeleteMembershipCommand:
     def execute(
         self,
         role: Role,
-        user_id: str,
+        user_id: UUID,
         domain: Optional[str] = None,
         resource: Optional[str] = None,
+        deleted_by: Optional[User] = None,
     ) -> RoleAssignmentResponse:
         """
         Execute the command to delete a role binding.
@@ -47,6 +51,7 @@ class DeleteMembershipCommand:
             user_id: The ID of the user
             domain: The domain/tenant for the role (optional)
             resource: The resource the role applies to (optional)
+            deleted_by: The user performing this action (optional)
 
         Returns:
             RoleAssignmentResponse: The response containing removal details
@@ -55,6 +60,13 @@ class DeleteMembershipCommand:
             ValueError: If role removal fails
         """
         try:
+            # We need to fetch the user from Identies. Users in custos
+            # are being used as a cache for Identies users.
+            # They might might have inconsistent data.
+            user = self.user_service.get_user(user_id)
+            if not user:
+                raise ValueError(f"User with id '{user_id}' not found")
+
             # Use the role identifier for Casbin
             role_identifier = str(role.identifier)
 
@@ -73,7 +85,7 @@ class DeleteMembershipCommand:
             # Delete membership record
             try:
                 # Convert user_id string to UUID
-                user_uuid = UUID(user_id)
+                user_uuid = user_id
                 role_uuid = cast(UUID, role.id)
 
                 # Delete membership if it exists
@@ -102,7 +114,7 @@ class DeleteMembershipCommand:
 
             response = RoleAssignmentResponse(
                 success=True,
-                user_id=user_id,
+                user_id=str(user_id),
                 role=role_identifier,
                 domain=domain,
                 resource=resource,
@@ -115,7 +127,9 @@ class DeleteMembershipCommand:
             )
 
             # Publish membership deleted event if publisher is available
-            self._publish_membership_deleted_event(role, user_id, domain, resource)
+            self._publish_membership_deleted_event(
+                role, user, domain, resource, deleted_by
+            )
 
             return response
 
@@ -129,20 +143,22 @@ class DeleteMembershipCommand:
     def _publish_membership_deleted_event(
         self,
         role: Role,
-        user_id: str,
+        user: User,
         domain: Optional[str],
         resource: Optional[str],
+        deleted_by: Optional[User] = None,
     ) -> None:
         """
         Publish a membership deleted event.
 
         Args:
             role: The role that was removed
-            user_id: The ID of the user losing the role
+            user: The user losing the role
             domain: The domain/tenant for the membership (optional)
             resource: The resource the membership applies to (optional)
+            deleted_by: The user performing this action (optional)
         """
-        event = build_membership_deleted_event(role, user_id, domain, resource)
+        event = build_membership_deleted_event(role, user, domain, resource, deleted_by)
         if self.nats_publisher is not None:
             try:
                 self.nats_publisher.publish_sync(event, event.event_type)

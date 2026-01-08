@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.role import Role
+from app.models.user import User as UserModel
 from app.services.membership_service import MembershipService
 from app.schemas.authorization import RoleAssignmentResponse
 from app.schemas.membership import MembershipCreate
@@ -48,6 +49,7 @@ class CreateMembershipCommand:
         domain: Optional[str] = None,
         domain_metadata: Optional[dict] = None,
         resource: Optional[str] = None,
+        created_by: Optional[UserModel] = None,
     ) -> RoleAssignmentResponse:
         """
         Execute the command to create a role binding.
@@ -57,6 +59,7 @@ class CreateMembershipCommand:
             user_id: The ID of the user
             domain: The domain/tenant for the role (optional)
             resource: The resource the role applies to (optional)
+            created_by: The user performing this action (optional)
 
         Returns:
             RoleAssignmentResponse: The response containing assignment details
@@ -111,6 +114,11 @@ class CreateMembershipCommand:
                         raise ValueError(
                             "Failed to assign role. Role may already exist or be invalid."
                         )
+
+                    # Publish membership created event if publisher is available
+                    self._publish_membership_created_event(
+                        role, user, domain, resource, created_by
+                    )
                 else:
                     self.logger.debug(
                         f"Membership already exists: user_id={user_id}, role_id={role_uuid}"
@@ -139,9 +147,6 @@ class CreateMembershipCommand:
                 f"domain={domain}, resource={resource}"
             )
 
-            # Publish membership created event if publisher is available
-            self._publish_membership_created_event(role, user_id, domain, resource)
-
             return response
 
         except ValueError:
@@ -154,20 +159,22 @@ class CreateMembershipCommand:
     def _publish_membership_created_event(
         self,
         role: Role,
-        user_id: str,
+        user: User,
         domain: Optional[str],
         resource: Optional[str],
+        created_by: Optional[UserModel] = None,
     ) -> None:
         """
         Publish a membership created event.
 
         Args:
             role: The role that was assigned
-            user_id: The ID of the user receiving the role
+            user: The user receiving the role
             domain: The domain/tenant for the membership (optional)
             resource: The resource the membership applies to (optional)
+            created_by: The user performing this action (optional)
         """
-        event = build_membership_created_event(role, user_id, domain, resource)
+        event = build_membership_created_event(role, user, domain, resource, created_by)
         if self.nats_publisher is not None:
             try:
                 self.nats_publisher.publish_sync(event, event.event_type)

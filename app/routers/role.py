@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from app.db import get_db
+from app.models.user import User
+from uuid import UUID
 from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
 from app.schemas.role import (
@@ -36,7 +38,8 @@ logger = get_logger()
 
 @router.post("/{role_id}/memberships", response_model=RoleAssignmentResponse)
 async def create_role_membership(
-    request: BindingRequest,
+    request: Request,
+    binding_request: BindingRequest,
     role: RoleModel = Depends(get_role_by_id),
     db: Session = Depends(get_db),
 ) -> RoleAssignmentResponse:
@@ -46,13 +49,17 @@ async def create_role_membership(
     This endpoint creates a role binding, optionally scoped to a specific
     domain for multi-tenancy support. Uses role_id to look up the role.
     """
+    # Get the current user from request state (set by authentication middleware)
+    created_by: User = request.state.user
+
     command = CreateMembershipCommand(db)
     response = command.execute(
         role=role,
-        user_id=request.user_id,
-        domain=request.domain,
-        domain_metadata=request.domain_metadata,
-        resource=request.resource,
+        user_id=UUID(binding_request.user_id),
+        domain=binding_request.domain,
+        domain_metadata=binding_request.domain_metadata,
+        resource=binding_request.resource,
+        created_by=created_by,
     )
     return response
 
