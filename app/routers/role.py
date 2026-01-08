@@ -34,8 +34,8 @@ router = APIRouter(prefix="/roles", tags=["Role"])
 logger = get_logger()
 
 
-@router.post("/{role_id}/bindings", response_model=RoleAssignmentResponse)
-async def create_role_binding(
+@router.post("/{role_id}/memberships", response_model=RoleAssignmentResponse)
+async def create_role_membership(
     request: BindingRequest,
     role: RoleModel = Depends(get_role_by_id),
     db: Session = Depends(get_db),
