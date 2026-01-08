@@ -1,4 +1,5 @@
 from unittest.mock import Mock, patch
+from uuid import UUID
 from app.commands.memberships.create_membership_command import CreateMembershipCommand
 from app.services.membership_service import MembershipService
 
@@ -210,3 +211,35 @@ class TestCreateMembershipCommand:
             # Assertions
             assert response.success is True
             assert response.user_id == user_id
+
+    def test_execute_with_uuid_object(self, db, setup_role, setup_user):
+        """Test that command correctly handles UUID object passed as user_id (simulating router behavior)."""
+        # Pass UUID object directly (as router does when converting string to UUID)
+        user_id_uuid = setup_user.id
+
+        command = CreateMembershipCommand(db, nats_publisher=None)
+        # Mock the assign_role method
+        with patch.object(
+            command.casbin_service, "assign_role", return_value=True
+        ) as mock_assign_role:
+            response = command.execute(
+                role=setup_role,
+                user_id=user_id_uuid,  # Pass UUID object, not string
+            )
+
+            # Assertions - user_id in response should be a string (converted from UUID)
+            assert response.success is True
+            assert isinstance(
+                response.user_id, str
+            ), "user_id should be converted to string"
+            assert response.user_id == str(user_id_uuid)
+            assert response.role == str(setup_role.identifier)
+            assert "successfully assigned" in response.message.lower()
+
+            # Verify Casbin was called with string (UUID converted to string)
+            mock_assign_role.assert_called_once_with(
+                user_id=str(user_id_uuid),  # Command converts UUID to string for casbin
+                role=str(setup_role.identifier),
+                domain=None,
+                resource=None,
+            )

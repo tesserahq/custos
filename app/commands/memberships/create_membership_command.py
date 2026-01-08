@@ -104,7 +104,7 @@ class CreateMembershipCommand:
 
                     # Assign role
                     success = self.casbin_service.assign_role(
-                        user_id=user_id,
+                        user_id=str(user_id),
                         role=role_identifier,
                         domain=domain,
                         resource=resource,
@@ -135,7 +135,7 @@ class CreateMembershipCommand:
 
             response = RoleAssignmentResponse(
                 success=True,
-                user_id=user_id,
+                user_id=str(user_id),
                 role=role_identifier,
                 domain=domain,
                 resource=resource,
