@@ -27,7 +27,6 @@ from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.schemas.permission import PermissionCreate
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
-from app.schemas.authorization import RoleAssignmentResponse
 from app.routers.utils.dependencies import get_role_by_id
 from app.schemas.binding import BindingRequest
 
@@ -36,24 +35,25 @@ router = APIRouter(prefix="/roles", tags=["Role"])
 logger = get_logger()
 
 
-@router.post("/{role_id}/memberships", response_model=RoleAssignmentResponse)
+@router.post("/{role_id}/memberships", response_model=Membership, status_code=201)
 async def create_role_membership(
     request: Request,
     binding_request: BindingRequest,
     role: RoleModel = Depends(get_role_by_id),
     db: Session = Depends(get_db),
-) -> RoleAssignmentResponse:
+) -> Membership:
     """
     Create a role binding.
 
     This endpoint creates a role binding, optionally scoped to a specific
     domain for multi-tenancy support. Uses role_id to look up the role.
+    Returns the created or existing membership.
     """
     # Get the current user from request state (set by authentication middleware)
     created_by: User = request.state.user
 
     command = CreateMembershipCommand(db)
-    response = command.execute(
+    membership_model = command.execute(
         role=role,
         user_id=UUID(binding_request.user_id),
         domain=binding_request.domain,
@@ -61,7 +61,8 @@ async def create_role_membership(
         resource=binding_request.resource,
         created_by=created_by,
     )
-    return response
+    # Convert model to schema
+    return Membership.model_validate(membership_model)
 
 
 @router.post("/batch", response_model=list[Role], status_code=201)

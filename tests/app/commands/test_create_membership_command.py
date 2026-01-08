@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch
 from uuid import UUID
 from app.commands.memberships.create_membership_command import CreateMembershipCommand
 from app.services.membership_service import MembershipService
+from app.models.membership import Membership as MembershipModel
 
 
 class TestCreateMembershipCommand:
@@ -16,27 +17,28 @@ class TestCreateMembershipCommand:
         with patch.object(
             command.casbin_service, "assign_role", return_value=True
         ) as mock_assign_role:
-            response = command.execute(
+            membership = command.execute(
                 role=setup_role,
                 user_id=user_id,
             )
 
-            # Assertions
-            assert response.success is True
-            assert response.user_id == user_id
-            assert response.role == str(setup_role.identifier)
-            assert response.domain is None
-            assert response.resource is None
-            assert "successfully assigned" in response.message.lower()
-
-            # Verify membership was created
-            membership_service = MembershipService(db)
-            membership = membership_service.get_membership_by_user_and_role(
-                setup_user.id, setup_role.id
-            )
-            assert membership is not None
+            # Assertions - should return Membership model object
+            assert isinstance(membership, MembershipModel)
             assert membership.user_id == setup_user.id
             assert membership.role_id == setup_role.id
+            assert membership.domain is None
+            assert membership.id is not None
+            assert membership.created_at is not None
+            assert membership.updated_at is not None
+
+            # Verify membership was created in database
+            membership_service = MembershipService(db)
+            db_membership = membership_service.get_membership_by_user_and_role(
+                setup_user.id, setup_role.id
+            )
+            assert db_membership is not None
+            assert db_membership.user_id == setup_user.id
+            assert db_membership.role_id == setup_role.id
 
             # Verify Casbin was called
             mock_assign_role.assert_called_once_with(
@@ -59,7 +61,7 @@ class TestCreateMembershipCommand:
         with patch.object(
             command.casbin_service, "assign_role", return_value=True
         ) as mock_assign_role:
-            response = command.execute(
+            membership = command.execute(
                 role=setup_role,
                 user_id=user_id,
                 domain=domain,
@@ -67,9 +69,10 @@ class TestCreateMembershipCommand:
             )
 
             # Assertions
-            assert response.success is True
-            assert response.domain == domain
-            assert response.resource == resource
+            assert isinstance(membership, MembershipModel)
+            assert membership.domain == domain
+            assert membership.user_id == setup_user.id
+            assert membership.role_id == setup_role.id
 
             # Verify Casbin was called with domain and resource
             mock_assign_role.assert_called_once_with(
@@ -94,10 +97,13 @@ class TestCreateMembershipCommand:
         command = CreateMembershipCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
-            response = command.execute(role=setup_role, user_id=user_id)
+            membership = command.execute(role=setup_role, user_id=user_id)
 
-            # Should still succeed
-            assert response.success is True
+            # Should still succeed and return the existing membership
+            assert isinstance(membership, MembershipModel)
+            assert membership.id == existing_membership.id
+            assert membership.user_id == setup_user.id
+            assert membership.role_id == setup_role.id
 
             # Verify only one membership exists (not duplicated)
             memberships = membership_service.get_memberships_by_user(setup_user.id)
@@ -115,10 +121,11 @@ class TestCreateMembershipCommand:
         command = CreateMembershipCommand(db, nats_publisher=mock_publisher)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
-            response = command.execute(role=setup_role, user_id=user_id)
+            membership = command.execute(role=setup_role, user_id=user_id)
 
+            # Verify membership was returned
+            assert isinstance(membership, MembershipModel)
             # Verify event was published
-            assert response.success is True
             assert mock_publisher.publish_sync.called
             call_args = mock_publisher.publish_sync.call_args
             assert call_args is not None
@@ -132,11 +139,12 @@ class TestCreateMembershipCommand:
         command = CreateMembershipCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
-            response = command.execute(role=setup_role, user_id=user_id)
+            membership = command.execute(role=setup_role, user_id=user_id)
 
             # Assertions
-            assert response.success is True
-            assert response.user_id == user_id
+            assert isinstance(membership, MembershipModel)
+            assert membership.user_id == setup_user.id
+            assert membership.role_id == setup_role.id
 
     def test_execute_event_publishing_failure_does_not_raise(
         self, db, setup_role, setup_user
@@ -152,9 +160,10 @@ class TestCreateMembershipCommand:
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
             # Should still succeed even if event publishing fails
-            response = command.execute(role=setup_role, user_id=user_id)
+            membership = command.execute(role=setup_role, user_id=user_id)
 
-            assert response.success is True
+            assert isinstance(membership, MembershipModel)
+            assert membership.user_id == setup_user.id
 
     def test_execute_multiple_bindings_same_user_different_roles(
         self, db, setup_user, faker
@@ -183,12 +192,14 @@ class TestCreateMembershipCommand:
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
             # Create bindings for both roles
-            response1 = command.execute(role=role1, user_id=user_id)
-            response2 = command.execute(role=role2, user_id=user_id)
+            membership1 = command.execute(role=role1, user_id=user_id)
+            membership2 = command.execute(role=role2, user_id=user_id)
 
             # Both should succeed
-            assert response1.success is True
-            assert response2.success is True
+            assert isinstance(membership1, MembershipModel)
+            assert isinstance(membership2, MembershipModel)
+            assert membership1.role_id == role1.id
+            assert membership2.role_id == role2.id
 
             # Verify both memberships exist
             membership_service = MembershipService(db)
@@ -206,11 +217,12 @@ class TestCreateMembershipCommand:
         command = CreateMembershipCommand(db)
         # Mock the assign_role method
         with patch.object(command.casbin_service, "assign_role", return_value=True):
-            response = command.execute(role=setup_role, user_id=user_id)
+            membership = command.execute(role=setup_role, user_id=user_id)
 
             # Assertions
-            assert response.success is True
-            assert response.user_id == user_id
+            assert isinstance(membership, MembershipModel)
+            assert membership.user_id == setup_user.id
+            assert membership.role_id == setup_role.id
 
     def test_execute_with_uuid_object(self, db, setup_role, setup_user):
         """Test that command correctly handles UUID object passed as user_id (simulating router behavior)."""
@@ -222,19 +234,17 @@ class TestCreateMembershipCommand:
         with patch.object(
             command.casbin_service, "assign_role", return_value=True
         ) as mock_assign_role:
-            response = command.execute(
+            membership = command.execute(
                 role=setup_role,
                 user_id=user_id_uuid,  # Pass UUID object, not string
             )
 
-            # Assertions - user_id in response should be a string (converted from UUID)
-            assert response.success is True
-            assert isinstance(
-                response.user_id, str
-            ), "user_id should be converted to string"
-            assert response.user_id == str(user_id_uuid)
-            assert response.role == str(setup_role.identifier)
-            assert "successfully assigned" in response.message.lower()
+            # Assertions - should return Membership model object
+            assert isinstance(membership, MembershipModel)
+            assert membership.user_id == user_id_uuid
+            assert membership.role_id == setup_role.id
+            assert membership.id is not None
+            assert membership.created_at is not None
 
             # Verify Casbin was called with string (UUID converted to string)
             mock_assign_role.assert_called_once_with(

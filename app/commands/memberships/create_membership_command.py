@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.models.role import Role
 from app.models.user import User as UserModel
+from app.models.membership import Membership as MembershipModel
 from app.services.membership_service import MembershipService
-from app.schemas.authorization import RoleAssignmentResponse
 from app.schemas.membership import MembershipCreate
 from app.events.membership_events import build_membership_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
@@ -50,7 +50,7 @@ class CreateMembershipCommand:
         domain_metadata: Optional[dict] = None,
         resource: Optional[str] = None,
         created_by: Optional[UserModel] = None,
-    ) -> RoleAssignmentResponse:
+    ) -> MembershipModel:
         """
         Execute the command to create a role binding.
 
@@ -62,7 +62,7 @@ class CreateMembershipCommand:
             created_by: The user performing this action (optional)
 
         Returns:
-            RoleAssignmentResponse: The response containing assignment details
+            MembershipModel: The created or existing membership model object
 
         Raises:
             ValueError: If role assignment fails
@@ -73,6 +73,7 @@ class CreateMembershipCommand:
 
             # Create membership record. We are keeping a "cache" of memberships in the database. This is not the source of truth.
             # Services using Custos are the source of truth.
+            membership = None
             try:
                 # Convert user_id string to UUID
                 role_uuid = cast(UUID, role.id)
@@ -97,7 +98,9 @@ class CreateMembershipCommand:
                         domain=domain,
                         domain_metadata=domain_metadata,
                     )
-                    self.membership_service.create_membership(membership_create)
+                    created_membership = self.membership_service.create_membership(
+                        membership_create
+                    )
                     self.logger.info(
                         f"Membership created: user_id={user_id}, role_id={role_uuid}"
                     )
@@ -119,35 +122,47 @@ class CreateMembershipCommand:
                     self._publish_membership_created_event(
                         role, user, domain, resource, created_by
                     )
+
+                    # Fetch the membership with user relationship loaded
+                    membership = (
+                        self.membership_service.get_membership_by_user_and_role(
+                            user_id, role_uuid, domain
+                        )
+                    )
                 else:
                     self.logger.debug(
                         f"Membership already exists: user_id={user_id}, role_id={role_uuid}"
                     )
+                    # Get existing membership with user relationship loaded
+                    membership = existing_membership
+
+                    # Still assign role in Casbin even if membership exists (in case it was deleted from Casbin)
+                    success = self.casbin_service.assign_role(
+                        user_id=str(user_id),
+                        role=role_identifier,
+                        domain=domain,
+                        resource=resource,
+                    )
+
+                    if not success:
+                        raise ValueError(
+                            "Failed to assign role. Role may already exist or be invalid."
+                        )
             except ValueError as e:
-                # Handle invalid UUID format
-                self.logger.warning(
-                    f"Failed to create membership: user_id '{user_id}' is not a valid UUID: {e}"
-                )
-                # Don't fail the entire operation if membership creation fails
-                # The Casbin assignment was successful
+                # Re-raise ValueError from Casbin or explicit errors
+                raise
             except Exception as e:
                 raise ValueError(f"Failed to create membership record: {str(e)}")
 
-            response = RoleAssignmentResponse(
-                success=True,
-                user_id=str(user_id),
-                role=role_identifier,
-                domain=domain,
-                resource=resource,
-                message=f"Role '{role_identifier}' successfully assigned to user '{user_id}'",
-            )
+            if membership is None:
+                raise ValueError("Membership was not created or retrieved")
 
             self.logger.info(
                 f"Role assigned: user={user_id}, role={role_identifier}, "
                 f"domain={domain}, resource={resource}"
             )
 
-            return response
+            return membership
 
         except ValueError:
             # Re-raise ValueError as-is (these are expected validation errors)
