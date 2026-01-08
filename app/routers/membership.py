@@ -4,7 +4,7 @@ from app.db import get_db
 from app.services.role_service import RoleService
 from app.schemas.membership import Membership
 from app.core.logging_config import get_logger
-from app.commands.binding.delete_binding_command import DeleteBindingCommand
+from app.commands.memberships.delete_membership_command import DeleteMembershipCommand
 from app.routers.utils.dependencies import get_membership_by_id
 from app.models.user import User
 
@@ -58,8 +58,8 @@ def delete_membership(
                 status_code=404, detail=f"Role with id {membership.role_id} not found"
             )
 
-        # Use DeleteBindingCommand to remove from both Casbin and database
-        command = DeleteBindingCommand(db)
+        # Use DeleteMembershipCommand to remove from both Casbin and database
+        command = DeleteMembershipCommand(db)
         response = command.execute(
             role=role,
             user_id=str(membership.user_id),

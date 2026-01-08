@@ -150,7 +150,7 @@ Example: `g, user-123, custos-admin, *`
 └─────────────────────────┘  └─────────────────────────┘
 ```
 
-1. **Assign Role**: `CreateBindingCommand` simultaneously:
+1. **Assign Role**: `CreateMembershipCommand` simultaneously:
    - Creates a record in PostgreSQL `memberships` table (for querying/auditing)
    - Assigns the role in Casbin via `casbin_service.assign_role()` (for authorization)
 
@@ -208,7 +208,7 @@ Example: `g, user-123, custos-admin, *`
 
 - **CreateRolesBatchCommand**: Creates roles and permissions in PostgreSQL, then syncs policies to Casbin
 - **SyncRolePolicyCommand**: Syncs role permissions from PostgreSQL to Casbin policies
-- **CreateBindingCommand**: Assigns roles to users in both PostgreSQL (memberships) and Casbin
+- **CreateMembershipCommand**: Assigns roles to users in both PostgreSQL (memberships) and Casbin
 - **SetupCommand**: Initializes system by importing roles from JSON and assigning to super users
 
 ### Routers
@@ -236,7 +236,7 @@ Custos publishes events when data changes:
 
 - **Role Events**: `role.created`, `role.updated`, `role.deleted`
 - **Permission Events**: `permission.created`, `permission.updated`, `permission.deleted`
-- **Binding Events**: `bind.created`, `bind.deleted`
+- **Membership Events**: `membership.created`, `membership.deleted`
 
 These events allow other services to react to authorization changes in real-time.
 

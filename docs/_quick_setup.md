@@ -93,7 +93,7 @@ When you call the `/system/setup` endpoint, the following process occurs:
 
 5. **Super User Assignment**: Assigns all created roles to each super user specified in `SUPER_USER_EMAIL`:
    - Looks up each user by email address in the database
-   - Creates role bindings for each user-role combination using `CreateBindingCommand`
+   - Creates role bindings for each user-role combination using `CreateMembershipCommand`
    - All assignments are made in the global domain (`*`), giving super users access across all domains
 
 After this process completes, the specified super users will have all the predefined roles assigned to them with global domain access, enabling them to manage the authorization system and other services according to the permissions defined in the configuration.

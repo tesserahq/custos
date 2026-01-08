@@ -1,4 +1,4 @@
-"""Command to delete a role binding (remove a role from a user)."""
+"""Command to delete a membership (remove a role from a user)."""
 
 import logging
 from typing import Optional, cast
@@ -8,14 +8,14 @@ from sqlalchemy.orm import Session
 from app.models.role import Role
 from app.services.membership_service import MembershipService
 from app.schemas.authorization import RoleAssignmentResponse
-from app.events.bind_events import build_bind_deleted_event
+from app.events.membership_events import build_membership_deleted_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 from app.services.casbin_service import get_casbin_service
 
 
-class DeleteBindingCommand:
+class DeleteMembershipCommand:
     """
-    Command to delete a role binding (remove a role from a user).
+    Command to delete a membership (remove a role from a user).
     Uses Casbin to remove the role, optionally scoped to a domain and resource.
     """
 
@@ -114,8 +114,8 @@ class DeleteBindingCommand:
                 f"domain={domain}, resource={resource}"
             )
 
-            # Publish bind deleted event if publisher is available
-            self._publish_bind_deleted_event(role, user_id, domain, resource)
+            # Publish membership deleted event if publisher is available
+            self._publish_membership_deleted_event(role, user_id, domain, resource)
 
             return response
 
@@ -126,7 +126,7 @@ class DeleteBindingCommand:
             self.logger.error(f"Failed to remove role: {str(e)}")
             raise ValueError(f"Failed to remove role: {str(e)}")
 
-    def _publish_bind_deleted_event(
+    def _publish_membership_deleted_event(
         self,
         role: Role,
         user_id: str,
@@ -134,17 +134,19 @@ class DeleteBindingCommand:
         resource: Optional[str],
     ) -> None:
         """
-        Publish a bind deleted event.
+        Publish a membership deleted event.
 
         Args:
             role: The role that was removed
             user_id: The ID of the user losing the role
-            domain: The domain/tenant for the binding (optional)
-            resource: The resource the binding applies to (optional)
+            domain: The domain/tenant for the membership (optional)
+            resource: The resource the membership applies to (optional)
         """
-        event = build_bind_deleted_event(role, user_id, domain, resource)
+        event = build_membership_deleted_event(role, user_id, domain, resource)
         if self.nats_publisher is not None:
             try:
                 self.nats_publisher.publish_sync(event, event.event_type)
             except Exception:  # pragma: no cover - defensive logging
-                self.logger.exception("Failed to publish bind-deleted event to NATS")
+                self.logger.exception(
+                    "Failed to publish membership-deleted event to NATS"
+                )

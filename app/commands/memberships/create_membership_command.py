@@ -1,4 +1,4 @@
-"""Command to create a role binding (assign a role to a user)."""
+"""Command to create a membership (assign a role to a user)."""
 
 import logging
 from typing import Optional, cast
@@ -9,7 +9,7 @@ from app.models.role import Role
 from app.services.membership_service import MembershipService
 from app.schemas.authorization import RoleAssignmentResponse
 from app.schemas.membership import MembershipCreate
-from app.events.bind_events import build_bind_created_event
+from app.events.membership_events import build_membership_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 from app.services.user_service import UserService
 from app.schemas.user import User
@@ -20,7 +20,7 @@ from app.schemas.user import UserOnboard
 from app.services.casbin_service import get_casbin_service
 
 
-class CreateBindingCommand:
+class CreateMembershipCommand:
     """
     Command to create a role binding (assign a role to a user).
     Uses Casbin to assign the role, optionally scoped to a domain and resource.
@@ -139,8 +139,8 @@ class CreateBindingCommand:
                 f"domain={domain}, resource={resource}"
             )
 
-            # Publish bind created event if publisher is available
-            self._publish_bind_created_event(role, user_id, domain, resource)
+            # Publish membership created event if publisher is available
+            self._publish_membership_created_event(role, user_id, domain, resource)
 
             return response
 
@@ -151,7 +151,7 @@ class CreateBindingCommand:
             self.logger.error(f"Failed to assign role: {str(e)}")
             raise ValueError(f"Failed to assign role: {str(e)}")
 
-    def _publish_bind_created_event(
+    def _publish_membership_created_event(
         self,
         role: Role,
         user_id: str,
@@ -159,20 +159,22 @@ class CreateBindingCommand:
         resource: Optional[str],
     ) -> None:
         """
-        Publish a bind created event.
+        Publish a membership created event.
 
         Args:
             role: The role that was assigned
             user_id: The ID of the user receiving the role
-            domain: The domain/tenant for the binding (optional)
-            resource: The resource the binding applies to (optional)
+            domain: The domain/tenant for the membership (optional)
+            resource: The resource the membership applies to (optional)
         """
-        event = build_bind_created_event(role, user_id, domain, resource)
+        event = build_membership_created_event(role, user_id, domain, resource)
         if self.nats_publisher is not None:
             try:
                 self.nats_publisher.publish_sync(event, event.event_type)
             except Exception:  # pragma: no cover - defensive logging
-                self.logger.exception("Failed to publish bind-created event to NATS")
+                self.logger.exception(
+                    "Failed to publish membership-created event to NATS"
+                )
 
     def fetch_user(
         self,

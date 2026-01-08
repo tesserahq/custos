@@ -19,7 +19,7 @@ from app.commands.role.create_role_command import CreateRoleCommand
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
 from app.commands.role.update_role_command import UpdateRoleCommand
 from app.commands.role.delete_role_command import DeleteRoleCommand
-from app.commands.binding.create_binding_command import CreateBindingCommand
+from app.commands.memberships.create_membership_command import CreateMembershipCommand
 from app.commands.permission.create_permission_command import CreatePermissionCommand
 from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.schemas.permission import PermissionCreate
@@ -46,7 +46,7 @@ async def create_role_membership(
     This endpoint creates a role binding, optionally scoped to a specific
     domain for multi-tenancy support. Uses role_id to look up the role.
     """
-    command = CreateBindingCommand(db)
+    command = CreateMembershipCommand(db)
     response = command.execute(
         role=role,
         user_id=request.user_id,

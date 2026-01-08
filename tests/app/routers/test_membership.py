@@ -35,7 +35,7 @@ class TestMembershipRouter:
         response = client.get("/memberships/invalid-uuid")
         assert response.status_code == 422
 
-    @patch("app.commands.binding.delete_binding_command.get_casbin_service")
+    @patch("app.commands.memberships.delete_membership_command.get_casbin_service")
     def test_delete_membership_success(
         self, mock_get_casbin_service, client_another_user, db, setup_user, setup_role
     ):
@@ -58,7 +58,7 @@ class TestMembershipRouter:
         deleted_membership = membership_service.get_membership(membership.id)
         assert deleted_membership is None
 
-    @patch("app.commands.binding.delete_binding_command.get_casbin_service")
+    @patch("app.commands.memberships.delete_membership_command.get_casbin_service")
     def test_delete_membership_prevents_self_removal(
         self, mock_get_casbin_service, client, db, setup_user, setup_role
     ):
