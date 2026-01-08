@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 import rollbar
 from rollbar.logger import RollbarHandler
+from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.telemetry import setup_tracing
@@ -58,6 +59,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
 
         # Attach Rollbar handler to the root logger
         logger.addHandler(rollbar_handler)
+        app.add_middleware(RollbarMiddleware)
 
     if not testing and not settings.disable_auth:
         logger.info("Main: Adding authentication middleware")
