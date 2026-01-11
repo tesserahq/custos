@@ -28,7 +28,7 @@ from app.schemas.permission import PermissionCreate
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from app.routers.utils.dependencies import get_role_by_id
-from app.schemas.binding import BindingRequest
+from app.schemas.membership import MembershipRequest
 
 
 router = APIRouter(prefix="/roles", tags=["Role"])
@@ -38,7 +38,7 @@ logger = get_logger()
 @router.post("/{role_id}/memberships", response_model=Membership, status_code=201)
 async def create_role_membership(
     request: Request,
-    binding_request: BindingRequest,
+    binding_request: MembershipRequest,
     role: RoleModel = Depends(get_role_by_id),
     db: Session = Depends(get_db),
 ) -> Membership:
