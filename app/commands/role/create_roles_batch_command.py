@@ -187,8 +187,6 @@ class CreateRolesBatchCommand:
             event = build_roles_batch_created_event(created_roles, created_permissions)
             if self.nats_publisher is not None:
                 self.nats_publisher.publish_sync(event, event.event_type)
-                self.logger.info(
-                    f"Published batch event for {len(created_roles)} roles and {len(created_permissions)} permissions"
-                )
+
         except Exception:  # pragma: no cover - defensive logging
             self.logger.exception("Failed to publish roles batch-created event to NATS")

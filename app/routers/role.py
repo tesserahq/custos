@@ -83,7 +83,6 @@ def create_roles_batch(
     try:
         command = CreateRolesBatchCommand(db)
         created_roles = command.execute(request.roles, resync=request.resync)
-        logger.info(f"Created {len(created_roles)} roles in batch")
         return [Role.model_validate(role) for role in created_roles]
     except ValueError as e:
         # Handle validation errors (e.g., duplicate role name, duplicate permission)
@@ -112,10 +111,7 @@ def bind_role(
     try:
         command = SyncRolePolicyCommand(db)
         result = command.execute(role.id, bind_data.domain)
-        logger.info(
-            f"Bound role {role.id} to domain '{bind_data.domain}': "
-            f"{result['policies_added']}/{result['total_permissions']} policies added"
-        )
+
         return RoleBindResponse(**result)
     except ValueError as e:
         # Handle validation errors (e.g., role not found)
@@ -126,9 +122,6 @@ def bind_role(
             raise HTTPException(status_code=400, detail=error_message)
     except Exception as e:
         # Handle unexpected errors
-        logger.error(
-            f"Failed to bind role {role.id} to domain '{bind_data.domain}': {str(e)}"
-        )
         raise HTTPException(status_code=500, detail=f"Failed to bind role: {str(e)}")
 
 
@@ -164,14 +157,12 @@ def create_role(role_data: RoleCreate, db: Session = Depends(get_db)) -> Role:
     try:
         command = CreateRoleCommand(db)
         role = command.execute(role_data)
-        logger.info(f"Created role: {role.id} ({role.name})")
         return role
     except ValueError as e:
         # Handle validation errors (e.g., duplicate name)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Handle unexpected errors
-        logger.error(f"Failed to create role: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create role")
 
 
@@ -189,7 +180,6 @@ def update_role(
     try:
         command = UpdateRoleCommand(db)
         updated_role = command.execute(role.id, role_data)
-        logger.info(f"Updated role: {updated_role.id} ({updated_role.name})")
         return updated_role
     except ValueError as e:
         # Handle validation errors (e.g., role not found, duplicate name)
@@ -220,7 +210,6 @@ def delete_role(
             raise HTTPException(
                 status_code=404, detail=f"Role with id {role.id} not found"
             )
-        logger.info(f"Deleted role: {role.id}")
     except ValueError as e:
         # Handle validation errors (e.g., role not found)
         error_message = str(e)
@@ -230,7 +219,6 @@ def delete_role(
             raise HTTPException(status_code=400, detail=error_message)
     except Exception as e:
         # Handle unexpected errors
-        logger.error(f"Failed to delete role: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete role")
 
 
@@ -292,14 +280,10 @@ def create_role_permission(
         )
         command = CreatePermissionCommand(db)
         permission = command.execute(permission_create)
-        logger.info(
-            f"Created permission: {permission.id} ({permission.object}:{permission.action}) for role {role.id}"
-        )
         return permission
     except ValueError as e:
         # Handle validation errors (e.g., duplicate object+action+role_id)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Handle unexpected errors
-        logger.error(f"Failed to create permission: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create permission")

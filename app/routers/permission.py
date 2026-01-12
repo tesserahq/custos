@@ -37,9 +37,7 @@ def update_permission(
     try:
         command = UpdatePermissionCommand(db)
         updated_permission = command.execute(permission.id, permission_data)
-        logger.info(
-            f"Updated permission: {updated_permission.id} ({updated_permission.object}:{updated_permission.action})"
-        )
+
         return updated_permission
     except ValueError as e:
         # Handle validation errors (e.g., permission not found, duplicate object+action+role_id)
@@ -50,7 +48,6 @@ def update_permission(
             raise HTTPException(status_code=400, detail=error_message)
     except Exception as e:
         # Handle unexpected errors
-        logger.error(f"Failed to update permission: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update permission")
 
 
@@ -71,7 +68,6 @@ def delete_permission(
             raise HTTPException(
                 status_code=404, detail=f"Permission with id {permission.id} not found"
             )
-        logger.info(f"Deleted permission: {permission.id}")
     except ValueError as e:
         # Handle validation errors (e.g., permission not found)
         error_message = str(e)
@@ -81,5 +77,4 @@ def delete_permission(
             raise HTTPException(status_code=400, detail=error_message)
     except Exception as e:
         # Handle unexpected errors
-        logger.error(f"Failed to delete permission: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete permission")

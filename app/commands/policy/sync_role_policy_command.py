@@ -90,11 +90,6 @@ class SyncRolePolicyCommand:
             # This allows for some duplicates while ensuring most policies are created
             success = policies_added >= len(permissions) * 0.8
 
-            self.logger.info(
-                f"Policies created for role '{role.name}' (id: {role_id}) in domain '{domain}': "
-                f"{policies_added}/{len(permissions)} policies added, {policies_failed} failed"
-            )
-
             return {
                 "success": success,
                 "role_name": role.name,

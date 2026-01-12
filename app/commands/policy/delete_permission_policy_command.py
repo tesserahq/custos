@@ -76,11 +76,6 @@ class DeletePermissionPolicyCommand:
                     "Policy may not exist."
                 )
 
-            self.logger.info(
-                f"Policy {'removed' if policy_removed else 'not found'} for permission '{permission_id}' "
-                f"({permission.object}:{permission.action}) for role '{role.name}' in domain '{domain}'"
-            )
-
             return {
                 "success": policy_removed,
                 "permission_id": str(permission_id),

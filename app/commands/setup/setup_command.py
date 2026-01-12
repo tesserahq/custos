@@ -77,7 +77,7 @@ class SetupCommand:
         if not os.path.exists(json_file_path):
             raise FileNotFoundError(f"JSON file not found: {json_file_path}")
 
-        self.logger.info(f"Loading roles from JSON file: {json_file_path}")
+        self.logger.debug(f"Loading roles from JSON file: {json_file_path}")
 
         # Load JSON file
         with open(json_file_path, "r", encoding="utf-8") as f:
@@ -93,7 +93,7 @@ class SetupCommand:
         command = CreateRolesBatchCommand(self.db, self.nats_publisher)
         created_roles = command.execute(roles_data)
 
-        self.logger.info(
+        self.logger.debug(
             f"Successfully imported {len(created_roles)} roles from {json_file_path}"
         )
 
@@ -128,7 +128,6 @@ class SetupCommand:
                     "Please ensure the user exists before running setup."
                 )
             super_users.append((user, user.id))
-            self.logger.info(f"Found super user: {email} (user_id: {user.id})")
 
         # Bind each role and assign to super users
         policy_command = SyncRolePolicyCommand(self.db)
@@ -139,11 +138,8 @@ class SetupCommand:
                 from uuid import UUID
 
                 role_id: UUID = role.id  # type: ignore[assignment]
-                policy_result = policy_command.execute(role_id, domain)
-                self.logger.info(
-                    f"Bound role '{role.name}' to domain '{domain}': "
-                    f"{policy_result['policies_added']}/{policy_result['total_permissions']} policies created"
-                )
+                policy_command.execute(role_id, domain)
+
             except Exception as e:
                 self.logger.warning(
                     f"Failed to bind role '{role.name}' to domain '{domain}': {e}"
@@ -153,29 +149,9 @@ class SetupCommand:
             # Assign role to each super user
             bind_command = CreateMembershipCommand(self.db, self.nats_publisher)
             for user, user_id in super_users:
-                try:
-                    response = bind_command.execute(
-                        role=role,
-                        user_id=str(user_id),
-                        domain=domain,
-                        resource=None,
-                    )
-                    if response.success:
-                        self.logger.info(
-                            f"Assigned role '{role.name}' ({role.identifier}) to user '{user.email}' (user_id: {user_id}) in domain '{domain}'"
-                        )
-                    else:
-                        self.logger.warning(
-                            f"Failed to assign role '{role.name}' to user '{user.email}'"
-                        )
-                except ValueError as e:
-                    # Handle validation errors (e.g., role already assigned)
-                    self.logger.warning(
-                        f"Error assigning role '{role.name}' to user '{user.email}': {e}"
-                    )
-                    # Continue with other assignments
-                except Exception as e:
-                    self.logger.warning(
-                        f"Error assigning role '{role.name}' to user '{user.email}': {e}"
-                    )
-                    # Continue with other assignments
+                bind_command.execute(
+                    role=role,
+                    user_id=str(user_id),
+                    domain=domain,
+                    resource=None,
+                )

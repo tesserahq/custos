@@ -45,10 +45,9 @@ class CasbinService:
             # Load policies
             self.enforcer.load_policy()
 
-            self.logger.info("Casbin enforcer initialized successfully")
+            self.logger.debug("Casbin enforcer initialized successfully")
 
         except Exception as e:
-            self.logger.error(f"Failed to initialize Casbin enforcer: {e}")
             raise
 
     def authorize(
@@ -91,9 +90,15 @@ class CasbinService:
             else:
                 result = self.enforcer.enforce(subject, obj, act)
 
-            self.logger.info(
-                f"Authorization check: user={user_id}, action={action}, "
-                f"resource={resource}, domain={domain}, allowed={result}"
+            self.logger.debug(
+                "Authorization check",
+                extra={
+                    "user_id": user_id,
+                    "action": action,
+                    "resource": resource,
+                    "domain": domain,
+                    "allowed": result,
+                },
             )
 
             return result
@@ -378,60 +383,50 @@ class CasbinService:
         Returns:
             bool: True if successful, False otherwise
         """
-        try:
-            # Get all users and their roles BEFORE clearing policies
-            all_users = self.enforcer.get_all_subjects()
-            users_to_clear = []
+        # Get all users and their roles BEFORE clearing policies
+        all_users = self.enforcer.get_all_subjects()
+        users_to_clear = []
 
-            for user in all_users:
-                # Get all roles for this user (both domain-specific and global)
-                user_roles = self.enforcer.get_roles_for_user(user)
-                domain_roles = []
+        for user in all_users:
+            # Get all roles for this user (both domain-specific and global)
+            user_roles = self.enforcer.get_roles_for_user(user)
+            domain_roles = []
 
-                # Also check domain-specific roles
-                for domain in ["*", "global", "admin"]:
-                    try:
-                        domain_user_roles = self.enforcer.get_roles_for_user_in_domain(
-                            user, domain
-                        )
-                        domain_roles.extend(
-                            [(role, domain) for role in domain_user_roles]
-                        )
-                    except Exception:
-                        # Domain might not exist, continue
-                        pass
+            # Also check domain-specific roles
+            for domain in ["*", "global", "admin"]:
+                try:
+                    domain_user_roles = self.enforcer.get_roles_for_user_in_domain(
+                        user, domain
+                    )
+                    domain_roles.extend([(role, domain) for role in domain_user_roles])
+                except Exception:
+                    # Domain might not exist, continue
+                    pass
 
-                users_to_clear.append((user, user_roles, domain_roles))
+            users_to_clear.append((user, user_roles, domain_roles))
 
-            # Clear all policies first
-            self.enforcer.clear_policy()
+        # Clear all policies first
+        self.enforcer.clear_policy()
 
-            # Now remove all role assignments
-            for user, user_roles, domain_roles in users_to_clear:
-                # Remove global roles
-                for role in user_roles:
-                    try:
-                        self.enforcer.delete_role_for_user(user, role)
-                    except Exception:
-                        # Role might already be removed, continue
-                        pass
+        # Now remove all role assignments
+        for user, user_roles, domain_roles in users_to_clear:
+            # Remove global roles
+            for role in user_roles:
+                try:
+                    self.enforcer.delete_role_for_user(user, role)
+                except Exception:
+                    # Role might already be removed, continue
+                    pass
 
-                # Remove domain-specific roles
-                for role, domain in domain_roles:
-                    try:
-                        self.enforcer.delete_role_for_user_in_domain(user, role, domain)
-                    except Exception:
-                        # Role might already be removed, continue
-                        pass
+            # Remove domain-specific roles
+            for role, domain in domain_roles:
+                try:
+                    self.enforcer.delete_role_for_user_in_domain(user, role, domain)
+                except Exception:
+                    # Role might already be removed, continue
+                    pass
 
-            # Save the empty policy
-            self.enforcer.save_policy()
+        # Save the empty policy
+        self.enforcer.save_policy()
 
-            self.logger.info(
-                "All Casbin policies and role assignments cleared successfully"
-            )
-            return True
-
-        except Exception as e:
-            self.logger.error(f"Failed to clear Casbin policies: {e}")
-            return False
+        return True

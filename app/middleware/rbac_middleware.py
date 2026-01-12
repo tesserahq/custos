@@ -48,15 +48,6 @@ class RBACMiddleware(BaseHTTPMiddleware):
         resource = self._extract_resource(path)
         action = self._get_action(request)
 
-        self.logger.info("RBAC Middleware:")
-        self.logger.info(f"Path: {path}")
-        self.logger.info(f"Resource: {resource}")
-        self.logger.info(f"Method: {request.method}")
-        self.logger.info(f"Action: {action}")
-        self.logger.info(f"User: {user.email}")
-        self.logger.info(f"User ID: {user.id}")
-        self.logger.info("--------------------------------")
-
         allowed = self.casbin_service.authorize(
             user_id=str(user.id),
             resource=f"{PREFIX}.{resource}",
@@ -64,14 +55,25 @@ class RBACMiddleware(BaseHTTPMiddleware):
             domain=GLOBAL_DOMAIN,
         )
 
+        self.logger.info(
+            "RBAC Middleware authorize check",
+            extra={
+                "path": path,
+                "resource": resource,
+                "method": request.method,
+                "action": action,
+                "user": user.email,
+                "user_id": user.id,
+                "allowed": allowed,
+            },
+        )
+
         if not allowed:
-            self.logger.info("RBAC Middleware: Unauthorized response")
             return JSONResponse(
                 status_code=HTTP_403_FORBIDDEN,
                 content={"error": "Forbidden"},
             )
 
-        self.logger.info("RBAC Middleware: Request allowed")
         return await call_next(request)
 
     def _extract_resource(self, path: str) -> str:

@@ -101,9 +101,6 @@ class CreateMembershipCommand:
                     created_membership = self.membership_service.create_membership(
                         membership_create
                     )
-                    self.logger.info(
-                        f"Membership created: user_id={user_id}, role_id={role_uuid}"
-                    )
 
                     # Assign role
                     success = self.casbin_service.assign_role(
@@ -156,11 +153,6 @@ class CreateMembershipCommand:
 
             if membership is None:
                 raise ValueError("Membership was not created or retrieved")
-
-            self.logger.info(
-                f"Role assigned: user={user_id}, role={role_identifier}, "
-                f"domain={domain}, resource={resource}"
-            )
 
             return membership
 

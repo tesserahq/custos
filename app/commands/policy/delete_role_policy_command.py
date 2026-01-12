@@ -62,10 +62,6 @@ class DeleteRolePolicyCommand:
                     f"No policies found for role '{role.name}' (identifier: {role_identifier})"
                 )
 
-            self.logger.info(
-                f"Policies removed for role '{role.name}' (id: {role_id}): {policies_removed} policies removed"
-            )
-
             return {
                 "success": True,
                 "role_name": role.name,

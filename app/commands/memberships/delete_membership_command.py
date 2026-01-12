@@ -93,14 +93,6 @@ class DeleteMembershipCommand:
                     user_uuid, role_uuid
                 )
 
-                if deleted:
-                    self.logger.info(
-                        f"Membership deleted: user_id={user_uuid}, role_id={role_uuid}"
-                    )
-                else:
-                    self.logger.debug(
-                        f"Membership not found: user_id={user_uuid}, role_id={role_uuid}"
-                    )
             except ValueError as e:
                 # Handle invalid UUID format
                 self.logger.warning(
@@ -119,11 +111,6 @@ class DeleteMembershipCommand:
                 domain=domain,
                 resource=resource,
                 message=f"Role '{role_identifier}' successfully removed from user '{user_id}'",
-            )
-
-            self.logger.info(
-                f"Role removed: user={user_id}, role={role_identifier}, "
-                f"domain={domain}, resource={resource}"
             )
 
             # Publish membership deleted event if publisher is available

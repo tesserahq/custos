@@ -58,7 +58,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
         app.add_middleware(RollbarMiddleware)
 
     if not testing and not settings.disable_auth:
-        logger.info("Main: Adding authentication middleware")
+        logger.debug("Main: Adding authentication middleware")
         from tessera_sdk.middleware.authentication import AuthenticationMiddleware
         from tessera_sdk.middleware.user_onboarding import UserOnboardingMiddleware
         from tessera_sdk.utils.service_factory import create_service_factory
@@ -86,7 +86,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
         app.add_route("/metrics", metrics)
 
     else:
-        logger.info("Main: No authentication middleware")
+        logger.debug("Main: No authentication middleware")
         if auth_middleware:
             app.add_middleware(auth_middleware)
     # TODO: Restrict this to the allowed origins

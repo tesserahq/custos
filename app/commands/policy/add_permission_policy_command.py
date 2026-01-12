@@ -66,20 +66,6 @@ class AddPermissionPolicyCommand:
                 domain=domain,
             )
 
-            if policy_added:
-                self.logger.debug(
-                    f"Policy added: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
-                )
-            else:
-                self.logger.warning(
-                    f"Failed to add policy: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
-                )
-
-            self.logger.info(
-                f"Policy {'created' if policy_added else 'failed'} for permission '{permission_id}' "
-                f"({permission.object}:{permission.action}) for role '{role.name}' in domain '{domain}'"
-            )
-
             return {
                 "success": policy_added,
                 "permission_id": str(permission_id),

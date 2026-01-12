@@ -74,7 +74,6 @@ def delete_membership(
                 detail="Failed to remove role binding from Casbin",
             )
 
-        logger.info(f"Deleted membership: {membership.id}")
     except ValueError as e:
         # Handle validation errors (e.g., role not found, binding removal failed)
         error_message = str(e)
@@ -87,5 +86,4 @@ def delete_membership(
         raise
     except Exception as e:
         # Handle unexpected errors
-        logger.error(f"Failed to delete membership: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete membership")
