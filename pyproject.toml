@@ -52,7 +52,7 @@ cryptography = "^46.0.3"
 PyYAML = "^6.0.1"
 # tessera-sdk = { path = "../tessera-sdk-py/", develop = true }
 tessera-sdk = { git = "https://github.com/tesserahq/tessera-sdk-py.git", branch = "main" }
-fastapi-pagination = "^v0.15.4"
+fastapi-pagination = "^0.15.4"
 uvicorn = "^0.40.0"
 opentelemetry-instrumentation-requests = "^0.60b1"
 
