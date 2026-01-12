@@ -41,6 +41,18 @@ class PermissionService:
         """
         return self.db.query(Permission)
 
+    def get_permissions_by_role_query(self, role_id: UUID) -> Query:
+        """
+        Get a query object for permissions filtered by role_id that can be used with pagination.
+
+        Args:
+            role_id: The ID of the role to filter permissions by.
+
+        Returns:
+            Query: SQLAlchemy query object for permissions filtered by role_id.
+        """
+        return self.db.query(Permission).filter(Permission.role_id == role_id)
+
     def create_permission(self, permission: PermissionCreate) -> Permission:
         db_permission = Permission(**permission.model_dump())
         self.db.add(db_permission)

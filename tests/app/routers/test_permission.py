@@ -104,8 +104,11 @@ class TestRolePermissionRouter:
         response = client.get(f"/roles/{setup_role.id}/permissions")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 0
+        assert "items" in data
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) == 0
+        assert "total" in data
+        assert data["total"] == 0
 
     def test_list_role_permissions_with_data(
         self, client, setup_role, setup_permission
@@ -118,9 +121,12 @@ class TestRolePermissionRouter:
         response = client.get(f"/roles/{setup_role.id}/permissions")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) >= 1
-        assert any(perm["id"] == str(setup_permission.id) for perm in data)
+        assert "items" in data
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) >= 1
+        assert any(perm["id"] == str(setup_permission.id) for perm in data["items"])
+        assert "total" in data
+        assert data["total"] >= 1
 
     def test_list_role_permissions_role_not_found(self, client):
         """Test listing permissions for a non-existent role."""

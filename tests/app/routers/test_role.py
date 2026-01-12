@@ -257,7 +257,8 @@ class TestRoleRouter:
         role1_id = role1["id"]
         perm_response = client.get(f"/roles/{role1_id}/permissions")
         assert perm_response.status_code == 200
-        permissions = perm_response.json()
+        permissions_data = perm_response.json()
+        permissions = permissions_data["items"]
         assert len(permissions) == 2
         assert any(
             p["object"] == "contact" and p["action"] == "read" for p in permissions
@@ -318,7 +319,8 @@ class TestRoleRouter:
         role_id = data[0]["id"]
         perm_response = client.get(f"/roles/{role_id}/permissions")
         assert perm_response.status_code == 200
-        permissions = perm_response.json()
+        permissions_data = perm_response.json()
+        permissions = permissions_data["items"]
         assert len(permissions) == 0
 
     def test_create_roles_batch_missing_required_fields(self, client):
@@ -377,7 +379,8 @@ class TestRoleRouter:
             # Verify permissions
             perm_response = client.get(f"/roles/{role['id']}/permissions")
             assert perm_response.status_code == 200
-            permissions = perm_response.json()
+            permissions_data = perm_response.json()
+            permissions = permissions_data["items"]
             assert len(permissions) == 2
 
     def test_bind_role_success(self, client, setup_role, db, faker):

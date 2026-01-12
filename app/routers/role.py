@@ -222,19 +222,19 @@ def delete_role(
         raise HTTPException(status_code=500, detail="Failed to delete role")
 
 
-@router.get("/{role_id}/permissions", response_model=list[Permission])
+@router.get("/{role_id}/permissions", response_model=Page[Permission])
 def list_role_permissions(
     role: Role = Depends(get_role_by_id), db: Session = Depends(get_db)
-):
+) -> Page[Permission]:
     """
-    List all permissions for a specific role.
+    List all permissions for a specific role with pagination.
 
     Raises 404 if the role is not found.
+    Returns a paginated response using fastapi-pagination.
     """
-    # Validate role exists
     permission_service = PermissionService(db)
-    permissions = permission_service.get_permissions_by_role(role.id)
-    return permissions
+    query = permission_service.get_permissions_by_role_query(role.id)
+    return paginate(query)
 
 
 @router.get("/{role_id}/memberships", response_model=Page[Membership])
