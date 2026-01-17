@@ -70,6 +70,25 @@
     ]
   },
   {
+    "name": "Identies Owner",
+    "identifier": "identies-owner",
+    "description": "Identies owner role with full permissions to manage Service accounts and more",
+    "permissions": [
+      { "object": "identies.api_key", "action": "read" },
+      { "object": "identies.api_key", "action": "update" },
+      { "object": "identies.api_key", "action": "delete" },
+      { "object": "identies.api_key", "action": "create" },
+
+      { "object": "identies.self", "action": "read" },
+      { "object": "identies.self", "action": "update" },
+
+      { "object": "identies.self.api_key", "action": "read" },
+      { "object": "identies.self.api_key", "action": "update" },
+      { "object": "identies.self.api_key", "action": "delete" },
+      { "object": "identies.self.api_key", "action": "create" }
+    ]
+  },
+  {
     "name": "Orcha Admin",
     "identifier": "orcha-admin",
     "description": "Orcha admin role with full permissions to manage Orcha and more",
@@ -95,6 +114,26 @@
       { "object": "orcha.workflow", "action": "update" },
       { "object": "orcha.workflow", "action": "delete" },
       { "object": "orcha.workflow", "action": "create" }
+    ]
+  },
+  {
+    "name": "Indexa Admin",
+    "identifier": "indexa-admin",
+    "description": "Indexa admin role with full permissions to manage Indexa and more",
+    "permissions": [
+      { "object": "indexa.domain_service", "action": "read" },
+      { "object": "indexa.domain_service", "action": "create" },
+      { "object": "indexa.domain_service", "action": "delete" },
+      { "object": "indexa.domain_service", "action": "update" },
+
+      { "object": "indexa.provider", "action": "read" },
+
+      { "object": "indexa.indexer", "action": "read" },
+
+      { "object": "indexa.event", "action": "read" },
+      { "object": "indexa.event", "action": "create" },
+      { "object": "indexa.event", "action": "delete" },
+      { "object": "indexa.event", "action": "update" }
     ]
   }
 ]
