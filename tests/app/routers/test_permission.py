@@ -5,6 +5,68 @@ from uuid import uuid4
 class TestPermissionRouter:
     """Test cases for the permission endpoints."""
 
+    def test_list_permissions_empty(self, client):
+        """Test listing permissions returns correct structure."""
+        response = client.get("/permissions/")
+        assert response.status_code == 200
+        data = response.json()
+        assert "items" in data
+        assert isinstance(data["items"], list)
+        assert "total" in data
+        assert isinstance(data["total"], int)
+        assert "page" in data
+        assert "size" in data
+        assert "pages" in data
+
+    def test_list_permissions_with_data(self, client, setup_permission):
+        """Test listing permissions when permissions exist."""
+        response = client.get("/permissions/")
+        assert response.status_code == 200
+        data = response.json()
+        assert "items" in data
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) >= 1
+        assert "total" in data
+        assert data["total"] >= 1
+
+        # Verify the permission we created exists by fetching it directly
+        # (it might be on a different page due to pagination)
+        get_response = client.get(f"/permissions/{setup_permission.id}")
+        assert get_response.status_code == 200
+        permission_data = get_response.json()
+        assert permission_data["id"] == str(setup_permission.id)
+        assert permission_data["object"] == setup_permission.object
+        assert permission_data["action"] == setup_permission.action
+
+    def test_list_permissions_with_pagination(
+        self, client, setup_permission, setup_another_permission
+    ):
+        """Test listing permissions with pagination parameters."""
+        response = client.get("/permissions/?page=1&size=1")
+        assert response.status_code == 200
+        data = response.json()
+        assert "items" in data
+        assert len(data["items"]) == 1
+        assert "page" in data
+        assert "size" in data
+        assert "pages" in data
+
+        response = client.get("/permissions/?page=2&size=1")
+        assert response.status_code == 200
+        data = response.json()
+        assert "items" in data
+        assert len(data["items"]) <= 1
+
+    def test_list_permissions_invalid_pagination(self, client):
+        """Test listing permissions with invalid pagination parameters."""
+        # Negative page
+        response = client.get("/permissions/?page=-1")
+        assert response.status_code == 422
+
+        # Zero size
+        response = client.get("/permissions/?size=0")
+        assert response.status_code == 422
+
     def test_get_permission_success(self, client, setup_permission):
         """Test retrieving a permission by ID."""
         response = client.get(f"/permissions/{setup_permission.id}")

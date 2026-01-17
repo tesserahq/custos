@@ -39,7 +39,7 @@ class PermissionService:
         Returns:
             Query: SQLAlchemy query object for permissions.
         """
-        return self.db.query(Permission)
+        return self.db.query(Permission).order_by(Permission.object.asc())
 
     def get_permissions_by_role_query(self, role_id: UUID) -> Query:
         """
