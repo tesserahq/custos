@@ -90,7 +90,7 @@ class CasbinService:
             else:
                 result = self.enforcer.enforce(subject, obj, act)
 
-            self.logger.debug(
+            self.logger.info(
                 "Authorization check",
                 extra={
                     "user_id": user_id,

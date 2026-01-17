@@ -21,6 +21,8 @@
       { "object": "custos.role", "action": "assign" },
 
       { "object": "custos.user", "action": "read" },
+      
+      { "object": "custos.permission_check", "action": "create" },
 
       { "object": "custos.binding", "action": "read" },
       { "object": "custos.binding", "action": "update" },

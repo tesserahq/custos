@@ -137,3 +137,38 @@ class UserDetails(BaseModel):
         """Pydantic model configuration."""
 
         from_attributes = True
+
+
+class PermissionCheckRequest(BaseModel):
+    """Request schema for checking user permissions."""
+
+    resource: str
+    """The resource/permission object to check (e.g., 'custos.user')."""
+
+    action: str
+    """The action to check (e.g., 'read', 'write', 'delete')."""
+
+    domain: Optional[str] = None
+    """The domain/tenant for multi-tenancy (e.g., '*' or UUID). Defaults to '*'."""
+
+
+class PermissionCheckResponse(BaseModel):
+    """Response schema for permission check results."""
+
+    allowed: bool
+    """Whether the user is allowed to perform the action."""
+
+    user_id: UUID
+    """The ID of the user being checked."""
+
+    resource: str
+    """The resource/permission object that was checked."""
+
+    action: str
+    """The action that was checked."""
+
+    domain: Optional[str] = None
+    """The domain/tenant that was checked."""
+
+    reason: Optional[str] = None
+    """Reason for the decision if denied."""

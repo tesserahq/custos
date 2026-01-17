@@ -77,26 +77,35 @@ class RBACMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     def _extract_resource(self, path: str) -> str:
+        """
+        Extracts and normalizes the resource name from a URL path.
+        Handles:
+            - Singularizing resource names
+            - Converting hyphens to underscores (e.g., permission-check -> permission_check)
+            - Detecting "batch" and ID segments
+        """
+
+        def normalize(segment: str) -> str:
+            if not segment:
+                return segment
+            # Convert hyphens to underscores
+            segment = segment.replace("-", "_")
+            return self._singularize(segment)
+
         segments = [s for s in path.split("/") if s]
         if not segments:
             return "root"
 
-        # Special case: if the path ends with "batch", use the parent resource
-        # e.g., "/roles/batch" -> "role"
+        # If the path ends with "batch", use the parent resource (e.g., /roles/batch -> role)
         if segments[-1] == "batch" and len(segments) > 1:
-            return self._singularize(segments[-2])
+            return normalize(segments[-2])
 
-        # Check if the last segment looks like an ID (UUID format)
-        # If it is, use the second-to-last segment as the resource
-        # e.g., "/roles/custos-admin/bindings" -> "binding"
-        # e.g., "/roles/123e4567-e89b-12d3-a456-426614174000" -> "role"
+        # Check if the last segment looks like an ID (UUID etc)
         last_segment = segments[-1]
         if self._looks_like_id(last_segment) and len(segments) > 1:
-            # Last segment is an ID, use the second-to-last segment
-            return self._singularize(segments[-2])
+            return normalize(segments[-2])
         else:
-            # Last segment is the resource name
-            return self._singularize(last_segment)
+            return normalize(last_segment)
 
     def _looks_like_id(self, segment: str) -> bool:
         """

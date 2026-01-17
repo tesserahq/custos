@@ -1,4 +1,5 @@
 from uuid import uuid4
+from unittest.mock import patch
 from app.services.membership_service import MembershipService
 from app.schemas.membership import MembershipCreate
 
@@ -224,3 +225,146 @@ class TestUserRouter:
         membership_ids = [item["id"] for item in items]
         assert str(user_membership.id) in membership_ids
         assert str(another_user_membership.id) not in membership_ids
+
+    @patch("app.routers.user.get_casbin_service")
+    def test_check_user_permission_allowed(
+        self, mock_get_casbin_service, client, setup_user
+    ):
+        """Test checking user permission when allowed."""
+        # Mock Casbin service
+        mock_casbin_service = mock_get_casbin_service.return_value
+        mock_casbin_service.authorize.return_value = True
+
+        request_data = {
+            "resource": "custos.user",
+            "action": "read",
+            "domain": "*",
+        }
+
+        response = client.post(
+            f"/users/{setup_user.id}/permission-checks", json=request_data
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["allowed"] is True
+        assert data["user_id"] == str(setup_user.id)
+        assert data["resource"] == request_data["resource"]
+        assert data["action"] == request_data["action"]
+        assert data["domain"] == request_data["domain"]
+        assert data["reason"] is None
+
+        # Verify Casbin service was called with correct parameters
+        mock_casbin_service.authorize.assert_called_once_with(
+            user_id=str(setup_user.id),
+            action=request_data["action"],
+            resource=request_data["resource"],
+            domain=request_data["domain"],
+        )
+
+    @patch("app.routers.user.get_casbin_service")
+    def test_check_user_permission_denied(
+        self, mock_get_casbin_service, client, setup_user
+    ):
+        """Test checking user permission when denied."""
+        # Mock Casbin service
+        mock_casbin_service = mock_get_casbin_service.return_value
+        mock_casbin_service.authorize.return_value = False
+
+        request_data = {
+            "resource": "custos.user",
+            "action": "write",
+            "domain": "some-domain-uuid",
+        }
+
+        response = client.post(
+            f"/users/{setup_user.id}/permission-checks", json=request_data
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["allowed"] is False
+        assert data["user_id"] == str(setup_user.id)
+        assert data["resource"] == request_data["resource"]
+        assert data["action"] == request_data["action"]
+        assert data["domain"] == request_data["domain"]
+        assert data["reason"] == "Access denied by policy"
+
+    @patch("app.routers.user.get_casbin_service")
+    def test_check_user_permission_default_domain(
+        self, mock_get_casbin_service, client, setup_user
+    ):
+        """Test checking user permission with default domain when domain is not provided."""
+        # Mock Casbin service
+        mock_casbin_service = mock_get_casbin_service.return_value
+        mock_casbin_service.authorize.return_value = True
+
+        request_data = {
+            "resource": "custos.user",
+            "action": "read",
+        }
+
+        response = client.post(
+            f"/users/{setup_user.id}/permission-checks", json=request_data
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["allowed"] is True
+        assert data["domain"] == "*"  # Should default to "*"
+
+        # Verify Casbin service was called with "*" as domain
+        mock_casbin_service.authorize.assert_called_once_with(
+            user_id=str(setup_user.id),
+            action=request_data["action"],
+            resource=request_data["resource"],
+            domain="*",
+        )
+
+    def test_check_user_permission_user_not_found(self, client):
+        """Test checking permission for a non-existent user."""
+        non_existent_id = uuid4()
+        request_data = {
+            "resource": "custos.user",
+            "action": "read",
+            "domain": "*",
+        }
+
+        response = client.post(
+            f"/users/{non_existent_id}/permission-checks", json=request_data
+        )
+        assert response.status_code == 404
+        data = response.json()
+        assert "not found" in data["detail"].lower()
+
+    def test_check_user_permission_invalid_uuid(self, client):
+        """Test checking permission with invalid user UUID format."""
+        request_data = {
+            "resource": "custos.user",
+            "action": "read",
+            "domain": "*",
+        }
+
+        response = client.post(
+            "/users/invalid-uuid/permission-checks", json=request_data
+        )
+        assert response.status_code == 422
+
+    def test_check_user_permission_missing_fields(self, client, setup_user):
+        """Test checking permission with missing required fields."""
+        # Missing resource
+        request_data = {
+            "action": "read",
+            "domain": "*",
+        }
+        response = client.post(
+            f"/users/{setup_user.id}/permission-checks", json=request_data
+        )
+        assert response.status_code == 422
+
+        # Missing action
+        request_data = {
+            "resource": "custos.user",
+            "domain": "*",
+        }
+        response = client.post(
+            f"/users/{setup_user.id}/permission-checks", json=request_data
+        )
+        assert response.status_code == 422
