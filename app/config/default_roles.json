@@ -20,6 +20,8 @@
       { "object": "custos.role", "action": "create" },
       { "object": "custos.role", "action": "assign" },
 
+      { "object": "custos.user", "action": "read" },
+
       { "object": "custos.binding", "action": "read" },
       { "object": "custos.binding", "action": "update" },
       { "object": "custos.binding", "action": "delete" },

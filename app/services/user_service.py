@@ -1,6 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserOnboard
 from datetime import datetime, timezone
@@ -26,6 +26,15 @@ class UserService:
 
     def get_users(self, skip: int = 0, limit: int = 100) -> List[User]:
         return self.db.query(User).offset(skip).limit(limit).all()
+
+    def get_users_query(self) -> Query:
+        """
+        Get a query object for users that can be used with pagination.
+
+        Returns:
+            Query: SQLAlchemy query object for users.
+        """
+        return self.db.query(User).order_by(User.updated_at.desc())
 
     def create_user(self, user: UserCreate) -> User:
         db_user = User(**user.model_dump())

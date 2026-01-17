@@ -3,6 +3,7 @@ from typing import Optional
 from uuid import UUID
 from datetime import datetime
 from app.schemas.user import User
+from app.schemas.role import Role
 
 
 class MembershipBase(BaseModel):
@@ -57,6 +58,9 @@ class Membership(MembershipInDB):
 
     user: Optional[User] = None
     """User object associated with this membership. Populated when user relationship is loaded."""
+
+    role: Optional[Role] = None
+    """Role object associated with this membership. Populated when role relationship is loaded."""
 
 
 class MembershipRequest(BaseModel):

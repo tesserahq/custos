@@ -5,9 +5,12 @@ from app.db import get_db
 from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
 from app.services.membership_service import MembershipService
+from app.services.user_service import UserService
 from app.models.role import Role
 from app.models.permission import Permission
+from app.models.user import User
 from app.schemas.membership import Membership
+from app.schemas.user import User as UserSchema
 
 
 def get_role_by_id(
@@ -87,3 +90,25 @@ def get_membership_by_id(
     if membership is None:
         raise HTTPException(status_code=404, detail="Membership not found")
     return Membership.model_validate(membership)
+
+
+def get_user_by_id(
+    user_id: UUID,
+    db: Session = Depends(get_db),
+) -> UserSchema:
+    """FastAPI dependency to get a user by ID.
+
+    Args:
+        user_id: The UUID of the user to retrieve
+        db: Database session dependency
+
+    Returns:
+        UserSchema: The retrieved user
+
+    Raises:
+        HTTPException: If the user is not found
+    """
+    user = UserService(db).get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserSchema.model_validate(user)
