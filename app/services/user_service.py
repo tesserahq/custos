@@ -1,5 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, Query
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserOnboard
@@ -27,14 +28,37 @@ class UserService:
     def get_users(self, skip: int = 0, limit: int = 100) -> List[User]:
         return self.db.query(User).offset(skip).limit(limit).all()
 
-    def get_users_query(self) -> Query:
+    def get_users_query(self, q: str | None = None) -> Query:
         """
         Get a query object for users that can be used with pagination.
+
+        If q is provided, results are filtered by a case-insensitive "contains"
+        match on first_name, last_name, or email.
 
         Returns:
             Query: SQLAlchemy query object for users.
         """
-        return self.db.query(User).order_by(User.updated_at.desc())
+        query = self.db.query(User)
+
+        q_normalized = (q or "").strip()
+        if q_normalized:
+            # Escape SQL LIKE wildcards so "john_doe" doesn't match "johnXdoe" etc.
+            escaped = (
+                q_normalized.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            )
+            pattern = f"%{escaped}%"
+
+            query = query.filter(
+                or_(
+                    User.first_name.ilike(pattern, escape="\\"),
+                    User.last_name.ilike(pattern, escape="\\"),
+                    User.email.ilike(pattern, escape="\\"),
+                )
+            )
+
+        return query.order_by(User.updated_at.desc())
 
     def create_user(self, user: UserCreate) -> User:
         db_user = User(**user.model_dump())
@@ -71,8 +95,8 @@ class UserService:
     def verify_user(self, user_id: UUID) -> Optional[User]:
         db_user = self.db.query(User).filter(User.id == user_id).first()
         if db_user:
-            db_user.verified = True
-            db_user.verified_at = datetime.now(timezone.utc)
+            db_user.verified = True  # type: ignore[assignment]
+            db_user.verified_at = datetime.now(timezone.utc)  # type: ignore[assignment]
             self.db.commit()
             self.db.refresh(db_user)
         return db_user

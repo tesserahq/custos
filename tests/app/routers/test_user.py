@@ -2,6 +2,7 @@ from uuid import uuid4
 from unittest.mock import patch
 from app.services.membership_service import MembershipService
 from app.schemas.membership import MembershipCreate
+from app.models.user import User
 
 
 class TestUserRouter:
@@ -46,6 +47,72 @@ class TestUserRouter:
         data = response.json()
         assert "items" in data
         assert len(data["items"]) <= 1
+
+    def test_list_users_search_by_email(self, client, db, faker):
+        """Test listing users filtered by the q search param (email)."""
+        token = "zz_unique_search_token_123"
+
+        user = User(
+            email=f"{token}@example.com",
+            username=f"{token}@example.com",
+            first_name=faker.first_name(),
+            last_name=faker.last_name(),
+            provider="google",
+            external_id=faker.uuid4(),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        response = client.get(f"/users/?q={token}")
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+        assert data["items"][0]["id"] == str(user.id)
+
+    def test_list_users_search_by_name(self, client, db, faker):
+        """Test listing users filtered by the q search param (first/last name)."""
+        first_token = "UniqueFirstToken"
+        last_token = "UniqueLastToken"
+
+        user = User(
+            email=f"{faker.uuid4()}@example.com",
+            username=faker.uuid4(),
+            first_name=first_token,
+            last_name=last_token,
+            provider="google",
+            external_id=faker.uuid4(),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        response = client.get(f"/users/?q={last_token}")
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+        assert data["items"][0]["id"] == str(user.id)
+
+        response = client.get(f"/users/?q={first_token.lower()}")
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+        assert data["items"][0]["id"] == str(user.id)
+
+    def test_list_users_search_no_matches(self, client):
+        """Test listing users filtered by q when there are no matches."""
+        response = client.get("/users/?q=definitely_no_match_zz_999999")
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["total"] == 0
+        assert data["items"] == []
 
     def test_get_user_success(self, client, setup_user):
         """Test retrieving a user by ID."""

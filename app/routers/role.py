@@ -30,7 +30,6 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from app.routers.utils.dependencies import get_role_by_id
 from app.schemas.membership import MembershipRequest
 
-
 router = APIRouter(prefix="/roles", tags=["Role"])
 logger = get_logger()
 

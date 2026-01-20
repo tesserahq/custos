@@ -1,3 +1,8 @@
+import os
+
+# Ensure tests default to the test database/settings unless explicitly overridden.
+os.environ.setdefault("ENV", "test")
+
 from app.config import get_settings
 import pytest
 import logging
@@ -55,15 +60,11 @@ def drop_test_database():
     conn = engine.connect()
 
     # Terminate all connections to the test database
-    conn.execute(
-        text(
-            """
+    conn.execute(text("""
         SELECT pg_terminate_backend(pid) 
         FROM pg_stat_activity 
         WHERE datname = 'custos_test' AND pid <> pg_backend_pid()
-    """
-        )
-    )
+    """))
 
     # Drop the test database
     conn.execute(text("DROP DATABASE IF EXISTS custos_test"))

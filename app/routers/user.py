@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.services.user_service import UserService
@@ -12,20 +12,24 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from app.routers.utils.dependencies import get_user_by_id
 from app.core.logging_config import get_logger
 
-
 router = APIRouter(prefix="/users", tags=["User"])
 logger = get_logger()
 
 
 @router.get("/", response_model=Page[User])
-def list_users(db: Session = Depends(get_db)) -> Page[User]:
+def list_users(
+    q: str | None = Query(
+        default=None, description="Search by first_name, last_name, or email"
+    ),
+    db: Session = Depends(get_db),
+) -> Page[User]:
     """
     List all users with pagination.
 
     Returns a paginated response using fastapi-pagination.
     """
     user_service = UserService(db)
-    query = user_service.get_users_query()
+    query = user_service.get_users_query(q=q)
     return paginate(query)
 
 
@@ -56,8 +60,8 @@ def list_user_memberships(
 
 @router.post("/{user_id}/permission-checks", response_model=PermissionCheckResponse)
 def check_user_permission(
+    request: PermissionCheckRequest,
     user: User = Depends(get_user_by_id),
-    request: PermissionCheckRequest = ...,
 ) -> PermissionCheckResponse:
     """
     Check if a user has permission to perform an action on a resource.
