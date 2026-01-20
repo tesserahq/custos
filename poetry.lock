@@ -713,14 +713,14 @@ standard-no-fastapi-cloud-cli = ["email-validator (>=2.0.0)", "fastapi-cli[stand
 
 [[package]]
 name = "fastapi-pagination"
-version = "0.15.4"
+version = "0.15.6"
 description = "FastAPI pagination"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "fastapi_pagination-0.15.4-py3-none-any.whl", hash = "sha256:66d3eb5e28bfb8128a978c3f11c49300c5e914a03b96a24c9f491727e6a8d2d1"},
-    {file = "fastapi_pagination-0.15.4.tar.gz", hash = "sha256:be9be01181399be0a54bdbd9c991b70ed6cde3aa52d543ffd92af76202ee1013"},
+    {file = "fastapi_pagination-0.15.6-py3-none-any.whl", hash = "sha256:5c44bfaa78c1c968ca6f027b01a27c1805194c7cc8776eb84ec78235abcdaece"},
+    {file = "fastapi_pagination-0.15.6.tar.gz", hash = "sha256:c59ca1aa056dccee3526953357c2d1128f988f83d3034d95ddb8de6f5a68e9f8"},
 ]
 
 [package.dependencies]
@@ -729,7 +729,7 @@ pydantic = ">=1.9.1"
 typing-extensions = ">=4.8.0"
 
 [package.extras]
-aiosqlite = ["aiosqlite (>=0.19.0,!=0.22.0)"]
+aiosqlite = ["aiosqlite (>=0.19.0,!=0.22.0,!=0.22.1)"]
 asyncpg = ["asyncpg (>=0.24.0)", "sqlalchemy (>=1.3.20)"]
 beanie = ["beanie (>=2.0.0)"]
 bunnet = ["bunnet (>=1.1.0)"]
@@ -741,7 +741,9 @@ mongoengine = ["mongoengine (>=0.23.1)"]
 motor = ["motor (>=3.6.0)"]
 odmantic = ["odmantic (>=1.0.2)"]
 orm = ["databases (>=0.6.0)", "orm (>=0.3.1)"]
+ormar = ["ormar (>=0.21.0)"]
 piccolo = ["piccolo (>=0.89)"]
+psycopg = ["psycopg[binary] (>=3.3.2)"]
 scylla-driver = ["scylla-driver (>=3.25.6)"]
 sqlalchemy = ["sqlakeyset (>=2.0.1680321678)", "sqlalchemy (>=1.3.20)"]
 sqlmodel = ["sqlakeyset (>=2.0.1680321678)", "sqlmodel (>=0.0.22)"]
@@ -2571,4 +2573,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "1128a218b0baaf9d32a56e11392e4ce91214d222082d73225f451ceed8cd6cfc"
+content-hash = "bfc58c55bb679f9449112b12f5cc0c51d818fb52909c7cce483ed10cc61cccf6"
