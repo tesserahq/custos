@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.user import User
@@ -223,7 +223,11 @@ def delete_role(
 
 @router.get("/{role_id}/permissions", response_model=Page[Permission])
 def list_role_permissions(
-    role: Role = Depends(get_role_by_id), db: Session = Depends(get_db)
+    q: str | None = Query(
+        default=None, description="Search by permission object or action"
+    ),
+    role: Role = Depends(get_role_by_id),
+    db: Session = Depends(get_db),
 ) -> Page[Permission]:
     """
     List all permissions for a specific role with pagination.
@@ -232,7 +236,7 @@ def list_role_permissions(
     Returns a paginated response using fastapi-pagination.
     """
     permission_service = PermissionService(db)
-    query = permission_service.get_permissions_by_role_query(role.id)
+    query = permission_service.get_permissions_by_role_query(role.id, q=q)
     return paginate(query)
 
 

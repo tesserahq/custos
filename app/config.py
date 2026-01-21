@@ -25,6 +25,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("ENV", "ENVIRONMENT"),
     )
     log_level: str = Field(default="INFO", json_schema_extra={"env": "LOG_LEVEL"})
+    log_format: str = Field(default="text", json_schema_extra={"env": "LOG_FORMAT"})
     disable_auth: bool = Field(default=False, json_schema_extra={"env": "DISABLE_AUTH"})
     rollbar_access_token: Optional[str] = Field(
         default=None, json_schema_extra={"env": "ROLLBAR_ACCESS_TOKEN"}

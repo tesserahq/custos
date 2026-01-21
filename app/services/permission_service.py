@@ -1,5 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, Query
 from app.models.permission import Permission
 from app.schemas.permission import PermissionCreate, PermissionUpdate
@@ -41,17 +42,39 @@ class PermissionService:
         """
         return self.db.query(Permission).order_by(Permission.object.asc())
 
-    def get_permissions_by_role_query(self, role_id: UUID) -> Query:
+    def get_permissions_by_role_query(
+        self, role_id: UUID, q: str | None = None
+    ) -> Query:
         """
         Get a query object for permissions filtered by role_id that can be used with pagination.
 
         Args:
             role_id: The ID of the role to filter permissions by.
+            q: Optional search term to filter permissions by object or action.
 
         Returns:
             Query: SQLAlchemy query object for permissions filtered by role_id.
         """
-        return self.db.query(Permission).filter(Permission.role_id == role_id)
+        query = self.db.query(Permission).filter(Permission.role_id == role_id)
+
+        q_normalized = (q or "").strip()
+        if q_normalized:
+            # Escape SQL LIKE wildcards so "a_b" doesn't match "acb" etc.
+            escaped = (
+                q_normalized.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            )
+            pattern = f"%{escaped}%"
+
+            query = query.filter(
+                or_(
+                    Permission.object.ilike(pattern, escape="\\"),
+                    Permission.action.ilike(pattern, escape="\\"),
+                )
+            )
+
+        return query.order_by(Permission.object.asc(), Permission.action.asc())
 
     def create_permission(self, permission: PermissionCreate) -> Permission:
         db_permission = Permission(**permission.model_dump())

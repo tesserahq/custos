@@ -267,6 +267,27 @@ class TestRoleRouter:
             p["object"] == "contact" and p["action"] == "write" for p in permissions
         )
 
+    def test_list_role_permissions_with_search(self, client, setup_role, db):
+        """Test listing role permissions filtered by q search term."""
+        from app.models.permission import Permission
+
+        matching = Permission(object="contact", action="read", role_id=setup_role.id)
+        non_matching = Permission(
+            object="workspace", action="manage", role_id=setup_role.id
+        )
+        db.add(matching)
+        db.add(non_matching)
+        db.commit()
+
+        response = client.get(f"/roles/{setup_role.id}/permissions?q=cont")
+        assert response.status_code == 200
+        data = response.json()
+        items = data["items"]
+
+        assert len(items) == 1
+        assert items[0]["object"] == "contact"
+        assert items[0]["action"] == "read"
+
     def test_create_roles_batch_duplicate_names_in_batch(self, client, faker):
         """Test creating batch with duplicate role names."""
         roles_data = [
