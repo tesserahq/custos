@@ -68,8 +68,20 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         ).inc()
         REQUESTS.labels(method=method, path=path, app_name=self.app_name).inc()
         before_time = time.perf_counter()
+
         try:
             response = await call_next(request)
+            status_code = response.status_code
+            after_time = time.perf_counter()
+            span = trace.get_current_span()
+            trace_id = trace.format_trace_id(span.get_span_context().trace_id)
+
+            REQUESTS_PROCESSING_TIME.labels(
+                method=method, path=path, app_name=self.app_name
+            ).observe(after_time - before_time, exemplar={"TraceID": trace_id})
+
+            return response  # response is only defined when no exception occurred
+
         except BaseException as e:
             status_code = HTTP_500_INTERNAL_SERVER_ERROR
             EXCEPTIONS.labels(
@@ -78,17 +90,8 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
                 exception_type=type(e).__name__,
                 app_name=self.app_name,
             ).inc()
-            raise e from None
-        else:
-            status_code = response.status_code
-            after_time = time.perf_counter()
-            # retrieve trace id for exemplar
-            span = trace.get_current_span()
-            trace_id = trace.format_trace_id(span.get_span_context().trace_id)
+            raise
 
-            REQUESTS_PROCESSING_TIME.labels(
-                method=method, path=path, app_name=self.app_name
-            ).observe(after_time - before_time, exemplar={"TraceID": trace_id})
         finally:
             RESPONSES.labels(
                 method=method,
@@ -99,8 +102,6 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             REQUESTS_IN_PROGRESS.labels(
                 method=method, path=path, app_name=self.app_name
             ).dec()
-
-        return response
 
     @staticmethod
     def get_path(request: Request) -> Tuple[str, bool]:

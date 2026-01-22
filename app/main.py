@@ -17,6 +17,7 @@ from app.middleware.rbac_middleware import RBACMiddleware
 from app.utils.metrics import PrometheusMiddleware, metrics
 
 SKIP_AUTH_PATHS = ["/health", "/openapi.json", "/docs", "/metrics"]
+SKIP_ONBOARDING_PATHS = ["/authorization/authorize"]
 SKIP_RBAC_PATHS = [
     "/health",
     "/openapi.json",
@@ -73,6 +74,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
             UserOnboardingMiddleware,
             identies_base_url=settings.identies_api_url,
             user_service_factory=user_service_factory,
+            skip_onboarding_paths=SKIP_ONBOARDING_PATHS,
         )
         app.add_middleware(
             AuthenticationMiddleware,
