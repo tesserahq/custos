@@ -67,101 +67,80 @@ class CreateMembershipCommand:
         Raises:
             ValueError: If role assignment fails
         """
-        try:
-            # Use the role identifier for Casbin
-            role_identifier = str(role.identifier)
+        # Use the role identifier for Casbin
+        role_identifier = str(role.identifier)
 
-            # Create membership record. We are keeping a "cache" of memberships in the database. This is not the source of truth.
-            # Services using Custos are the source of truth.
-            membership = None
-            try:
-                # Convert user_id string to UUID
-                role_uuid = cast(UUID, role.id)
+        # Create membership record. We are keeping a "cache" of memberships in the database. This is not the source of truth.
+        # Services using Custos are the source of truth.
+        membership = None
+        # Convert user_id string to UUID
+        role_uuid = cast(UUID, role.id)
 
-                # Check if membership already exists
-                existing_membership = (
-                    self.membership_service.get_membership_by_user_and_role(
-                        user_id, role_uuid, domain
-                    )
+        # Check if membership already exists
+        existing_membership = self.membership_service.get_membership_by_user_and_role(
+            user_id, role_uuid, domain
+        )
+
+        if not existing_membership:
+            # We need to fetch the user from Identies. Users in custos
+            # are being used as a cache for Identies users.
+            # They might might have inconsistent data.
+            user = self.fetch_user(user_id)
+
+            # Create new membership
+            membership_create = MembershipCreate(
+                user_id=user.id,
+                role_id=role_uuid,
+                domain=domain,
+                domain_metadata=domain_metadata,
+            )
+            created_membership = self.membership_service.create_membership(
+                membership_create
+            )
+
+            # Assign role
+            success = self.casbin_service.assign_role(
+                user_id=str(user_id),
+                role=role_identifier,
+                domain=domain,
+                resource=resource,
+            )
+
+            if not success:
+                raise ValueError(
+                    "Failed to assign role. Role may already exist or be invalid."
                 )
 
-                if not existing_membership:
-                    # We need to fetch the user from Identies. Users in custos
-                    # are being used as a cache for Identies users.
-                    # They might might have inconsistent data.
-                    user = self.fetch_user(user_id)
+            # Publish membership created event if publisher is available
+            self._publish_membership_created_event(
+                role, user, domain, resource, created_by
+            )
 
-                    # Create new membership
-                    membership_create = MembershipCreate(
-                        user_id=user.id,
-                        role_id=role_uuid,
-                        domain=domain,
-                        domain_metadata=domain_metadata,
-                    )
-                    created_membership = self.membership_service.create_membership(
-                        membership_create
-                    )
+            # Fetch the membership with user relationship loaded
+            membership = self.membership_service.get_membership_by_user_and_role(
+                user_id, role_uuid, domain
+            )
+        else:
+            self.logger.debug(
+                f"Membership already exists: user_id={user_id}, role_id={role_uuid}"
+            )
+            # Get existing membership with user relationship loaded
+            membership = existing_membership
 
-                    # Assign role
-                    success = self.casbin_service.assign_role(
-                        user_id=str(user_id),
-                        role=role_identifier,
-                        domain=domain,
-                        resource=resource,
-                    )
+            # Still assign role in Casbin even if membership exists (in case it was deleted from Casbin)
+            success = self.casbin_service.assign_role(
+                user_id=str(user_id),
+                role=role_identifier,
+                domain=domain,
+                resource=resource,
+            )
 
-                    if not success:
-                        raise ValueError(
-                            "Failed to assign role. Role may already exist or be invalid."
-                        )
+            if not success:
+                raise ValueError(
+                    "Failed to assign role. Role may already exist or be invalid."
+                )
 
-                    # Publish membership created event if publisher is available
-                    self._publish_membership_created_event(
-                        role, user, domain, resource, created_by
-                    )
-
-                    # Fetch the membership with user relationship loaded
-                    membership = (
-                        self.membership_service.get_membership_by_user_and_role(
-                            user_id, role_uuid, domain
-                        )
-                    )
-                else:
-                    self.logger.debug(
-                        f"Membership already exists: user_id={user_id}, role_id={role_uuid}"
-                    )
-                    # Get existing membership with user relationship loaded
-                    membership = existing_membership
-
-                    # Still assign role in Casbin even if membership exists (in case it was deleted from Casbin)
-                    success = self.casbin_service.assign_role(
-                        user_id=str(user_id),
-                        role=role_identifier,
-                        domain=domain,
-                        resource=resource,
-                    )
-
-                    if not success:
-                        raise ValueError(
-                            "Failed to assign role. Role may already exist or be invalid."
-                        )
-            except ValueError as e:
-                # Re-raise ValueError from Casbin or explicit errors
-                raise
-            except Exception as e:
-                raise ValueError(f"Failed to create membership record: {str(e)}")
-
-            if membership is None:
-                raise ValueError("Membership was not created or retrieved")
-
-            return membership
-
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
-        except Exception as e:
-            self.logger.error(f"Failed to assign role: {str(e)}")
-            raise ValueError(f"Failed to assign role: {str(e)}")
+        return membership
 
     def _publish_membership_created_event(
         self,
@@ -212,13 +191,13 @@ class CreateMembershipCommand:
 
         identies_client = IdentiesClient(
             base_url=self.settings.identies_api_url,
-            # TODO: This is a temporary solution, we need to move this into jobs
-            timeout=320,  # Shorter timeout for middleware
-            max_retries=1,  # Fewer retries for middleware
             api_token=m2m_token,
         )
 
-        identies_user = identies_client.get_user(user_id)
+        self.logger.info(f"Fetching user from Identies: {user_id}")
+
+        identies_user = identies_client.get_internal_user(user_id)
+        self.logger.info(f"Identies user: {identies_user}")
         user = UserOnboard(
             id=identies_user.id,
             email=identies_user.email,
