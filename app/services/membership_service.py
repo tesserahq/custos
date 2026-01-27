@@ -89,6 +89,23 @@ class MembershipService:
             .filter(Membership.user_id == user_id)
         )
 
+    def get_memberships_by_role_query(self, role_id: UUID) -> Query:
+        """
+        Get a query object for memberships by role_id that can be used with pagination.
+        Includes user relationship loaded.
+
+        Args:
+            role_id: The UUID of the role to filter memberships by
+
+        Returns:
+            Query: SQLAlchemy query object for memberships filtered by role_id with user relationship loaded.
+        """
+        return (
+            self.db.query(Membership)
+            .options(joinedload(Membership.user))
+            .filter(Membership.role_id == role_id)
+        )
+
     def create_membership(self, membership: MembershipCreate) -> Membership:
         """Create a new membership."""
         db_membership = Membership(**membership.model_dump())

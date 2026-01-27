@@ -5,6 +5,7 @@ from app.models.user import User
 from uuid import UUID
 from app.services.role_service import RoleService
 from app.services.permission_service import PermissionService
+from app.services.membership_service import MembershipService
 from app.schemas.role import (
     Role,
     RoleCreate,
@@ -250,14 +251,8 @@ def list_role_memberships(
     Raises 404 if the role is not found.
     Returns a paginated response using fastapi-pagination.
     """
-    from app.models.membership import Membership as MembershipModel
-    from sqlalchemy.orm import joinedload
-
-    query = (
-        db.query(MembershipModel)
-        .options(joinedload(MembershipModel.user))
-        .filter(MembershipModel.role_id == role.id)
-    )
+    membership_service = MembershipService(db)
+    query = membership_service.get_memberships_by_role_query(role.id)
     return paginate(query)
 
 

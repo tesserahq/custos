@@ -9,20 +9,26 @@ from app.routers.utils.dependencies import get_permission_by_id
 from app.services.permission_service import PermissionService
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi import Query
 
 router = APIRouter(prefix="/permissions", tags=["Permission"])
 logger = get_logger()
 
 
-@router.get("/", response_model=Page[Permission])
-def list_permissions(db: Session = Depends(get_db)) -> Page[Permission]:
+@router.get("", response_model=Page[Permission])
+def list_permissions(
+    q: str | None = Query(
+        default=None, description="Search by permission object or action"
+    ),
+    db: Session = Depends(get_db),
+) -> Page[Permission]:
     """
     List all permissions with pagination.
 
     Returns a paginated response using fastapi-pagination.
     """
     permission_service = PermissionService(db)
-    query = permission_service.get_permissions_query()
+    query = permission_service.get_permissions_query(q=q)
     return paginate(query)
 
 

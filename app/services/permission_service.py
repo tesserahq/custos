@@ -33,14 +33,33 @@ class PermissionService:
     def get_permissions(self, skip: int = 0, limit: int = 100) -> List[Permission]:
         return self.db.query(Permission).offset(skip).limit(limit).all()
 
-    def get_permissions_query(self) -> Query:
+    def get_permissions_query(self, q: str | None = None) -> Query:
         """
         Get a query object for permissions that can be used with pagination.
 
         Returns:
             Query: SQLAlchemy query object for permissions.
         """
-        return self.db.query(Permission).order_by(Permission.object.asc())
+        query = self.db.query(Permission)
+
+        q_normalized = (q or "").strip()
+        if q_normalized:
+            # Escape SQL LIKE wildcards so "a_b" doesn't match "acb" etc.
+            escaped = (
+                q_normalized.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            )
+            pattern = f"%{escaped}%"
+
+            query = query.filter(
+                or_(
+                    Permission.object.ilike(pattern, escape="\\"),
+                    Permission.action.ilike(pattern, escape="\\"),
+                )
+            )
+
+        return query.order_by(Permission.object.asc(), Permission.action.asc())
 
     def get_permissions_by_role_query(
         self, role_id: UUID, q: str | None = None
