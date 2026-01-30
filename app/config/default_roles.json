@@ -21,7 +21,7 @@
       { "object": "custos.role", "action": "assign" },
 
       { "object": "custos.user", "action": "read" },
-      
+
       { "object": "custos.permission_check", "action": "create" },
 
       { "object": "custos.binding", "action": "read" },
@@ -132,12 +132,24 @@
 
       { "object": "indexa.provider", "action": "read" },
 
-      { "object": "indexa.indexer", "action": "read" },
+      { "object": "indexa.reindex_job", "action": "read" },
+      { "object": "indexa.reindex_job", "action": "create" },
+      { "object": "indexa.reindex_job", "action": "update" },
 
       { "object": "indexa.event", "action": "read" },
       { "object": "indexa.event", "action": "create" },
       { "object": "indexa.event", "action": "delete" },
       { "object": "indexa.event", "action": "update" }
+    ]
+  },
+  {
+    "name": "Sendly Admin",
+    "identifier": "sender-admin",
+    "description": "Sendly admin role with full permissions to manage Sendly and more",
+    "permissions": [
+      { "object": "sendly.email", "action": "read" },
+      { "object": "sendly.email", "action": "create" },
+      { "object": "sendly.email", "action": "update" }
     ]
   }
 ]
