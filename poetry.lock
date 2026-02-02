@@ -1662,14 +1662,14 @@ files = [
 
 [[package]]
 name = "pycasbin"
-version = "2.7.1"
+version = "2.8.0"
 description = "An authorization library that supports access control models like ACL, RBAC, ABAC in Python"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "pycasbin-2.7.1-py3-none-any.whl", hash = "sha256:4962361b9f0ebae4255e2df50667fcf9cf4142b37906360fd15231d86ecf837d"},
-    {file = "pycasbin-2.7.1.tar.gz", hash = "sha256:e1d93742973ffe9b0bd8e921561f6f06d4a7c0c3a49fd1fbba85cd7a59b0d851"},
+    {file = "pycasbin-2.8.0-py3-none-any.whl", hash = "sha256:1a9e370de553c677c4dff75a5d6f3b0eb354b73b20d7df77ff4ee61a71267a3a"},
+    {file = "pycasbin-2.8.0.tar.gz", hash = "sha256:2615c8940d58caf03c9206246d9499209fd520448c682d2f2ca101c41d9b0aee"},
 ]
 
 [package.dependencies]
