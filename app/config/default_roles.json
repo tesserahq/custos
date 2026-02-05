@@ -152,6 +152,8 @@
       { "object": "sendly.email", "action": "update" },
 
       { "object": "sendly.provider.delivery_event", "action": "create" }
+
+      { "object": "sendly.provider", "action": "read" }
     ]
   }
 ]
