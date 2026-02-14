@@ -51,8 +51,8 @@ pycasbin = "^2.6.1"
 casbin-sqlalchemy-adapter = "^1.4.0"
 cryptography = "^46.0.3"
 PyYAML = "^6.0.1"
-tessera-sdk = { path = "../tessera-sdk-py/", develop = true }
-# tessera-sdk = { git = "https://github.com/tesserahq/tessera-sdk-py.git", branch = "main" }
+# tessera-sdk = { path = "../tessera-sdk-py/", develop = true }
+tessera-sdk = { git = "https://github.com/tesserahq/tessera-sdk-py.git", branch = "main" }
 fastapi-pagination = "^0.15.6"
 uvicorn = "^0.40.0"
 
