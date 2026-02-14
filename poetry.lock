@@ -685,14 +685,14 @@ pydantic = ["pydantic (>=1.7.4,!=1.8,!=1.8.1,<3.0.0)"]
 
 [[package]]
 name = "fastapi"
-version = "0.128.8"
+version = "0.129.0"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "fastapi-0.128.8-py3-none-any.whl", hash = "sha256:5618f492d0fe973a778f8fec97723f598aa9deee495040a8d51aaf3cf123ecf1"},
-    {file = "fastapi-0.128.8.tar.gz", hash = "sha256:3171f9f328c4a218f0a8d2ba8310ac3a55d1ee12c28c949650288aee25966007"},
+    {file = "fastapi-0.129.0-py3-none-any.whl", hash = "sha256:b4946880e48f462692b31c083be0432275cbfb6e2274566b1be91479cc1a84ec"},
+    {file = "fastapi-0.129.0.tar.gz", hash = "sha256:61315cebd2e65df5f97ec298c888f9de30430dd0612d59d6480beafbc10655af"},
 ]
 
 [package.dependencies]
@@ -2617,4 +2617,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "c74f92b856bd10cd57bf4f71d901e8d36fdd39553120ae037c97f1cc10b0d3e3"
+content-hash = "1a37b89cf925afc5c9a447117358ad7c1ad831ceed35852115f48cdec17e75d1"
