@@ -201,7 +201,6 @@ class CreateMembershipCommand:
         user = UserOnboard(
             id=identies_user.id,
             email=identies_user.email,
-            username=identies_user.username,
             service_account=identies_user.service_account,
             first_name=identies_user.first_name,
             last_name=identies_user.last_name,

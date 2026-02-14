@@ -14,7 +14,6 @@ def test_user(db, faker):
 
     user_data = {
         "email": email,
-        "username": email,
         "first_name": faker.first_name(),
         "last_name": faker.last_name(),
         "provider": "google",
@@ -36,7 +35,6 @@ def setup_user(db, faker):
 
     user_data = {
         "email": email,
-        "username": email,
         "first_name": faker.first_name(),
         "last_name": faker.last_name(),
         "provider": "google",
@@ -58,7 +56,6 @@ def setup_another_user(db, faker):
 
     user_data = {
         "email": email,
-        "username": email,
         "first_name": faker.first_name(),
         "last_name": faker.last_name(),
         "provider": "google",

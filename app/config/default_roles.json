@@ -54,6 +54,8 @@
       { "object": "identies.api_key", "action": "delete" },
       { "object": "identies.api_key", "action": "create" },
 
+      { "object": "identies.external_account", "action": "read" },
+
       { "object": "identies.access_rule", "action": "read" },
       { "object": "identies.access_rule", "action": "update" },
       { "object": "identies.access_rule", "action": "delete" },

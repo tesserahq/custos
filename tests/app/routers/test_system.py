@@ -10,7 +10,6 @@ class TestSystemRouter:
         """Helper to create a super user for testing."""
         user = User(
             email=email,
-            username=email,
             first_name="Admin",
             last_name="User",
             external_id=faker.uuid4(),

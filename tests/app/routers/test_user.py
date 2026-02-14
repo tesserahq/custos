@@ -54,7 +54,6 @@ class TestUserRouter:
 
         user = User(
             email=f"{token}@example.com",
-            username=f"{token}@example.com",
             first_name=faker.first_name(),
             last_name=faker.last_name(),
             provider="google",
@@ -79,7 +78,6 @@ class TestUserRouter:
 
         user = User(
             email=f"{faker.uuid4()}@example.com",
-            username=faker.uuid4(),
             first_name=first_token,
             last_name=last_token,
             provider="google",
