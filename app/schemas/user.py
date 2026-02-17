@@ -18,6 +18,9 @@ class UserBase(BaseModel):
 
     last_name: str
     """User's last name. Required field."""
+    
+    preferred_name: Optional[str] = None
+    """User's preferred name. Can be used for display."""
 
     provider: Optional[str] = None
     """Authentication provider (e.g., 'google', 'github', etc.) if user signed up via OAuth."""
@@ -114,6 +117,9 @@ class UserDetails(BaseModel):
 
     first_name: str
     """User's first name. Required field."""
+    
+    preferred_name: Optional[str] = None
+    """User's preferred name. Can be used for display."""
 
     last_name: str
     """User's last name. Required field."""

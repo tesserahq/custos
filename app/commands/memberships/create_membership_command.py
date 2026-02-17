@@ -190,7 +190,6 @@ class CreateMembershipCommand:
         m2m_token = self._get_m2m_token()
 
         identies_client = IdentiesClient(
-            base_url=self.settings.identies_api_url,
             api_token=m2m_token,
         )
 
@@ -201,6 +200,7 @@ class CreateMembershipCommand:
         user = UserOnboard(
             id=identies_user.id,
             email=identies_user.email,
+            preferred_name=identies_user.preferred_name,
             service_account=identies_user.service_account,
             first_name=identies_user.first_name,
             last_name=identies_user.last_name,
