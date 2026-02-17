@@ -18,7 +18,7 @@ class UserBase(BaseModel):
 
     last_name: str
     """User's last name. Required field."""
-    
+
     preferred_name: Optional[str] = None
     """User's preferred name. Can be used for display."""
 
@@ -117,7 +117,7 @@ class UserDetails(BaseModel):
 
     first_name: str
     """User's first name. Required field."""
-    
+
     preferred_name: Optional[str] = None
     """User's preferred name. Can be used for display."""
 
