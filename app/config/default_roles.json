@@ -157,5 +157,29 @@
 
       { "object": "sendly.provider", "action": "read" }
     ]
+  },
+  {
+    "name": "Conversa Admin",
+    "identifier": "conversa-admin",
+    "description": "Conversa admin role with full permissions to manage Conversa and more",
+    "permissions": [
+      { "object": "conversa.system_prompt", "action": "read" },
+      { "object": "conversa.system_prompt", "action": "create" },
+      { "object": "conversa.system_prompt", "action": "update" },
+      { "object": "conversa.system_prompt", "action": "delete" },
+
+      { "object": "conversa.credential", "action": "read" },
+      { "object": "conversa.credential", "action": "create" },
+      { "object": "conversa.credential", "action": "update" },
+      { "object": "conversa.credential", "action": "delete" },
+
+      { "object": "conversa.session", "action": "read" },
+      { "object": "conversa.session", "action": "update" },
+
+      { "object": "conversa.context_source", "action": "read" },
+      { "object": "conversa.context_source", "action": "create" },
+      { "object": "conversa.context_source", "action": "update" },
+      { "object": "conversa.context_source", "action": "delete" }
+    ]
   }
 ]

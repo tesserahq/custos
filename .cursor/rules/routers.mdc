@@ -1,43 +1,115 @@
 ---
-description: Use this rule when generating or updating API routers. It enforces a consistent response format ({"data": [...]}), prevents redundant foreign keys in request bodies, and promotes clean multi-tenant patterns. Always validate parent scope (e.g., resource) via the URL, not the payload.
+description: Use this rule when generating or updating API routers. Covers pagination, RBAC, response formats, dependencies, and multi-tenant patterns. Parent scope (e.g., resource, role) is validated via URL path, not payload.
 globs:
 alwaysApply: false
 ---
+
+# Routers
+
 In the routers directory:
 
-* Create a file named <model>_router.py
+* Create a file named `{model}.py` (e.g., permission.py, role.py)
 * Define an APIRouter instance with:
-* prefix="/<model_plural>" or for nested: prefix="/resources/{resource_id}/<model_plural>"
-* tags=["<Model>"]
-* Implement the following endpoints:
-* GET / – list all items, returns { "data": [...] }
-* GET /{id} – retrieve a specific item by ID
-* POST / – create a new item
-* PUT /{id} – update an existing item
-* DELETE /{id} – delete an item
-* Do not use underscore for path definition. A model named "RealEstate" should have a path "real-states"
-* Use the corresponding service (<Model>Service) for database interaction
-* Use Pydantic schemas for validation (<Model>CreateRequest, <Model>Update)
-* Do not include resource_id in the request body schema if it’s passed via the URL
-* Use routers/utils/dependencies when possible
+  * prefix="/{model_plural}" or for nested: prefix="/{parent_plural}/{parent_id}/{child_plural}"
+  * tags=["{Model}"]
+* Implement standard endpoints where applicable:
+  * GET / – list items (paginated)
+  * GET /{model_singular}_id – retrieve a single item
+  * POST / – create (returns 201)
+  * PUT /{model_singular}_id – update
+  * DELETE /{model_singular}_id – delete (returns 204)
+* Use path parameter `{model_singular}_id` (e.g., permission_id, role_id, user_id)
+* Do not use underscores in path segments; use hyphens (e.g., "permission-checks" not "permission_checks")
+* A model named "RealEstate" should use path "real-states"
+
+Response Format
+
+* List endpoints: use `Page[T]` from fastapi-pagination. Response shape: `{"items": [...], "total": N, "page": N, "size": N, "pages": N}`
+* Single-item endpoints: return the schema directly (no `data` wrapper)
+* Ensure `add_pagination(app)` is called in main.py
+
+```python
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
+
+@router.get("/", response_model=Page[Permission])
+def list_permissions(q: str | None = Query(default=None, description="Search ..."), db: Session = Depends(get_db)):
+    query = PermissionService(db).get_permissions_query(q=q)
+    return paginate(query)
+```
+
+Pagination and Search
+
+* Use `paginate(query)` from fastapi_pagination.ext.sqlalchemy for list endpoints
+* Add optional `q` query parameter for search where the service supports it
+* Keep the query-building logic in the service; router calls `paginate(query)`
+
+RBAC
+
+* RBAC is enforced globally by RBACMiddleware. No per-route RBAC logic needed unless special rules apply
+* Middleware maps: GET→read, POST→create, PUT/PATCH→update, DELETE→delete
+* Skip paths are configured in main.py (SKIP_RBAC_PATHS)
+* Routes assume `request.state.user` is set by authentication middleware
+
+Commands and Services
+
+* Use `<Model>Service` for queries (list, get by id) and `get_<model>_by_id` dependencies
+* Use Commands for complex operations: create, update, delete (e.g., CreateRoleCommand, UpdatePermissionCommand)
+* Do not include parent_id in the request body schema when it is passed via the URL
+
+Status Codes
+
+* POST (create): status_code=201
+* DELETE: status_code=204
+
+Exception Handling
+
+* Catch ValueError for validation errors; map "not found" to 404, others to 400
+* Re-raise HTTPException as-is
+* Catch generic Exception for 500 with a safe message
+* Use try/except in routes that call Commands
+
+```python
+try:
+    command = UpdatePermissionCommand(db)
+    return command.execute(permission.id, data)
+except ValueError as e:
+    msg = str(e)
+    if "not found" in msg.lower():
+        raise HTTPException(status_code=404, detail=msg)
+    raise HTTPException(status_code=400, detail=msg)
+except HTTPException:
+    raise
+except Exception as e:
+    raise HTTPException(status_code=500, detail="Failed to update permission")
+```
+
+Dependencies and Current User
+
+* Use `routers/utils/dependencies` for `get_<model>_by_id` (validates existence, returns 404 if missing)
+* Inject parent via dependency when route is nested (e.g., `role: Role = Depends(get_role_by_id)`)
+* When the acting user is needed, use `request.state.user` (set by auth middleware)
 
 Nested Resources
 
-For resource-scoped routes:
-* Use prefix="/resource/{[resource]_id}/<resource_plural>"
-* Accept resource_id as a path parameter in each route function
-* Always call get_resource_by_id(resource, db) at the start of the route to:
-* Validate the resource exists
-* Enforce access control and scope
-* Inject resource_id manually into service-layer calls, not the request body
+For routes scoped under a parent (e.g., /roles/{role_id}/permissions):
+
+* Use prefix="/{parent_plural}/{parent_id}/{child_plural}"
+* Accept the parent via dependency: `parent: Parent = Depends(get_parent_by_id)`
+* Inject parent_id into service/command calls from the resolved parent, not from the request body
 
 ```python
-@router.post("/", response_model=CredentialRead)
-def create_credential(
-    resource_id: UUID,
-    data: CredentialCreateRequest,
+@router.post("/", response_model=Permission, status_code=201)
+def create_role_permission(
+    permission_data: PermissionCreateRequest,
+    role: Role = Depends(get_role_by_id),
     db: Session = Depends(get_db),
 ):
-    resource = get_resource_by_id(resource_id, db)
-    return CredentialService(db).create_credential(data, resource_id=resource.id)
+    permission_create = PermissionCreate(
+        object=permission_data.object,
+        action=permission_data.action,
+        role_id=role.id,  # from URL path via dependency
+    )
+    command = CreatePermissionCommand(db)
+    return command.execute(permission_create)
 ```
