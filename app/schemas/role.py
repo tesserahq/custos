@@ -29,6 +29,9 @@ class RoleUpdate(BaseModel):
     name: Optional[str] = None
     """Updated role name."""
 
+    identifier: str
+    """Updated role identifier. Required field."""
+
     description: Optional[str] = None
     """Updated role description."""
 
