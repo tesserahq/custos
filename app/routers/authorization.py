@@ -29,7 +29,7 @@ async def authorize(request: AuthorizationRequest) -> AuthorizationResponse:
     )
 
     logger.info(
-        f"Authorization check for user {request.user_id} on resource {request.resource} with domain {request.domain} and resource_id {request.resource_id} is {allowed}"
+        f"Authorization check for user {request.user_id} on resource {request.resource} with domain {request.domain} and action {request.action} is {allowed}"
     )
 
     # Build response
