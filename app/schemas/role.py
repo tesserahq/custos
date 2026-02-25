@@ -29,7 +29,7 @@ class RoleUpdate(BaseModel):
     name: Optional[str] = None
     """Updated role name."""
 
-    identifier: str
+    identifier: Optional[str] = None
     """Updated role identifier. Required field."""
 
     description: Optional[str] = None
@@ -76,7 +76,7 @@ class RoleBatchItem(BaseModel):
     name: str
     """Role name. Required field."""
 
-    identifier: str
+    identifier: Optional[str] = None
     """Role identifier. Required field."""
 
     description: Optional[str] = None
