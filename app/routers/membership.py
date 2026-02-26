@@ -42,48 +42,26 @@ def delete_membership(
     # Get the current user from request state (set by authentication middleware)
     deleted_by: User = request.state.user
 
-    # Prevent users from removing themselves from a role
-    if membership.user_id == deleted_by.id:
+    # Get the role to pass to DeleteBindingCommand
+    role_service = RoleService(db)
+    role = role_service.get_role(membership.role_id)
+    if not role:
         raise HTTPException(
-            status_code=403,
-            detail="You cannot remove yourself from a role. Another user must do it for you.",
+            status_code=404, detail=f"Role with id {membership.role_id} not found"
         )
 
-    try:
-        # Get the role to pass to DeleteBindingCommand
-        role_service = RoleService(db)
-        role = role_service.get_role(membership.role_id)
-        if not role:
-            raise HTTPException(
-                status_code=404, detail=f"Role with id {membership.role_id} not found"
-            )
+    # Use DeleteMembershipCommand to remove from both Casbin and database
+    command = DeleteMembershipCommand(db)
+    response = command.execute(
+        role=role,
+        user_id=membership.user_id,
+        domain=None,  # Memberships don't store domain, so we remove globally
+        resource=None,
+        deleted_by=deleted_by,
+    )
 
-        # Use DeleteMembershipCommand to remove from both Casbin and database
-        command = DeleteMembershipCommand(db)
-        response = command.execute(
-            role=role,
-            user_id=membership.user_id,
-            domain=None,  # Memberships don't store domain, so we remove globally
-            resource=None,
-            deleted_by=deleted_by,
+    if not response.success:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to remove role binding from Casbin",
         )
-
-        if not response.success:
-            raise HTTPException(
-                status_code=400,
-                detail="Failed to remove role binding from Casbin",
-            )
-
-    except ValueError as e:
-        # Handle validation errors (e.g., role not found, binding removal failed)
-        error_message = str(e)
-        if "not found" in error_message.lower():
-            raise HTTPException(status_code=404, detail=error_message)
-        else:
-            raise HTTPException(status_code=400, detail=error_message)
-    except HTTPException:
-        # Re-raise HTTP exceptions
-        raise
-    except Exception as e:
-        # Handle unexpected errors
-        raise HTTPException(status_code=500, detail="Failed to delete membership")

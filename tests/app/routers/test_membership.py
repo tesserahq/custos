@@ -58,36 +58,6 @@ class TestMembershipRouter:
         deleted_membership = membership_service.get_membership(membership.id)
         assert deleted_membership is None
 
-    @patch("app.commands.memberships.delete_membership_command.get_casbin_service")
-    def test_delete_membership_prevents_self_removal(
-        self, mock_get_casbin_service, client, db, setup_user, setup_role
-    ):
-        """Test that a user cannot delete their own membership."""
-        # Create a membership for setup_user (same as the client user)
-        membership_service = MembershipService(db)
-        membership = membership_service.create_membership(
-            MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
-        )
-
-        # Mock Casbin service (should not be called)
-        mock_casbin_service = mock_get_casbin_service.return_value
-        mock_casbin_service.remove_role.return_value = True
-
-        # setup_user tries to delete their own membership
-        response = client.delete(f"/memberships/{membership.id}")
-        assert response.status_code == 403
-        data = response.json()
-        assert "cannot remove yourself" in data["detail"].lower()
-        assert "another user must do it" in data["detail"].lower()
-
-        # Verify membership was NOT deleted
-        existing_membership = membership_service.get_membership(membership.id)
-        assert existing_membership is not None
-        assert existing_membership.id == membership.id
-
-        # Verify Casbin was not called
-        mock_casbin_service.remove_role.assert_not_called()
-
     def test_delete_membership_not_found(self, client):
         """Test deleting a non-existent membership."""
         non_existent_id = uuid4()

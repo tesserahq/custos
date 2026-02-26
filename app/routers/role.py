@@ -203,23 +203,10 @@ def delete_role(
 
     Returns 204 No Content on success. Raises 404 if the role is not found.
     """
-    try:
-        command = DeleteRoleCommand(db)
-        success = command.execute(role.id)
-        if not success:
-            raise HTTPException(
-                status_code=404, detail=f"Role with id {role.id} not found"
-            )
-    except ValueError as e:
-        # Handle validation errors (e.g., role not found)
-        error_message = str(e)
-        if "not found" in error_message.lower():
-            raise HTTPException(status_code=404, detail=error_message)
-        else:
-            raise HTTPException(status_code=400, detail=error_message)
-    except Exception as e:
-        # Handle unexpected errors
-        raise HTTPException(status_code=500, detail="Failed to delete role")
+    command = DeleteRoleCommand(db)
+    success = command.execute(role.id)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Role with id {role.id} not found")
 
 
 @router.get("/{role_id}/permissions", response_model=Page[Permission])
