@@ -41,16 +41,14 @@ class MembershipService:
         self, user_id: UUID, role_id: UUID, domain: Optional[str] = None
     ) -> Optional[Membership]:
         """Get a membership by user ID and role ID with user relationship loaded."""
-        return (
+        query = (
             self.db.query(Membership)
             .options(joinedload(Membership.user))
-            .filter(
-                Membership.user_id == user_id,
-                Membership.role_id == role_id,
-                Membership.domain == domain,
-            )
-            .first()
+            .filter(Membership.user_id == user_id, Membership.role_id == role_id)
         )
+        if domain:
+            query = query.filter(Membership.domain == domain)
+        return query.first()
 
     def get_memberships(self, skip: int = 0, limit: int = 100) -> List[Membership]:
         """Get a list of memberships with pagination and user relationship loaded."""

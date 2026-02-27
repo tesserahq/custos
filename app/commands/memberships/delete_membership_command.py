@@ -59,73 +59,57 @@ class DeleteMembershipCommand:
         Raises:
             ValueError: If role removal fails
         """
-        try:
-            # We need to fetch the user from Identies. Users in custos
-            # are being used as a cache for Identies users.
-            # They might might have inconsistent data.
-            user = self.user_service.get_user(user_id)
-            if not user:
-                raise ValueError(f"User with id '{user_id}' not found")
+        # We need to fetch the user from Identies. Users in custos
+        # are being used as a cache for Identies users.
+        # They might might have inconsistent data.
+        user = self.user_service.get_user(user_id)
+        if not user:
+            raise ValueError(f"User with id '{user_id}' not found")
 
-            # Use the role identifier for Casbin
-            role_identifier = str(role.identifier)
+        # Use the role identifier for Casbin
+        role_identifier = str(role.identifier)
 
-            # Remove role from Casbin
-            success = self.casbin_service.remove_role(
-                user_id=user_id,
-                role=role_identifier,
-                domain=domain,
+        # Remove role from Casbin
+        success = self.casbin_service.remove_role(
+            user_id=user_id,
+            role=role_identifier,
+            domain=domain,
+        )
+
+        if not success:
+            # Log but don't fail - Casbin removal was successful
+            self.logger.error(
+                f"Failed to remove role for user {user_id} in domain {domain}. Role may not be assigned or is invalid."
             )
 
-            if not success:
-                raise ValueError(
-                    "Failed to remove role. Role may not be assigned or is invalid."
-                )
+        # Delete membership record
+        user_uuid = user_id
+        role_uuid = cast(UUID, role.id)
+        print(f"Deleting membership: {user_uuid} {role_uuid}")
 
-            # Delete membership record
-            try:
-                # Convert user_id string to UUID
-                user_uuid = user_id
-                role_uuid = cast(UUID, role.id)
+        # Delete membership if it exists
+        deleted = self.membership_service.delete_membership_by_user_and_role(
+            user_uuid, role_uuid
+        )
 
-                # Delete membership if it exists
-                deleted = self.membership_service.delete_membership_by_user_and_role(
-                    user_uuid, role_uuid
-                )
-
-            except ValueError as e:
-                # Handle invalid UUID format
-                self.logger.warning(
-                    f"Failed to delete membership: user_id '{user_id}' is not a valid UUID: {e}"
-                )
-                # Don't fail the entire operation if membership deletion fails
-                # The Casbin removal was successful
-            except Exception as e:
-                # Log but don't fail - Casbin removal was successful
-                self.logger.error(f"Failed to delete membership record: {str(e)}")
-
-            response = RoleAssignmentResponse(
-                success=True,
-                user_id=str(user_id),
-                role=role_identifier,
-                domain=domain,
-                resource=resource,
-                message=f"Role '{role_identifier}' successfully removed from user '{user_id}'",
+        if not deleted:
+            self.logger.error(
+                f"Failed to delete membership for user {user_id} in domain {domain}. Membership may not exist or is invalid."
             )
 
-            # Publish membership deleted event if publisher is available
-            self._publish_membership_deleted_event(
-                role, user, domain, resource, deleted_by
-            )
+        response = RoleAssignmentResponse(
+            success=True,
+            user_id=str(user_id),
+            role=role_identifier,
+            domain=domain,
+            resource=resource,
+            message=f"Role '{role_identifier}' successfully removed from user '{user_id}'",
+        )
 
-            return response
+        # Publish membership deleted event if publisher is available
+        self._publish_membership_deleted_event(role, user, domain, resource, deleted_by)
 
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
-        except Exception as e:
-            self.logger.error(f"Failed to remove role: {str(e)}")
-            raise ValueError(f"Failed to remove role: {str(e)}")
+        return response
 
     def _publish_membership_deleted_event(
         self,
