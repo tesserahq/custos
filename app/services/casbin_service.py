@@ -126,35 +126,28 @@ class CasbinService:
         Returns:
             bool: True if successful, False otherwise
         """
-        try:
-            if domain:
-                # Check if role is already assigned
-                user_roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
-                if role in user_roles:
-                    self.logger.debug(
-                        f"Role {role} already assigned to user {user_id} in domain {domain}"
-                    )
-                    return True
-
-                # For multi-tenancy, use domain-based role assignment
-                success = self.enforcer.add_role_for_user_in_domain(
-                    user_id, role, domain
+        if domain:
+            # Check if role is already assigned
+            user_roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
+            if role in user_roles:
+                self.logger.debug(
+                    f"Role {role} already assigned to user {user_id} in domain {domain}"
                 )
-            else:
-                # Check if role is already assigned
-                user_roles = self.enforcer.get_roles_for_user(user_id)
-                if role in user_roles:
-                    self.logger.debug(f"Role {role} already assigned to user {user_id}")
-                    return True
+                return True
 
-                # For global roles
-                success = self.enforcer.add_role_for_user(user_id, role)
+            # For multi-tenancy, use domain-based role assignment
+            success = self.enforcer.add_role_for_user_in_domain(user_id, role, domain)
+        else:
+            # Check if role is already assigned
+            user_roles = self.enforcer.get_roles_for_user(user_id)
+            if role in user_roles:
+                self.logger.debug(f"Role {role} already assigned to user {user_id}")
+                return True
 
-            return success
+            # For global roles
+            success = self.enforcer.add_role_for_user(user_id, role)
 
-        except Exception as e:
-            self.logger.error(f"Role assignment failed: {e}")
-            return False
+        return success
 
     def remove_role(
         self, user_id: str, role: str, domain: Optional[str] = None
@@ -170,19 +163,14 @@ class CasbinService:
         Returns:
             bool: True if successful, False otherwise
         """
-        try:
-            if domain:
-                success = self.enforcer.delete_roles_for_user_in_domain(
-                    user_id, role, domain
-                )
-            else:
-                success = self.enforcer.delete_role_for_user(user_id, role)
+        if domain:
+            success = self.enforcer.delete_roles_for_user_in_domain(
+                user_id, role, domain
+            )
+        else:
+            success = self.enforcer.delete_role_for_user(user_id, role)
 
-            return success
-
-        except Exception as e:
-            self.logger.error(f"Role removal failed: {e}")
-            return False
+        return success
 
     def get_user_roles(self, user_id: str, domain: Optional[str] = None) -> List[str]:
         """
@@ -195,17 +183,12 @@ class CasbinService:
         Returns:
             List[str]: List of role names
         """
-        try:
-            if domain:
-                roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
-            else:
-                roles = self.enforcer.get_roles_for_user(user_id)
+        if domain:
+            roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
+        else:
+            roles = self.enforcer.get_roles_for_user(user_id)
 
-            return roles
-
-        except Exception as e:
-            self.logger.error(f"Failed to get roles for user {user_id}: {e}")
-            return []
+        return roles
 
     def get_user_permissions(
         self, user_id: str, domain: Optional[str] = None, resource: Optional[str] = None
@@ -221,27 +204,20 @@ class CasbinService:
         Returns:
             List[Tuple[str, ...]]: List of permission tuples
         """
-        try:
-            if domain:
-                # Use implicit permissions to include those inherited via roles
-                permissions = self.enforcer.get_implicit_permissions_for_user(
-                    user_id, domain
-                )
-            else:
-                permissions = self.enforcer.get_implicit_permissions_for_user(user_id)
+        if domain:
+            # Use implicit permissions to include those inherited via roles
+            permissions = self.enforcer.get_implicit_permissions_for_user(
+                user_id, domain
+            )
+        else:
+            permissions = self.enforcer.get_implicit_permissions_for_user(user_id)
 
-            # Filter by resource if specified
-            if resource:
-                # For domain-based model, resource is at index 2
-                permissions = [
-                    p for p in permissions if len(p) > 2 and p[2] == resource
-                ]
+        # Filter by resource if specified
+        if resource:
+            # For domain-based model, resource is at index 2
+            permissions = [p for p in permissions if len(p) > 2 and p[2] == resource]
 
-            return permissions
-
-        except Exception as e:
-            self.logger.error(f"Failed to get permissions for user {user_id}: {e}")
-            return []
+        return permissions
 
     def add_policy(
         self, subject: str, obj: str, action: str, domain: Optional[str] = None
@@ -258,36 +234,31 @@ class CasbinService:
         Returns:
             bool: True if successful, False otherwise
         """
-        try:
-            if domain:
-                # Check if policy already exists
-                policy_exists = self.enforcer.has_policy(subject, domain, obj, action)
-                if policy_exists:
-                    self.logger.debug(
-                        f"Policy already exists: {subject} -> {obj} -> {action} in domain {domain}"
-                    )
-                    return True
-
-                # For domain-based model, use add_named_policy to specify the policy type
-                success = self.enforcer.add_named_policy(
-                    "p", [subject, domain, obj, action]
+        if domain:
+            # Check if policy already exists
+            policy_exists = self.enforcer.has_policy(subject, domain, obj, action)
+            if policy_exists:
+                self.logger.debug(
+                    f"Policy already exists: {subject} -> {obj} -> {action} in domain {domain}"
                 )
-            else:
-                # Check if policy already exists
-                policy_exists = self.enforcer.has_policy(subject, obj, action)
-                if policy_exists:
-                    self.logger.debug(
-                        f"Policy already exists: {subject} -> {obj} -> {action}"
-                    )
-                    return True
+                return True
 
-                success = self.enforcer.add_policy(subject, obj, action)
+            # For domain-based model, use add_named_policy to specify the policy type
+            success = self.enforcer.add_named_policy(
+                "p", [subject, domain, obj, action]
+            )
+        else:
+            # Check if policy already exists
+            policy_exists = self.enforcer.has_policy(subject, obj, action)
+            if policy_exists:
+                self.logger.debug(
+                    f"Policy already exists: {subject} -> {obj} -> {action}"
+                )
+                return True
 
-            return success
+            success = self.enforcer.add_policy(subject, obj, action)
 
-        except Exception as e:
-            self.logger.error(f"Failed to add policy: {e}")
-            return False
+        return success
 
     def remove_policy(
         self, subject: str, obj: str, action: str, domain: Optional[str] = None
@@ -304,17 +275,12 @@ class CasbinService:
         Returns:
             bool: True if successful, False otherwise
         """
-        try:
-            if domain:
-                success = self.enforcer.remove_policy(subject, domain, obj, action)
-            else:
-                success = self.enforcer.remove_policy(subject, obj, action)
+        if domain:
+            success = self.enforcer.remove_policy(subject, domain, obj, action)
+        else:
+            success = self.enforcer.remove_policy(subject, obj, action)
 
-            return success
-
-        except Exception as e:
-            self.logger.error(f"Failed to remove policy: {e}")
-            return False
+        return success
 
     def remove_all_policies_for_role(self, role_identifier: str) -> int:
         """
@@ -326,29 +292,22 @@ class CasbinService:
         Returns:
             int: Number of policies removed
         """
-        try:
-            # Get all policies for this role before removing them (for counting)
-            # Policies are stored as [subject, domain, obj, action] where subject is role_identifier
-            all_policies = self.enforcer.get_filtered_policy(0, role_identifier)
+        # Get all policies for this role before removing them (for counting)
+        # Policies are stored as [subject, domain, obj, action] where subject is role_identifier
+        all_policies = self.enforcer.get_filtered_policy(0, role_identifier)
 
-            if not all_policies:
-                return 0
+        if not all_policies:
+            return 0
 
-            # Remove all policies for this role using remove_filtered_policy
-            # This removes all policies where subject (index 0) matches role_identifier
-            removed = self.enforcer.remove_filtered_policy(0, role_identifier)
+        # Remove all policies for this role using remove_filtered_policy
+        # This removes all policies where subject (index 0) matches role_identifier
+        removed = self.enforcer.remove_filtered_policy(0, role_identifier)
 
-            if removed:
-                return len(all_policies)
-            else:
-                self.logger.warning(
-                    f"Failed to remove policies for role '{role_identifier}'"
-                )
-                return 0
-
-        except Exception as e:
-            self.logger.error(
-                f"Failed to remove all policies for role {role_identifier}: {e}"
+        if removed:
+            return len(all_policies)
+        else:
+            self.logger.warning(
+                f"Failed to remove policies for role '{role_identifier}'"
             )
             return 0
 
@@ -363,17 +322,12 @@ class CasbinService:
         Returns:
             List[str]: List of user IDs that have the specified role
         """
-        try:
-            if domain:
-                users = self.enforcer.get_users_for_role_in_domain(role, domain)
-            else:
-                users = self.enforcer.get_users_for_role(role)
+        if domain:
+            users = self.enforcer.get_users_for_role_in_domain(role, domain)
+        else:
+            users = self.enforcer.get_users_for_role(role)
 
-            return users
-
-        except Exception as e:
-            self.logger.error(f"Failed to get users for role {role}: {e}")
-            return []
+        return users
 
     def clear_all_policies(self) -> bool:
         """
