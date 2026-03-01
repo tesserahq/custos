@@ -21,7 +21,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.14"
-fastapi = "^0.133.0"
+fastapi = "^0.135.0"
 python-dotenv = "^1.0.0"
 gunicorn = "^25.0.0"
 faker = "^40.1.2"
