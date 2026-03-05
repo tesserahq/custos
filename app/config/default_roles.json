@@ -72,7 +72,12 @@
       { "object": "identies.self.api_key", "action": "read" },
       { "object": "identies.self.api_key", "action": "update" },
       { "object": "identies.self.api_key", "action": "delete" },
-      { "object": "identies.self.api_key", "action": "create" }
+      { "object": "identies.self.api_key", "action": "create" },
+
+      { "object": "identies.application", "action": "read" },
+      { "object": "identies.application", "action": "update" },
+      { "object": "identies.application", "action": "delete" },
+      { "object": "identies.application", "action": "create" }
     ]
   },
   {
@@ -179,7 +184,12 @@
       { "object": "conversa.context_source", "action": "read" },
       { "object": "conversa.context_source", "action": "create" },
       { "object": "conversa.context_source", "action": "update" },
-      { "object": "conversa.context_source", "action": "delete" }
+      { "object": "conversa.context_source", "action": "delete" },
+
+      { "object": "conversa.mcp_server", "action": "read" },
+      { "object": "conversa.mcp_server", "action": "create" },
+      { "object": "conversa.mcp_server", "action": "update" },
+      { "object": "conversa.mcp_server", "action": "delete" }
     ]
   }
 ]
