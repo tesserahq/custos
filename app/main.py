@@ -15,8 +15,9 @@ from fastapi_pagination import add_pagination
 from app.db import db_manager
 from app.middleware.rbac_middleware import RBACMiddleware
 from app.utils.metrics import PrometheusMiddleware, metrics
+from tessera_sdk.fastapi import get_livez_readyz_router
 
-SKIP_AUTH_PATHS = ["/health", "/openapi.json", "/docs", "/metrics"]
+SKIP_AUTH_PATHS = ["/livez", "/readyz", "/openapi.json", "/docs", "/metrics"]
 SKIP_ONBOARDING_PATHS = ["/authorization/authorize"]
 SKIP_RBAC_PATHS = [
     "/health",
@@ -107,6 +108,8 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(membership.router)
     app.include_router(system.router)
     app.include_router(user.router)
+
+    app.include_router(get_livez_readyz_router())
 
     # Add pagination support
     add_pagination(app)
