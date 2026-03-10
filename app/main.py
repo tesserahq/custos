@@ -20,7 +20,8 @@ from tessera_sdk.fastapi import get_livez_readyz_router
 SKIP_AUTH_PATHS = ["/livez", "/readyz", "/openapi.json", "/docs", "/metrics"]
 SKIP_ONBOARDING_PATHS = ["/authorization/authorize"]
 SKIP_RBAC_PATHS = [
-    "/health",
+    "/livez",
+    "/readyz",
     "/openapi.json",
     "/docs",
     "/system/setup",
