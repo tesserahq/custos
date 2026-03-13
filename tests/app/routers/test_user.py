@@ -1,6 +1,6 @@
 from uuid import uuid4
 from unittest.mock import patch
-from app.services.membership_service import MembershipService
+from app.repositories.membership_repository import MembershipRepository
 from app.schemas.membership import MembershipCreate
 from app.models.user import User
 
@@ -185,8 +185,8 @@ class TestUserRouter:
     def test_list_user_memberships_with_data(self, client, db, setup_user, setup_role):
         """Test listing memberships when user has memberships."""
         # Create a membership for the user
-        membership_service = MembershipService(db)
-        membership = membership_service.create_membership(
+        membership_repository = MembershipRepository(db)
+        membership = membership_repository.create_membership(
             MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
         )
 
@@ -215,8 +215,8 @@ class TestUserRouter:
     ):
         """Test listing user memberships with pagination parameters."""
         # Create multiple memberships for the user
-        membership_service = MembershipService(db)
-        membership1 = membership_service.create_membership(
+        membership_repository = MembershipRepository(db)
+        membership1 = membership_repository.create_membership(
             MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
         )
 
@@ -232,7 +232,7 @@ class TestUserRouter:
         db.commit()
         db.refresh(another_role)
 
-        membership2 = membership_service.create_membership(
+        membership2 = membership_repository.create_membership(
             MembershipCreate(user_id=setup_user.id, role_id=another_role.id)
         )
 
@@ -268,15 +268,15 @@ class TestUserRouter:
         self, client, db, setup_user, setup_another_user, setup_role
     ):
         """Test that user memberships endpoint only returns memberships for the specified user."""
-        membership_service = MembershipService(db)
+        membership_repository = MembershipRepository(db)
 
         # Create membership for setup_user
-        user_membership = membership_service.create_membership(
+        user_membership = membership_repository.create_membership(
             MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
         )
 
         # Create membership for another user
-        another_user_membership = membership_service.create_membership(
+        another_user_membership = membership_repository.create_membership(
             MembershipCreate(user_id=setup_another_user.id, role_id=setup_role.id)
         )
 
@@ -291,14 +291,14 @@ class TestUserRouter:
         assert str(user_membership.id) in membership_ids
         assert str(another_user_membership.id) not in membership_ids
 
-    @patch("app.routers.user.get_casbin_service")
+    @patch("app.routers.user.get_casbin_repository")
     def test_check_user_permission_allowed(
-        self, mock_get_casbin_service, client, setup_user
+        self, mock_get_casbin_repository, client, setup_user
     ):
         """Test checking user permission when allowed."""
-        # Mock Casbin service
-        mock_casbin_service = mock_get_casbin_service.return_value
-        mock_casbin_service.authorize.return_value = True
+        # Mock Casbin repository
+        mock_casbin_repository = mock_get_casbin_repository.return_value
+        mock_casbin_repository.authorize.return_value = True
 
         request_data = {
             "resource": "custos.user",
@@ -318,22 +318,22 @@ class TestUserRouter:
         assert data["domain"] == request_data["domain"]
         assert data["reason"] is None
 
-        # Verify Casbin service was called with correct parameters
-        mock_casbin_service.authorize.assert_called_once_with(
+        # Verify Casbin repository was called with correct parameters
+        mock_casbin_repository.authorize.assert_called_once_with(
             user_id=str(setup_user.id),
             action=request_data["action"],
             resource=request_data["resource"],
             domain=request_data["domain"],
         )
 
-    @patch("app.routers.user.get_casbin_service")
+    @patch("app.routers.user.get_casbin_repository")
     def test_check_user_permission_denied(
-        self, mock_get_casbin_service, client, setup_user
+        self, mock_get_casbin_repository, client, setup_user
     ):
         """Test checking user permission when denied."""
-        # Mock Casbin service
-        mock_casbin_service = mock_get_casbin_service.return_value
-        mock_casbin_service.authorize.return_value = False
+        # Mock Casbin repository
+        mock_casbin_repository = mock_get_casbin_repository.return_value
+        mock_casbin_repository.authorize.return_value = False
 
         request_data = {
             "resource": "custos.user",
@@ -353,14 +353,14 @@ class TestUserRouter:
         assert data["domain"] == request_data["domain"]
         assert data["reason"] == "Access denied by policy"
 
-    @patch("app.routers.user.get_casbin_service")
+    @patch("app.routers.user.get_casbin_repository")
     def test_check_user_permission_default_domain(
-        self, mock_get_casbin_service, client, setup_user
+        self, mock_get_casbin_repository, client, setup_user
     ):
         """Test checking user permission with default domain when domain is not provided."""
-        # Mock Casbin service
-        mock_casbin_service = mock_get_casbin_service.return_value
-        mock_casbin_service.authorize.return_value = True
+        # Mock Casbin repository
+        mock_casbin_repository = mock_get_casbin_repository.return_value
+        mock_casbin_repository.authorize.return_value = True
 
         request_data = {
             "resource": "custos.user",
@@ -375,8 +375,8 @@ class TestUserRouter:
         assert data["allowed"] is True
         assert data["domain"] == "*"  # Should default to "*"
 
-        # Verify Casbin service was called with "*" as domain
-        mock_casbin_service.authorize.assert_called_once_with(
+        # Verify Casbin repository was called with "*" as domain
+        mock_casbin_repository.authorize.assert_called_once_with(
             user_id=str(setup_user.id),
             action=request_data["action"],
             resource=request_data["resource"],

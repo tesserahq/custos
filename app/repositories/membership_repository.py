@@ -6,7 +6,7 @@ from app.schemas.membership import MembershipCreate, MembershipUpdate
 from app.utils.db.filtering import apply_filters
 
 
-class MembershipService:
+class MembershipRepository:
     def __init__(self, db: Session):
         self.db = db
 

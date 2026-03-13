@@ -6,7 +6,7 @@ from app.core.logging_config import get_logger
 from app.commands.permission.update_permission_command import UpdatePermissionCommand
 from app.commands.permission.delete_permission_command import DeletePermissionCommand
 from app.routers.utils.dependencies import get_permission_by_id
-from app.services.permission_service import PermissionService
+from app.repositories.permission_repository import PermissionRepository
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi import Query
@@ -27,8 +27,8 @@ def list_permissions(
 
     Returns a paginated response using fastapi-pagination.
     """
-    permission_service = PermissionService(db)
-    query = permission_service.get_permissions_query(q=q)
+    permission_repository = PermissionRepository(db)
+    query = permission_repository.get_permissions_query(q=q)
     return paginate(query)
 
 

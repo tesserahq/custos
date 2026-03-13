@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.services.user_service import UserService
-from app.services.membership_service import MembershipService
-from app.services.casbin_service import get_casbin_service
+from app.repositories.user_repository import UserRepository
+from app.repositories.membership_repository import MembershipRepository
+from app.repositories.casbin_repository import get_casbin_repository
 from app.schemas.user import User, PermissionCheckRequest, PermissionCheckResponse
 from app.schemas.membership import Membership
 from uuid import UUID
@@ -28,8 +28,8 @@ def list_users(
 
     Returns a paginated response using fastapi-pagination.
     """
-    user_service = UserService(db)
-    query = user_service.get_users_query(q=q)
+    user_repository = UserRepository(db)
+    query = user_repository.get_users_query(q=q)
     return paginate(query)
 
 
@@ -53,8 +53,8 @@ def list_user_memberships(
     Raises 404 if the user is not found.
     Returns a paginated response using fastapi-pagination.
     """
-    membership_service = MembershipService(db)
-    query = membership_service.get_memberships_by_user_query(user.id)
+    membership_repository = MembershipRepository(db)
+    query = membership_repository.get_memberships_by_user_query(user.id)
     return paginate(query)
 
 
@@ -79,13 +79,13 @@ def check_user_permission(
     Raises:
         404 if the user is not found
     """
-    casbin_service = get_casbin_service()
+    casbin_repository = get_casbin_repository()
 
     # Use domain from request or default to "*"
     domain = request.domain if request.domain is not None else "*"
 
     # Perform authorization check
-    allowed = casbin_service.authorize(
+    allowed = casbin_repository.authorize(
         user_id=str(user.id),
         action=request.action,
         resource=request.resource,

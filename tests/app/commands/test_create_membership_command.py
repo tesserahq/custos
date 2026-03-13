@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch
 from uuid import UUID
 from app.commands.memberships.create_membership_command import CreateMembershipCommand
-from app.services.membership_service import MembershipService
+from app.repositories.membership_repository import MembershipRepository
 from app.models.membership import Membership as MembershipModel
 
 
@@ -15,7 +15,7 @@ class TestCreateMembershipCommand:
         command = CreateMembershipCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(
-            command.casbin_service, "assign_role", return_value=True
+            command.casbin_repository, "assign_role", return_value=True
         ) as mock_assign_role:
             membership = command.execute(
                 role=setup_role,
@@ -32,8 +32,8 @@ class TestCreateMembershipCommand:
             assert membership.updated_at is not None
 
             # Verify membership was created in database
-            membership_service = MembershipService(db)
-            db_membership = membership_service.get_membership_by_user_and_role(
+            membership_repository = MembershipRepository(db)
+            db_membership = membership_repository.get_membership_by_user_and_role(
                 setup_user.id, setup_role.id
             )
             assert db_membership is not None
@@ -59,7 +59,7 @@ class TestCreateMembershipCommand:
         command = CreateMembershipCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(
-            command.casbin_service, "assign_role", return_value=True
+            command.casbin_repository, "assign_role", return_value=True
         ) as mock_assign_role:
             membership = command.execute(
                 role=setup_role,
@@ -87,16 +87,16 @@ class TestCreateMembershipCommand:
         user_id = str(setup_user.id)
 
         # Create existing membership
-        membership_service = MembershipService(db)
+        membership_repository = MembershipRepository(db)
         from app.schemas.membership import MembershipCreate
 
-        existing_membership = membership_service.create_membership(
+        existing_membership = membership_repository.create_membership(
             MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
         )
 
         command = CreateMembershipCommand(db, nats_publisher=None)
         # Mock the assign_role method
-        with patch.object(command.casbin_service, "assign_role", return_value=True):
+        with patch.object(command.casbin_repository, "assign_role", return_value=True):
             membership = command.execute(role=setup_role, user_id=user_id)
 
             # Should still succeed and return the existing membership
@@ -106,7 +106,7 @@ class TestCreateMembershipCommand:
             assert membership.role_id == setup_role.id
 
             # Verify only one membership exists (not duplicated)
-            memberships = membership_service.get_memberships_by_user(setup_user.id)
+            memberships = membership_repository.get_memberships_by_user(setup_user.id)
             assert len(memberships) == 1
             assert memberships[0].id == existing_membership.id
 
@@ -120,7 +120,7 @@ class TestCreateMembershipCommand:
 
         command = CreateMembershipCommand(db, nats_publisher=mock_publisher)
         # Mock the assign_role method
-        with patch.object(command.casbin_service, "assign_role", return_value=True):
+        with patch.object(command.casbin_repository, "assign_role", return_value=True):
             membership = command.execute(role=setup_role, user_id=user_id)
 
             # Verify membership was returned
@@ -138,7 +138,7 @@ class TestCreateMembershipCommand:
 
         command = CreateMembershipCommand(db, nats_publisher=None)
         # Mock the assign_role method
-        with patch.object(command.casbin_service, "assign_role", return_value=True):
+        with patch.object(command.casbin_repository, "assign_role", return_value=True):
             membership = command.execute(role=setup_role, user_id=user_id)
 
             # Assertions
@@ -158,7 +158,7 @@ class TestCreateMembershipCommand:
 
         command = CreateMembershipCommand(db, nats_publisher=mock_publisher)
         # Mock the assign_role method
-        with patch.object(command.casbin_service, "assign_role", return_value=True):
+        with patch.object(command.casbin_repository, "assign_role", return_value=True):
             # Should still succeed even if event publishing fails
             membership = command.execute(role=setup_role, user_id=user_id)
 
@@ -190,7 +190,7 @@ class TestCreateMembershipCommand:
 
         command = CreateMembershipCommand(db, nats_publisher=None)
         # Mock the assign_role method
-        with patch.object(command.casbin_service, "assign_role", return_value=True):
+        with patch.object(command.casbin_repository, "assign_role", return_value=True):
             # Create bindings for both roles
             membership1 = command.execute(role=role1, user_id=user_id)
             membership2 = command.execute(role=role2, user_id=user_id)
@@ -202,8 +202,8 @@ class TestCreateMembershipCommand:
             assert membership2.role_id == role2.id
 
             # Verify both memberships exist
-            membership_service = MembershipService(db)
-            memberships = membership_service.get_memberships_by_user(setup_user.id)
+            membership_repository = MembershipRepository(db)
+            memberships = membership_repository.get_memberships_by_user(setup_user.id)
             assert len(memberships) == 2
             role_ids = {m.role_id for m in memberships}
             assert role1.id in role_ids
@@ -216,7 +216,7 @@ class TestCreateMembershipCommand:
         # Don't pass nats_publisher, should create default
         command = CreateMembershipCommand(db)
         # Mock the assign_role method
-        with patch.object(command.casbin_service, "assign_role", return_value=True):
+        with patch.object(command.casbin_repository, "assign_role", return_value=True):
             membership = command.execute(role=setup_role, user_id=user_id)
 
             # Assertions
@@ -232,7 +232,7 @@ class TestCreateMembershipCommand:
         command = CreateMembershipCommand(db, nats_publisher=None)
         # Mock the assign_role method
         with patch.object(
-            command.casbin_service, "assign_role", return_value=True
+            command.casbin_repository, "assign_role", return_value=True
         ) as mock_assign_role:
             membership = command.execute(
                 role=setup_role,

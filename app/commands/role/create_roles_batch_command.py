@@ -10,12 +10,12 @@ from app.models.role import Role
 from app.models.permission import Permission
 from app.schemas.role import RoleBatchItem, RoleCreate
 from app.schemas.permission import PermissionCreate
-from app.services.role_service import RoleService
-from app.services.permission_service import PermissionService
+from app.repositories.role_repository import RoleRepository
+from app.repositories.permission_repository import PermissionRepository
 from app.events.role_events import build_roles_batch_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher  # type: ignore
 from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
-from app.services.casbin_service import GLOBAL_DOMAIN
+from app.repositories.casbin_repository import GLOBAL_DOMAIN
 
 
 class CreateRolesBatchCommand:
@@ -30,8 +30,8 @@ class CreateRolesBatchCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.role_service = RoleService(db)
-        self.permission_service = PermissionService(db)
+        self.role_repository = RoleRepository(db)
+        self.permission_repository = PermissionRepository(db)
         self.sync_role_policy_command = SyncRolePolicyCommand(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
@@ -66,7 +66,7 @@ class CreateRolesBatchCommand:
             # Create all roles and permissions without committing
             for role_item in roles_data:
                 # Check if role identifier already exists
-                role = self.role_service.get_role_by_identifier(role_item.identifier)
+                role = self.role_repository.get_role_by_identifier(role_item.identifier)
                 is_new_role = False
 
                 if not role:
@@ -76,7 +76,7 @@ class CreateRolesBatchCommand:
                         identifier=role_item.identifier,
                         description=role_item.description,
                     )
-                    role = self.role_service.add_role(role_create)
+                    role = self.role_repository.add_role(role_create)
                     self.db.flush()  # Flush to get the role ID without committing
                     is_new_role = True
 
@@ -87,7 +87,7 @@ class CreateRolesBatchCommand:
                 for perm_item in role_item.permissions:
                     # Check if permission already exists
                     existing = (
-                        self.permission_service.get_permission_by_object_and_action(
+                        self.permission_repository.get_permission_by_object_and_action(
                             perm_item.object,
                             perm_item.action,
                             role_id,
@@ -100,7 +100,7 @@ class CreateRolesBatchCommand:
                             action=perm_item.action,
                             role_id=role_id,
                         )
-                        db_permission = self.permission_service.add_permission(
+                        db_permission = self.permission_repository.add_permission(
                             permission_create
                         )
                         created_permissions.append((role, db_permission))

@@ -6,13 +6,13 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.role import Role
-from app.services.membership_service import MembershipService
+from app.repositories.membership_repository import MembershipRepository
 from app.schemas.authorization import RoleAssignmentResponse
 from app.events.membership_events import build_membership_deleted_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
-from app.services.casbin_service import get_casbin_service
+from app.repositories.casbin_repository import get_casbin_repository
 from app.models.user import User
-from app.services.user_service import UserService
+from app.repositories.user_repository import UserRepository
 
 
 class DeleteMembershipCommand:
@@ -27,9 +27,9 @@ class DeleteMembershipCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.casbin_service = get_casbin_service()
-        self.membership_service = MembershipService(db)
-        self.user_service = UserService(db)
+        self.casbin_repository = get_casbin_repository()
+        self.membership_repository = MembershipRepository(db)
+        self.user_repository = UserRepository(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -62,7 +62,7 @@ class DeleteMembershipCommand:
         # We need to fetch the user from Identies. Users in custos
         # are being used as a cache for Identies users.
         # They might might have inconsistent data.
-        user = self.user_service.get_user(user_id)
+        user = self.user_repository.get_user(user_id)
         if not user:
             raise ValueError(f"User with id '{user_id}' not found")
 
@@ -70,7 +70,7 @@ class DeleteMembershipCommand:
         role_identifier = str(role.identifier)
 
         # Remove role from Casbin
-        success = self.casbin_service.remove_role(
+        success = self.casbin_repository.remove_role(
             user_id=user_id,
             role=role_identifier,
             domain=domain,
@@ -88,7 +88,7 @@ class DeleteMembershipCommand:
         print(f"Deleting membership: {user_uuid} {role_uuid}")
 
         # Delete membership if it exists
-        deleted = self.membership_service.delete_membership_by_user_and_role(
+        deleted = self.membership_repository.delete_membership_by_user_and_role(
             user_uuid, role_uuid
         )
 

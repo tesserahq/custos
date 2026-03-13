@@ -2,10 +2,10 @@ from uuid import UUID
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.services.role_service import RoleService
-from app.services.permission_service import PermissionService
-from app.services.membership_service import MembershipService
-from app.services.user_service import UserService
+from app.repositories.role_repository import RoleRepository
+from app.repositories.permission_repository import PermissionRepository
+from app.repositories.membership_repository import MembershipRepository
+from app.repositories.user_repository import UserRepository
 from app.models.role import Role
 from app.models.permission import Permission
 from app.models.user import User
@@ -33,15 +33,15 @@ def get_role_by_id(
     Raises:
         HTTPException: If the role is not found
     """
-    role_service = RoleService(db)
+    role_repository = RoleRepository(db)
 
     # Try to parse as UUID first
     try:
         role_uuid = UUID(role_id)
-        role = role_service.get_role(role_uuid)
+        role = role_repository.get_role(role_uuid)
     except ValueError:
         # Not a valid UUID, treat as identifier
-        role = role_service.get_role_by_identifier(role_id)
+        role = role_repository.get_role_by_identifier(role_id)
 
     if role is None:
         raise HTTPException(status_code=404, detail="Role not found")
@@ -64,7 +64,7 @@ def get_permission_by_id(
     Raises:
         HTTPException: If the permission is not found
     """
-    permission = PermissionService(db).get_permission(permission_id)
+    permission = PermissionRepository(db).get_permission(permission_id)
     if permission is None:
         raise HTTPException(status_code=404, detail="Permission not found")
     return permission
@@ -86,7 +86,7 @@ def get_membership_by_id(
     Raises:
         HTTPException: If the membership is not found
     """
-    membership = MembershipService(db).get_membership(membership_id)
+    membership = MembershipRepository(db).get_membership(membership_id)
     if membership is None:
         raise HTTPException(status_code=404, detail="Membership not found")
     return Membership.model_validate(membership)
@@ -108,7 +108,7 @@ def get_user_by_id(
     Raises:
         HTTPException: If the user is not found
     """
-    user = UserService(db).get_user(user_id)
+    user = UserRepository(db).get_user(user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return UserSchema.model_validate(user)

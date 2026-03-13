@@ -3,12 +3,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
-from app.services.casbin_service import get_casbin_service
+from app.repositories.casbin_repository import get_casbin_repository
 from app.models.user import User
 from app.core.logging_config import get_logger
 from typing import List, Optional
 import re
-from app.services.casbin_service import GLOBAL_DOMAIN
+from app.repositories.casbin_repository import GLOBAL_DOMAIN
 
 PREFIX = "custos"
 
@@ -17,7 +17,7 @@ PREFIX = "custos"
 class RBACMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, skip_paths: Optional[List[str]] = None):
         super().__init__(app)
-        self.casbin_service = get_casbin_service()
+        self.casbin_repository = get_casbin_repository()
         self.logger = get_logger()
         self.skip_paths = skip_paths or []
 
@@ -48,7 +48,7 @@ class RBACMiddleware(BaseHTTPMiddleware):
         resource = self._extract_resource(path)
         action = self._get_action(request)
 
-        allowed = self.casbin_service.authorize(
+        allowed = self.casbin_repository.authorize(
             user_id=str(user.id),
             resource=f"{PREFIX}.{resource}",
             action=action,

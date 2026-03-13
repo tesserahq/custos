@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.models.role import Role
 from app.schemas.role import RoleCreate
-from app.services.role_service import RoleService
+from app.repositories.role_repository import RoleRepository
 from app.events.role_events import build_role_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 
@@ -24,7 +24,7 @@ class CreateRoleCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.role_service = RoleService(db)
+        self.role_repository = RoleRepository(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -45,11 +45,11 @@ class CreateRoleCommand:
         """
         try:
             # Check if role name already exists BEFORE creating
-            if self.role_service.get_role_by_name(role_data.name):
+            if self.role_repository.get_role_by_name(role_data.name):
                 raise ValueError(f"Role with name '{role_data.name}' already exists")
 
             # Create role (this commits the transaction)
-            role = self.role_service.create_role(role_data)
+            role = self.role_repository.create_role(role_data)
 
             if not role:
                 raise ValueError("Failed to create role")

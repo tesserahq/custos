@@ -5,8 +5,8 @@ from uuid import UUID
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 
-from app.services.permission_service import PermissionService
-from app.services.casbin_service import get_casbin_service
+from app.repositories.permission_repository import PermissionRepository
+from app.repositories.casbin_repository import get_casbin_repository
 
 
 class DeletePermissionPolicyCommand:
@@ -20,8 +20,8 @@ class DeletePermissionPolicyCommand:
         db: Session,
     ):
         self.db = db
-        self.permission_service = PermissionService(db)
-        self.casbin_service = get_casbin_service()
+        self.permission_repository = PermissionRepository(db)
+        self.casbin_repository = get_casbin_repository()
         self.logger = logging.getLogger(__name__)
 
     def execute(self, permission_id: UUID, domain: str) -> Dict[str, Any]:
@@ -46,7 +46,7 @@ class DeletePermissionPolicyCommand:
         """
         try:
             # Get the permission
-            permission = self.permission_service.get_permission(permission_id)
+            permission = self.permission_repository.get_permission(permission_id)
             if not permission:
                 raise ValueError(f"Permission with id '{permission_id}' not found")
 
@@ -59,7 +59,7 @@ class DeletePermissionPolicyCommand:
             role = permission.role
 
             # Remove policy: subject=role.identifier, domain=domain, obj=permission.object, action=permission.action
-            policy_removed = self.casbin_service.remove_policy(
+            policy_removed = self.casbin_repository.remove_policy(
                 subject=role.identifier,
                 obj=permission.object,
                 action=permission.action,

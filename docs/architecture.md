@@ -196,13 +196,13 @@ Example: `g, user-123, custos-admin, *`
 
 ## Key Components
 
-### Services
+### Repositories
 
-- **RoleService**: Manages roles and permissions in PostgreSQL
-- **PermissionService**: Manages permissions linked to roles
-- **MembershipService**: Manages membership records (shadow copy)
-- **UserService**: Manages user cache from Identies
-- **CasbinService**: Wrapper around Casbin enforcer for authorization checks and policy management
+- **RoleRepository**: Manages roles and permissions in PostgreSQL
+- **PermissionRepository**: Manages permissions linked to roles
+- **MembershipRepository**: Manages membership records (shadow copy)
+- **UserRepository**: Manages user cache from Identies
+- **CasbinRepository**: Wrapper around Casbin enforcer for authorization checks and policy management
 
 ### Commands
 
