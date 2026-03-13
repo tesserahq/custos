@@ -6,7 +6,7 @@ from app.schemas.role import RoleCreate, RoleUpdate
 from app.utils.db.filtering import apply_filters
 
 
-class RoleService:
+class RoleRepository:
     def __init__(self, db: Session):
         self.db = db
 

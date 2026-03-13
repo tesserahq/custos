@@ -11,7 +11,7 @@ from app.models.role import Role
 from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
 from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.commands.memberships.create_membership_command import CreateMembershipCommand
-from app.services.user_service import UserService
+from app.repositories.user_repository import UserRepository
 from app.config import get_settings
 from tessera_sdk.events.nats_router import NatsEventPublisher  # type: ignore
 
@@ -38,7 +38,7 @@ class SetupCommand:
         self.db = db
         self.nats_publisher = nats_publisher
         self.logger = logging.getLogger(__name__)
-        self.user_service = UserService(db)
+        self.user_repository = UserRepository(db)
 
     def execute(self, json_file_path: Optional[str] = None) -> List[Role]:
         """
@@ -121,7 +121,7 @@ class SetupCommand:
         # Look up super users by email
         super_users = []
         for email in super_user_emails:
-            user = self.user_service.get_user_by_email(email)
+            user = self.user_repository.get_user_by_email(email)
             if not user:
                 raise ValueError(
                     f"Super user with email '{email}' not found in database. "

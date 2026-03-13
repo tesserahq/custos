@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.user import User
 from uuid import UUID
-from app.services.role_service import RoleService
-from app.services.permission_service import PermissionService
-from app.services.membership_service import MembershipService
+from app.repositories.role_repository import RoleRepository
+from app.repositories.permission_repository import PermissionRepository
+from app.repositories.membership_repository import MembershipRepository
 from app.schemas.role import (
     Role,
     RoleCreate,
@@ -132,8 +132,8 @@ def list_roles(db: Session = Depends(get_db)) -> Page[Role]:
 
     Returns a paginated response using fastapi-pagination.
     """
-    role_service = RoleService(db)
-    query = role_service.get_roles_query()
+    role_repository = RoleRepository(db)
+    query = role_repository.get_roles_query()
     return paginate(query)
 
 
@@ -223,8 +223,8 @@ def list_role_permissions(
     Raises 404 if the role is not found.
     Returns a paginated response using fastapi-pagination.
     """
-    permission_service = PermissionService(db)
-    query = permission_service.get_permissions_by_role_query(role.id, q=q)
+    permission_repository = PermissionRepository(db)
+    query = permission_repository.get_permissions_by_role_query(role.id, q=q)
     return paginate(query)
 
 
@@ -238,8 +238,8 @@ def list_role_memberships(
     Raises 404 if the role is not found.
     Returns a paginated response using fastapi-pagination.
     """
-    membership_service = MembershipService(db)
-    query = membership_service.get_memberships_by_role_query(role.id)
+    membership_repository = MembershipRepository(db)
+    query = membership_repository.get_memberships_by_role_query(role.id)
     return paginate(query)
 
 

@@ -8,8 +8,8 @@ from sqlalchemy.exc import IntegrityError
 
 from app.models.permission import Permission
 from app.schemas.permission import PermissionCreate
-from app.services.permission_service import PermissionService
-from app.services.casbin_service import GLOBAL_DOMAIN
+from app.repositories.permission_repository import PermissionRepository
+from app.repositories.casbin_repository import GLOBAL_DOMAIN
 from app.commands.policy import AddPermissionPolicyCommand
 from app.events.permission_events import build_permission_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
@@ -27,7 +27,7 @@ class CreatePermissionCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.permission_service = PermissionService(db)
+        self.permission_repository = PermissionRepository(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -48,7 +48,7 @@ class CreatePermissionCommand:
         """
         try:
             # Check if permission with same object+action+role_id already exists BEFORE creating
-            existing = self.permission_service.get_permission_by_object_and_action(
+            existing = self.permission_repository.get_permission_by_object_and_action(
                 permission_data.object,
                 permission_data.action,
                 permission_data.role_id,
@@ -60,7 +60,7 @@ class CreatePermissionCommand:
                 )
 
             # Create permission (this commits the transaction)
-            permission = self.permission_service.create_permission(permission_data)
+            permission = self.permission_repository.create_permission(permission_data)
 
             if not permission:
                 raise ValueError("Failed to create permission")

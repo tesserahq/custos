@@ -7,7 +7,7 @@ from app.schemas.permission import PermissionCreate, PermissionUpdate
 from app.utils.db.filtering import apply_filters
 
 
-class PermissionService:
+class PermissionRepository:
     def __init__(self, db: Session):
         self.db = db
 

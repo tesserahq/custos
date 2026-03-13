@@ -89,7 +89,9 @@ class TestCreateRoleCommand:
 
         # Mock the service to raise an exception
         with patch.object(
-            command.role_service, "create_role", side_effect=Exception("Database error")
+            command.role_repository,
+            "create_role",
+            side_effect=Exception("Database error"),
         ):
             with pytest.raises(Exception) as exc_info:
                 command.execute(role_data)
@@ -111,9 +113,9 @@ class TestCreateRoleCommand:
 
         assert "already exists" in str(exc_info.value).lower()
         # Verify the existing role is still there (transaction wasn't rolled back)
-        from app.services.role_service import RoleService
+        from app.repositories.role_repository import RoleRepository
 
-        existing_role = RoleService(db).get_role(setup_role.id)
+        existing_role = RoleRepository(db).get_role(setup_role.id)
         assert existing_role is not None
 
     def test_execute_event_publishing_failure_does_not_raise(self, db, faker):

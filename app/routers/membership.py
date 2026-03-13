@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.services.role_service import RoleService
+from app.repositories.role_repository import RoleRepository
 from app.schemas.membership import Membership
 from app.core.logging_config import get_logger
 from app.commands.memberships.delete_membership_command import DeleteMembershipCommand
@@ -43,8 +43,8 @@ def delete_membership(
     deleted_by: User = request.state.user
 
     # Get the role to pass to DeleteBindingCommand
-    role_service = RoleService(db)
-    role = role_service.get_role(membership.role_id)
+    role_repository = RoleRepository(db)
+    role = role_repository.get_role(membership.role_id)
     if not role:
         raise HTTPException(
             status_code=404, detail=f"Role with id {membership.role_id} not found"

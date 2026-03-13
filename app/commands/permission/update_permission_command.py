@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.permission import Permission
 from app.schemas.permission import PermissionUpdate
-from app.services.permission_service import PermissionService
+from app.repositories.permission_repository import PermissionRepository
 from app.events.permission_events import build_permission_updated_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 
@@ -24,7 +24,7 @@ class UpdatePermissionCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.permission_service = PermissionService(db)
+        self.permission_repository = PermissionRepository(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -48,7 +48,9 @@ class UpdatePermissionCommand:
         """
         try:
             # Check if permission exists
-            existing_permission = self.permission_service.get_permission(permission_id)
+            existing_permission = self.permission_repository.get_permission(
+                permission_id
+            )
             if not existing_permission:
                 raise ValueError(f"Permission with id {permission_id} not found")
 
@@ -75,8 +77,10 @@ class UpdatePermissionCommand:
                 or permission_data.action is not None
                 or permission_data.role_id is not None
             ):
-                duplicate = self.permission_service.get_permission_by_object_and_action(
-                    object_val, action_val, role_id_val
+                duplicate = (
+                    self.permission_repository.get_permission_by_object_and_action(
+                        object_val, action_val, role_id_val
+                    )
                 )
                 if duplicate and duplicate.id != permission_id:
                     raise ValueError(
@@ -85,7 +89,7 @@ class UpdatePermissionCommand:
                     )
 
             # Update permission
-            updated_permission = self.permission_service.update_permission(
+            updated_permission = self.permission_repository.update_permission(
                 permission_id, permission_data
             )
 

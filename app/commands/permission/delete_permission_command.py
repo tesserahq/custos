@@ -6,8 +6,8 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.permission import Permission
-from app.services.permission_service import PermissionService
-from app.services.casbin_service import GLOBAL_DOMAIN
+from app.repositories.permission_repository import PermissionRepository
+from app.repositories.casbin_repository import GLOBAL_DOMAIN
 from app.commands.policy import DeletePermissionPolicyCommand
 from app.events.permission_events import build_permission_deleted_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
@@ -25,7 +25,7 @@ class DeletePermissionCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.permission_service = PermissionService(db)
+        self.permission_repository = PermissionRepository(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -46,7 +46,7 @@ class DeletePermissionCommand:
         """
         try:
             # Get the permission before deleting it (for event publishing and policy removal)
-            permission = self.permission_service.get_permission(permission_id)
+            permission = self.permission_repository.get_permission(permission_id)
             if not permission:
                 raise ValueError(f"Permission with id {permission_id} not found")
 
@@ -63,7 +63,7 @@ class DeletePermissionCommand:
                 )
 
             # Delete permission
-            success = self.permission_service.delete_permission(permission_id)
+            success = self.permission_repository.delete_permission(permission_id)
 
             if not success:
                 raise ValueError(f"Failed to delete permission with id {permission_id}")

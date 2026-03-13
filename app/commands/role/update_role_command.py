@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.role import Role
 from app.schemas.role import RoleUpdate
-from app.services.role_service import RoleService
+from app.repositories.role_repository import RoleRepository
 from app.events.role_events import build_role_updated_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
 
@@ -24,7 +24,7 @@ class UpdateRoleCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.role_service = RoleService(db)
+        self.role_repository = RoleRepository(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -46,20 +46,20 @@ class UpdateRoleCommand:
         """
         try:
             # Check if role exists
-            existing_role = self.role_service.get_role(role_id)
+            existing_role = self.role_repository.get_role(role_id)
             if not existing_role:
                 raise ValueError(f"Role with id {role_id} not found")
 
             # If name is being updated, check if new name already exists
             if role_data.name is not None and role_data.name != existing_role.name:
-                name_conflict = self.role_service.get_role_by_name(role_data.name)
+                name_conflict = self.role_repository.get_role_by_name(role_data.name)
                 if name_conflict:
                     raise ValueError(
                         f"Role with name '{role_data.name}' already exists"
                     )
 
             # Update role
-            updated_role = self.role_service.update_role(role_id, role_data)
+            updated_role = self.role_repository.update_role(role_id, role_data)
 
             if not updated_role:
                 raise ValueError(f"Failed to update role with id {role_id}")

@@ -3,7 +3,7 @@ from app.schemas.authorization import (
     AuthorizationRequest,
     AuthorizationResponse,
 )
-from app.services.casbin_service import get_casbin_service
+from app.repositories.casbin_repository import get_casbin_repository
 from app.core.logging_config import get_logger
 
 router = APIRouter(prefix="/authorization", tags=["authorization"])
@@ -18,9 +18,9 @@ async def authorize(request: AuthorizationRequest) -> AuthorizationResponse:
     This endpoint evaluates authorization using Casbin policies and returns
     a clear allow/deny decision with context.
     """
-    casbin_service = get_casbin_service()
+    casbin_repository = get_casbin_repository()
     # Perform authorization check
-    allowed = casbin_service.authorize(
+    allowed = casbin_repository.authorize(
         user_id=request.user_id,
         action=request.action,
         resource=request.resource,

@@ -1,6 +1,6 @@
 from uuid import uuid4
 from app.schemas.role import RoleCreate, RoleUpdate
-from app.services.role_service import RoleService
+from app.repositories.role_repository import RoleRepository
 
 
 def test_create_role(db, faker):
@@ -12,7 +12,7 @@ def test_create_role(db, faker):
         "description": faker.text(100),
     }
     role_create = RoleCreate(**role_data)
-    role = RoleService(db).create_role(role_create)
+    role = RoleRepository(db).create_role(role_create)
 
     # Assertions
     assert role.id is not None
@@ -25,7 +25,7 @@ def test_create_role(db, faker):
 def test_get_role(db, setup_role):
     """Test retrieving a role by ID."""
     # Get role
-    retrieved_role = RoleService(db).get_role(setup_role.id)
+    retrieved_role = RoleRepository(db).get_role(setup_role.id)
 
     # Assertions
     assert retrieved_role is not None
@@ -37,7 +37,7 @@ def test_get_role(db, setup_role):
 def test_get_role_by_name(db, setup_role):
     """Test retrieving a role by name."""
     # Get role by name
-    retrieved_role = RoleService(db).get_role_by_name(setup_role.name)
+    retrieved_role = RoleRepository(db).get_role_by_name(setup_role.name)
 
     # Assertions
     assert retrieved_role is not None
@@ -48,7 +48,7 @@ def test_get_role_by_name(db, setup_role):
 def test_get_roles(db, setup_role):
     """Test retrieving a list of roles."""
     # Get all roles
-    roles = RoleService(db).get_roles()
+    roles = RoleRepository(db).get_roles()
 
     # Assertions
     assert len(roles) >= 1
@@ -58,13 +58,13 @@ def test_get_roles(db, setup_role):
 def test_get_roles_with_pagination(db, setup_role, setup_another_role):
     """Test retrieving roles with pagination."""
     # Get roles with limit
-    roles = RoleService(db).get_roles(skip=0, limit=1)
+    roles = RoleRepository(db).get_roles(skip=0, limit=1)
 
     # Assertions
     assert len(roles) == 1
 
     # Get roles with skip
-    roles = RoleService(db).get_roles(skip=1, limit=1)
+    roles = RoleRepository(db).get_roles(skip=1, limit=1)
 
     # Assertions
     assert len(roles) <= 1
@@ -80,7 +80,7 @@ def test_update_role(db, setup_role, faker):
     role_update = RoleUpdate(**update_data)
 
     # Update role
-    updated_role = RoleService(db).update_role(setup_role.id, role_update)
+    updated_role = RoleRepository(db).update_role(setup_role.id, role_update)
 
     # Assertions
     assert updated_role is not None
@@ -96,7 +96,7 @@ def test_update_role_partial(db, setup_role, faker):
     role_update = RoleUpdate(**update_data)
 
     # Update role
-    updated_role = RoleService(db).update_role(setup_role.id, role_update)
+    updated_role = RoleRepository(db).update_role(setup_role.id, role_update)
 
     # Assertions
     assert updated_role is not None
@@ -108,56 +108,56 @@ def test_update_role_partial(db, setup_role, faker):
 
 def test_delete_role(db, setup_role):
     """Test deleting a role."""
-    role_service = RoleService(db)
+    role_repository = RoleRepository(db)
     # Delete role
-    success = role_service.delete_role(setup_role.id)
+    success = role_repository.delete_role(setup_role.id)
 
     # Assertions
     assert success is True
-    deleted_role = role_service.get_role(setup_role.id)
+    deleted_role = role_repository.get_role(setup_role.id)
     assert deleted_role is None
 
 
 def test_role_not_found_cases(db):
     """Test various not found cases."""
-    role_service = RoleService(db)
+    role_repository = RoleRepository(db)
     # Test various not found cases
     non_existent_id = uuid4()
 
     # Get non-existent role
-    assert role_service.get_role(non_existent_id) is None
+    assert role_repository.get_role(non_existent_id) is None
 
     # Get by non-existent name
-    assert role_service.get_role_by_name("nonexistent_role") is None
+    assert role_repository.get_role_by_name("nonexistent_role") is None
 
     # Update non-existent role
     update_data = {"name": "updated_role"}
     role_update = RoleUpdate(**update_data)
-    assert role_service.update_role(non_existent_id, role_update) is None
+    assert role_repository.update_role(non_existent_id, role_update) is None
 
     # Delete non-existent role
-    assert role_service.delete_role(non_existent_id) is False
+    assert role_repository.delete_role(non_existent_id) is False
 
 
 def test_search_roles_with_filters(db, setup_role):
     """Test searching roles with dynamic filters."""
     # Search using ilike filter on name
     filters = {"name": {"operator": "ilike", "value": "%" + setup_role.name[:5] + "%"}}
-    results = RoleService(db).search(filters)
+    results = RoleRepository(db).search(filters)
 
     assert isinstance(results, list)
     assert any(role.id == setup_role.id for role in results)
 
     # Search using exact match
     filters = {"name": setup_role.name}
-    results = RoleService(db).search(filters)
+    results = RoleRepository(db).search(filters)
 
     assert len(results) == 1
     assert results[0].id == setup_role.id
 
     # Search with no match
     filters = {"name": {"operator": "==", "value": "nonexistent_role"}}
-    results = RoleService(db).search(filters)
+    results = RoleRepository(db).search(filters)
 
     assert len(results) == 0
 
@@ -172,7 +172,7 @@ def test_search_roles_by_description(db, setup_role):
                 "value": "%" + setup_role.description[:10] + "%",
             }
         }
-        results = RoleService(db).search(filters)
+        results = RoleRepository(db).search(filters)
 
         assert isinstance(results, list)
         assert any(role.id == setup_role.id for role in results)

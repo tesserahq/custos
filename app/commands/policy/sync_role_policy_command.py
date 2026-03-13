@@ -5,8 +5,8 @@ from uuid import UUID
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 
-from app.services.role_service import RoleService
-from app.services.casbin_service import get_casbin_service
+from app.repositories.role_repository import RoleRepository
+from app.repositories.casbin_repository import get_casbin_repository
 
 
 class SyncRolePolicyCommand:
@@ -20,8 +20,8 @@ class SyncRolePolicyCommand:
         db: Session,
     ):
         self.db = db
-        self.role_service = RoleService(db)
-        self.casbin_service = get_casbin_service()
+        self.role_repository = RoleRepository(db)
+        self.casbin_repository = get_casbin_repository()
         self.logger = logging.getLogger(__name__)
 
     def execute(self, role_id: UUID, domain: str) -> Dict[str, Any]:
@@ -45,7 +45,7 @@ class SyncRolePolicyCommand:
         """
         try:
             # Get the role
-            role = self.role_service.get_role(role_id)
+            role = self.role_repository.get_role(role_id)
             if not role:
                 raise ValueError(f"Role with id '{role_id}' not found")
 
@@ -69,7 +69,7 @@ class SyncRolePolicyCommand:
 
             for permission in permissions:
                 # Add policy: subject=role.name, domain=domain, obj=permission.object, action=permission.action
-                if self.casbin_service.add_policy(
+                if self.casbin_repository.add_policy(
                     subject=role.identifier,
                     obj=permission.object,
                     action=permission.action,

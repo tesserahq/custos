@@ -34,7 +34,7 @@ class TestSyncRolePolicyCommand:
         # Verify policies were actually added to Casbin
         # Use the command's casbin_service instance to access the same enforcer
         # Policies are stored with role.id (UUID) as subject at index 0, domain at index 1
-        policies = command.casbin_service.enforcer.get_filtered_policy(
+        policies = command.casbin_repository.enforcer.get_filtered_policy(
             0, str(setup_role.identifier)
         )
         # Filter by domain (domain is at index 1 in the policy tuple)
@@ -133,7 +133,7 @@ class TestSyncRolePolicyCommand:
 
         # Mock add_policy to fail for some policies
         # Use the command's casbin_service instance
-        original_add_policy = command.casbin_service.add_policy
+        original_add_policy = command.casbin_repository.add_policy
         call_count = [0]
 
         def mock_add_policy(subject, obj, action, domain=None):
@@ -144,7 +144,7 @@ class TestSyncRolePolicyCommand:
             return original_add_policy(subject, obj, action, domain=domain)
 
         with patch.object(
-            command.casbin_service, "add_policy", side_effect=mock_add_policy
+            command.casbin_repository, "add_policy", side_effect=mock_add_policy
         ):
             result = command.execute(setup_role.id, domain)
 
@@ -172,7 +172,7 @@ class TestSyncRolePolicyCommand:
 
         # Mock add_policy to fail for 2 policies (8/10 = 80% success)
         # Use the command's casbin_service instance
-        original_add_policy = command.casbin_service.add_policy
+        original_add_policy = command.casbin_repository.add_policy
         call_count = [0]
 
         def mock_add_policy(subject, obj, action, domain=None):
@@ -183,7 +183,7 @@ class TestSyncRolePolicyCommand:
             return original_add_policy(subject, obj, action, domain=domain)
 
         with patch.object(
-            command.casbin_service, "add_policy", side_effect=mock_add_policy
+            command.casbin_repository, "add_policy", side_effect=mock_add_policy
         ):
             result = command.execute(setup_role.id, domain)
 
@@ -220,7 +220,7 @@ class TestSyncRolePolicyCommand:
         # Use the command's casbin_service instance to access the same enforcer
         # Policies are stored with role.id (UUID) as subject at index 0, domain at index 1
         # Filter by role ID first, then by domain
-        role_policies = command.casbin_service.enforcer.get_filtered_policy(
+        role_policies = command.casbin_repository.enforcer.get_filtered_policy(
             0, str(setup_role.identifier)
         )
         # Filter by domain (domain is at index 1 in the policy tuple)
@@ -245,9 +245,9 @@ class TestSyncRolePolicyCommand:
 
         command = SyncRolePolicyCommand(db)
 
-        # Mock role_service to raise an exception
+        # Mock role_repository to raise an exception
         with patch.object(
-            command.role_service, "get_role", side_effect=Exception("Database error")
+            command.role_repository, "get_role", side_effect=Exception("Database error")
         ):
             with pytest.raises(Exception) as exc_info:
                 command.execute(setup_role.id, domain)

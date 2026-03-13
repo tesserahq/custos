@@ -11,12 +11,12 @@ GLOBAL_DOMAIN = "*"
 
 
 @lru_cache()
-def get_casbin_service():
-    return CasbinService()
+def get_casbin_repository():
+    return CasbinRepository()
 
 
-class CasbinService:
-    """Service for handling authorization using Casbin."""
+class CasbinRepository:
+    """Repository for handling authorization using Casbin."""
 
     def __init__(self):
         self.settings = get_settings()

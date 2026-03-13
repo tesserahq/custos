@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from uuid import uuid4
-from app.services.membership_service import MembershipService
+from app.repositories.membership_repository import MembershipRepository
 from app.schemas.membership import MembershipCreate
 
 
@@ -10,8 +10,8 @@ class TestMembershipRouter:
     def test_get_membership_success(self, client, db, setup_user, setup_role):
         """Test retrieving a membership by ID."""
         # Create a membership
-        membership_service = MembershipService(db)
-        membership = membership_service.create_membership(
+        membership_repository = MembershipRepository(db)
+        membership = membership_repository.create_membership(
             MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
         )
 
@@ -35,27 +35,32 @@ class TestMembershipRouter:
         response = client.get("/memberships/invalid-uuid")
         assert response.status_code == 422
 
-    @patch("app.commands.memberships.delete_membership_command.get_casbin_service")
+    @patch("app.commands.memberships.delete_membership_command.get_casbin_repository")
     def test_delete_membership_success(
-        self, mock_get_casbin_service, client_another_user, db, setup_user, setup_role
+        self,
+        mock_get_casbin_repository,
+        client_another_user,
+        db,
+        setup_user,
+        setup_role,
     ):
         """Test that a user can delete another user's membership."""
         # Create a membership for setup_user
-        membership_service = MembershipService(db)
-        membership = membership_service.create_membership(
+        membership_repository = MembershipRepository(db)
+        membership = membership_repository.create_membership(
             MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
         )
 
         # Mock Casbin service
-        mock_casbin_service = mock_get_casbin_service.return_value
-        mock_casbin_service.remove_role.return_value = True
+        mock_casbin_repository = mock_get_casbin_repository.return_value  # noqa: F841
+        mock_casbin_repository.remove_role.return_value = True
 
         # client_another_user tries to delete setup_user's membership
         response = client_another_user.delete(f"/memberships/{membership.id}")
         assert response.status_code == 204
 
         # Verify membership was deleted
-        deleted_membership = membership_service.get_membership(membership.id)
+        deleted_membership = membership_repository.get_membership(membership.id)
         assert deleted_membership is None
 
     def test_delete_membership_not_found(self, client):

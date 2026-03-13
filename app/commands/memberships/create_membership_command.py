@@ -8,17 +8,17 @@ from sqlalchemy.orm import Session
 from app.models.role import Role
 from app.models.user import User as UserModel
 from app.models.membership import Membership as MembershipModel
-from app.services.membership_service import MembershipService
+from app.repositories.membership_repository import MembershipRepository
 from app.schemas.membership import MembershipCreate
 from app.events.membership_events import build_membership_created_event
 from tessera_sdk.events.nats_router import NatsEventPublisher
-from app.services.user_service import UserService
+from app.repositories.user_repository import UserRepository
 from app.schemas.user import User
 from tessera_sdk import IdentiesClient
 from tessera_sdk.utils.m2m_token import M2MTokenClient
 from app.config import get_settings
 from app.schemas.user import UserOnboard
-from app.services.casbin_service import get_casbin_service
+from app.repositories.casbin_repository import get_casbin_repository
 
 
 class CreateMembershipCommand:
@@ -33,9 +33,9 @@ class CreateMembershipCommand:
         nats_publisher: Optional[NatsEventPublisher] = None,
     ):
         self.db = db
-        self.user_service = UserService(db)
-        self.casbin_service = get_casbin_service()
-        self.membership_service = MembershipService(db)
+        self.user_repository = UserRepository(db)
+        self.casbin_repository = get_casbin_repository()
+        self.membership_repository = MembershipRepository(db)
         self.nats_publisher = (
             nats_publisher if nats_publisher is not None else NatsEventPublisher()
         )
@@ -77,8 +77,10 @@ class CreateMembershipCommand:
         role_uuid = cast(UUID, role.id)
 
         # Check if membership already exists
-        existing_membership = self.membership_service.get_membership_by_user_and_role(
-            user_id, role_uuid, domain
+        existing_membership = (
+            self.membership_repository.get_membership_by_user_and_role(
+                user_id, role_uuid, domain
+            )
         )
 
         if not existing_membership:
@@ -94,12 +96,12 @@ class CreateMembershipCommand:
                 domain=domain,
                 domain_metadata=domain_metadata,
             )
-            created_membership = self.membership_service.create_membership(
+            created_membership = self.membership_repository.create_membership(
                 membership_create
             )
 
             # Assign role
-            success = self.casbin_service.assign_role(
+            success = self.casbin_repository.assign_role(
                 user_id=str(user_id),
                 role=role_identifier,
                 domain=domain,
@@ -117,7 +119,7 @@ class CreateMembershipCommand:
             )
 
             # Fetch the membership with user relationship loaded
-            membership = self.membership_service.get_membership_by_user_and_role(
+            membership = self.membership_repository.get_membership_by_user_and_role(
                 user_id, role_uuid, domain
             )
         else:
@@ -128,7 +130,7 @@ class CreateMembershipCommand:
             membership = existing_membership
 
             # Still assign role in Casbin even if membership exists (in case it was deleted from Casbin)
-            success = self.casbin_service.assign_role(
+            success = self.casbin_repository.assign_role(
                 user_id=str(user_id),
                 role=role_identifier,
                 domain=domain,
@@ -183,7 +185,7 @@ class CreateMembershipCommand:
             User: The user
         """
         # If the user doesn't exist, we need to fetch it from Identies
-        user = self.user_service.get_user(user_id)
+        user = self.user_repository.get_user(user_id)
         if user:
             return user
 
@@ -212,7 +214,7 @@ class CreateMembershipCommand:
             external_id=identies_user.external_id,
         )
 
-        return self.user_service.onboard_user(user)
+        return self.user_repository.onboard_user(user)
 
     def _get_m2m_token(self) -> str:
         """
