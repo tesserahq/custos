@@ -85,11 +85,10 @@ class DeleteMembershipCommand:
         # Delete membership record
         user_uuid = user_id
         role_uuid = cast(UUID, role.id)
-        print(f"Deleting membership: {user_uuid} {role_uuid}")
 
-        # Delete membership if it exists
+        # Delete membership if it exists (scope by domain when provided)
         deleted = self.membership_repository.delete_membership_by_user_and_role(
-            user_uuid, role_uuid
+            user_uuid, role_uuid, domain=domain
         )
 
         if not deleted:
