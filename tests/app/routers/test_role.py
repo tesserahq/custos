@@ -1,4 +1,8 @@
+from unittest.mock import patch
 from uuid import uuid4
+
+from app.repositories.membership_repository import MembershipRepository
+from app.schemas.membership import MembershipCreate
 
 
 class TestRoleRouter:
@@ -461,4 +465,137 @@ class TestRoleRouter:
         """Test binding a role without domain field."""
         bind_data = {}
         response = client.post(f"/roles/{setup_role.id}/policies", json=bind_data)
+        assert response.status_code == 422
+
+    @patch("app.commands.memberships.delete_membership_command.get_casbin_repository")
+    def test_delete_role_membership_success(
+        self,
+        mock_get_casbin_repository,
+        client,
+        db,
+        setup_user,
+        setup_role,
+        faker,
+    ):
+        """Test deleting a membership by role_id, user_id, and domain."""
+        domain = str(faker.uuid4())
+        membership_repository = MembershipRepository(db)
+        membership_repository.create_membership(
+            MembershipCreate(
+                user_id=setup_user.id,
+                role_id=setup_role.id,
+                domain=domain,
+            )
+        )
+
+        mock_casbin_repository = mock_get_casbin_repository.return_value
+        mock_casbin_repository.remove_role.return_value = True
+
+        body = {
+            "user_id": str(setup_user.id),
+            "domain": domain,
+        }
+        response = client.request(
+            "DELETE",
+            f"/roles/{setup_role.id}/memberships",
+            json=body,
+        )
+        assert response.status_code == 204
+
+        deleted_membership = membership_repository.get_membership_by_user_and_role(
+            setup_user.id, setup_role.id, domain=domain
+        )
+        assert deleted_membership is None
+
+    @patch("app.commands.memberships.delete_membership_command.get_casbin_repository")
+    def test_delete_role_membership_by_identifier_success(
+        self,
+        mock_get_casbin_repository,
+        client,
+        db,
+        setup_user,
+        faker,
+    ):
+        """Test deleting a membership using role identifier (slug) in path."""
+        from app.models.role import Role as RoleModel
+
+        # Role with non-UUID identifier so get_role_by_id resolves by identifier
+        role = RoleModel(
+            name="SlugRole",
+            identifier="linden-collaborator",
+            description="Role with slug identifier",
+        )
+        db.add(role)
+        db.commit()
+        db.refresh(role)
+
+        domain = str(faker.uuid4())
+        membership_repository = MembershipRepository(db)
+        membership_repository.create_membership(
+            MembershipCreate(
+                user_id=setup_user.id,
+                role_id=role.id,
+                domain=domain,
+            )
+        )
+
+        mock_casbin_repository = mock_get_casbin_repository.return_value
+        mock_casbin_repository.remove_role.return_value = True
+
+        body = {
+            "user_id": str(setup_user.id),
+            "domain": domain,
+        }
+        response = client.request(
+            "DELETE",
+            f"/roles/{role.identifier}/memberships",
+            json=body,
+        )
+        assert response.status_code == 204
+
+        deleted_membership = membership_repository.get_membership_by_user_and_role(
+            setup_user.id, role.id, domain=domain
+        )
+        assert deleted_membership is None
+
+    def test_delete_role_membership_role_not_found(self, client, setup_user, faker):
+        """Test deleting a membership for a non-existent role."""
+        non_existent_id = uuid4()
+        body = {
+            "user_id": str(setup_user.id),
+            "domain": str(faker.uuid4()),
+        }
+        response = client.request(
+            "DELETE",
+            f"/roles/{non_existent_id}/memberships",
+            json=body,
+        )
+        assert response.status_code == 404
+        data = response.json()
+        assert "not found" in data["detail"].lower()
+
+    def test_delete_role_membership_missing_user_id(self, client, setup_role, faker):
+        """Test deleting a membership without user_id in body."""
+        body = {
+            "domain": str(faker.uuid4()),
+        }
+        response = client.request(
+            "DELETE",
+            f"/roles/{setup_role.id}/memberships",
+            json=body,
+        )
+        assert response.status_code == 422
+
+    def test_delete_role_membership_missing_domain(
+        self, client, setup_role, setup_user
+    ):
+        """Test deleting a membership without domain in body."""
+        body = {
+            "user_id": str(setup_user.id),
+        }
+        response = client.request(
+            "DELETE",
+            f"/roles/{setup_role.id}/memberships",
+            json=body,
+        )
         assert response.status_code == 422

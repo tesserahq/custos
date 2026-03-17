@@ -23,13 +23,14 @@ from app.commands.role.create_roles_batch_command import CreateRolesBatchCommand
 from app.commands.role.update_role_command import UpdateRoleCommand
 from app.commands.role.delete_role_command import DeleteRoleCommand
 from app.commands.memberships.create_membership_command import CreateMembershipCommand
+from app.commands.memberships.delete_membership_command import DeleteMembershipCommand
 from app.commands.permission.create_permission_command import CreatePermissionCommand
 from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.schemas.permission import PermissionCreate
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from app.routers.utils.dependencies import get_role_by_id
-from app.schemas.membership import MembershipRequest
+from app.schemas.membership import MembershipRequest, DeleteMembershipRequest
 
 router = APIRouter(prefix="/roles", tags=["Role"])
 logger = get_logger()
@@ -241,6 +242,33 @@ def list_role_memberships(
     membership_repository = MembershipRepository(db)
     query = membership_repository.get_memberships_by_role_query(role.id)
     return paginate(query)
+
+
+@router.delete("/{role_id}/memberships", status_code=204)
+def delete_role_membership(
+    body: DeleteMembershipRequest,
+    role: RoleModel = Depends(get_role_by_id),
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    Delete a membership by role, user_id, and domain.
+
+    Removes the role binding from Casbin and the membership record.
+    Role can be specified by UUID or identifier (e.g. slug).
+    """
+    command = DeleteMembershipCommand(db)
+    result = command.execute(
+        role=role,
+        user_id=UUID(body.user_id),
+        domain=body.domain or None,
+        resource=None,
+        deleted_by=None,
+    )
+    if not result.success:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to remove role binding",
+        )
 
 
 @router.post("/{role_id}/permissions", response_model=Permission, status_code=201)

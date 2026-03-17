@@ -76,3 +76,10 @@ class MembershipRequest(BaseModel):
     resource: Optional[str] = Field(
         None, description="The resource the role applies to"
     )
+
+
+class DeleteMembershipRequest(BaseModel):
+    """Request model for deleting a role membership by user and domain."""
+
+    user_id: str = Field(..., description="The ID of the user to remove from the role")
+    domain: str = Field(..., description="The domain/tenant for the membership")

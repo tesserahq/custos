@@ -153,9 +153,16 @@ class MembershipRepository:
             return True
         return False
 
-    def delete_membership_by_user_and_role(self, user_id: UUID, role_id: UUID) -> bool:
-        """Delete a membership by user ID and role ID."""
-        db_membership = self.get_membership_by_user_and_role(user_id, role_id)
+    def delete_membership_by_user_and_role(
+        self,
+        user_id: UUID,
+        role_id: UUID,
+        domain: Optional[str] = None,
+    ) -> bool:
+        """Delete a membership by user ID, role ID, and optionally domain."""
+        db_membership = self.get_membership_by_user_and_role(
+            user_id, role_id, domain=domain
+        )
         if db_membership:
             self.db.delete(db_membership)
             self.db.commit()
