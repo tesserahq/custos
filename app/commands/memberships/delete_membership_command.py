@@ -9,7 +9,7 @@ from app.models.role import Role
 from app.repositories.membership_repository import MembershipRepository
 from app.schemas.authorization import RoleAssignmentResponse
 from app.events.membership_events import build_membership_deleted_event
-from tessera_sdk.events.nats_router import NatsEventPublisher
+from tessera_sdk.infra.events.nats_router import NatsEventPublisher
 from app.repositories.casbin_repository import get_casbin_repository
 from app.models.user import User
 from app.repositories.user_repository import UserRepository

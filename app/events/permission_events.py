@@ -2,7 +2,7 @@
 
 from app.models.permission import Permission
 from app.schemas.permission import Permission as PermissionSchema
-from tessera_sdk.events.event import Event, event_source, event_type
+from tessera_sdk.infra.events.event import Event, event_source, event_type
 
 PERMISSION_CREATED = "permission.created"
 PERMISSION_UPDATED = "permission.updated"

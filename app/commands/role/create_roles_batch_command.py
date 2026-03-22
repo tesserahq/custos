@@ -13,7 +13,7 @@ from app.schemas.permission import PermissionCreate
 from app.repositories.role_repository import RoleRepository
 from app.repositories.permission_repository import PermissionRepository
 from app.events.role_events import build_roles_batch_created_event
-from tessera_sdk.events.nats_router import NatsEventPublisher  # type: ignore
+from tessera_sdk.infra.events.nats_router import NatsEventPublisher  # type: ignore
 from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.repositories.casbin_repository import GLOBAL_DOMAIN
 

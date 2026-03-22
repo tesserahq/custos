@@ -13,7 +13,7 @@ from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.commands.memberships.create_membership_command import CreateMembershipCommand
 from app.repositories.user_repository import UserRepository
 from app.config import get_settings
-from tessera_sdk.events.nats_router import NatsEventPublisher  # type: ignore
+from tessera_sdk.infra.events.nats_router import NatsEventPublisher  # type: ignore
 
 
 class SetupCommand:

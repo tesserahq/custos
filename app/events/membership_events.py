@@ -4,7 +4,7 @@ from typing import Optional
 from app.models.role import Role
 from app.models.user import User as UserModel
 from app.schemas.role import Role as RoleSchema
-from tessera_sdk.events.event import Event, event_source, event_type
+from tessera_sdk.infra.events.event import Event, event_source, event_type
 from app.schemas.user import User
 from app.schemas.user import User as UserSchema
 

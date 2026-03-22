@@ -5,7 +5,7 @@ from app.models.role import Role
 from app.models.permission import Permission
 from app.schemas.role import Role as RoleSchema
 from app.schemas.permission import Permission as PermissionSchema
-from tessera_sdk.events.event import Event, event_source, event_type
+from tessera_sdk.infra.events.event import Event, event_source, event_type
 
 ROLE_CREATED = "role.created"
 ROLE_UPDATED = "role.updated"

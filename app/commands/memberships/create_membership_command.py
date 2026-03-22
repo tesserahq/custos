@@ -11,11 +11,11 @@ from app.models.membership import Membership as MembershipModel
 from app.repositories.membership_repository import MembershipRepository
 from app.schemas.membership import MembershipCreate
 from app.events.membership_events import build_membership_created_event
-from tessera_sdk.events.nats_router import NatsEventPublisher
+from tessera_sdk.infra.events.nats_router import NatsEventPublisher
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import User
-from tessera_sdk import IdentiesClient
-from tessera_sdk.utils.m2m_token import M2MTokenClient
+from tessera_sdk.clients.identies import IdentiesClient
+from tessera_sdk.infra.m2m_token import M2MTokenClient
 from app.config import get_settings
 from app.schemas.user import UserOnboard
 from app.repositories.casbin_repository import get_casbin_repository
