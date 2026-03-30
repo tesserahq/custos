@@ -43,7 +43,6 @@ class RBACMiddleware(BaseHTTPMiddleware):
             )
 
         user = request.state.user
-        assert isinstance(user, User)
 
         resource = self._extract_resource(path)
         action = self._get_action(request)
