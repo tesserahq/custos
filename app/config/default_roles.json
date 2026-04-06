@@ -44,6 +44,11 @@
     "identifier": "identies-admin",
     "description": "Identies admin role with full permissions to manage Service accounts and more",
     "permissions": [
+      { "object": "identies.client", "action": "read" },
+      { "object": "identies.client", "action": "update" },
+      { "object": "identies.client", "action": "delete" },
+      { "object": "identies.client", "action": "create" },
+
       { "object": "identies.service_account", "action": "read" },
       { "object": "identies.service_account", "action": "update" },
       { "object": "identies.service_account", "action": "delete" },
