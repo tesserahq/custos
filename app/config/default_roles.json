@@ -163,6 +163,16 @@
       { "object": "sendly.email", "action": "create" },
       { "object": "sendly.email", "action": "update" },
 
+      { "object": "sendly.template", "action": "read" },
+      { "object": "sendly.template", "action": "create" },
+      { "object": "sendly.template", "action": "update" },
+      { "object": "sendly.template", "action": "delete" },
+
+      { "object": "sendly.layout", "action": "read" },
+      { "object": "sendly.layout", "action": "create" },
+      { "object": "sendly.layout", "action": "update" },
+      { "object": "sendly.layout", "action": "delete" },
+
       { "object": "sendly.provider.delivery_event", "action": "create" },
 
       { "object": "sendly.provider", "action": "read" }
