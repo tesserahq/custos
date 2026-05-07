@@ -36,7 +36,10 @@
       { "object": "custos.permission", "action": "read" },
       { "object": "custos.permission", "action": "update" },
       { "object": "custos.permission", "action": "delete" },
-      { "object": "custos.permission", "action": "create" }
+      { "object": "custos.permission", "action": "create" },
+
+      { "object": "custos.check", "action": "create" },
+      { "object": "custos.fix", "action": "create" }
     ]
   },
   {
@@ -205,6 +208,36 @@
       { "object": "conversa.mcp_server", "action": "create" },
       { "object": "conversa.mcp_server", "action": "update" },
       { "object": "conversa.mcp_server", "action": "delete" }
+    ]
+  },
+  {
+    "name": "Modela Admin",
+    "identifier": "modela-admin",
+    "description": "Modela admin role with full permissions to manage Modela and more",
+    "permissions": [
+      { "object": "modela.model_config", "action": "read" },
+      { "object": "modela.model_config", "action": "create" },
+      { "object": "modela.model_config", "action": "update" },
+      { "object": "modela.model_config", "action": "delete" },
+
+      { "object": "modela.completion", "action": "create" },
+
+      { "object": "modela.completion_request", "action": "read" },
+
+      { "object": "modela.credential", "action": "read" },
+      { "object": "modela.credential", "action": "create" },
+      { "object": "modela.credential", "action": "update" },
+      { "object": "modela.credential", "action": "delete" },
+
+      { "object": "modela.mcp_server", "action": "read" },
+      { "object": "modela.mcp_server", "action": "create" },
+      { "object": "modela.mcp_server", "action": "update" },
+      { "object": "modela.mcp_server", "action": "delete" },
+
+      { "object": "modela.system_prompt", "action": "read" },
+      { "object": "modela.system_prompt", "action": "create" },
+      { "object": "modela.system_prompt", "action": "update" },
+      { "object": "modela.system_prompt", "action": "delete" }
     ]
   }
 ]

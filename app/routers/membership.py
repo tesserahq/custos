@@ -55,7 +55,7 @@ def delete_membership(
     response = command.execute(
         role=role,
         user_id=membership.user_id,
-        domain=None,  # Memberships don't store domain, so we remove globally
+        domain=membership.domain,
         resource=None,
         deleted_by=deleted_by,
     )
