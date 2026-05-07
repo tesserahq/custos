@@ -70,6 +70,26 @@ class MembershipRepository:
         """
         return self.db.query(Membership).options(joinedload(Membership.user))
 
+    def get_active_memberships_by_user(
+        self, user_id: UUID, domain: Optional[str] = None
+    ) -> List[Membership]:
+        """Get active (non-deleted) memberships for a user with role relationship loaded.
+
+        Optionally filtered by domain. Used for sync checks where role identifiers
+        are needed alongside membership data.
+        """
+        query = (
+            self.db.query(Membership)
+            .options(joinedload(Membership.role))
+            .filter(
+                Membership.user_id == user_id,
+                Membership.deleted_at.is_(None),
+            )
+        )
+        if domain is not None:
+            query = query.filter(Membership.domain == domain)
+        return query.all()
+
     def get_memberships_by_user_query(self, user_id: UUID) -> Query:
         """
         Get a query object for memberships by user_id that can be used with pagination.

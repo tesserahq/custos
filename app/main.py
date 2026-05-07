@@ -10,7 +10,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from app.telemetry import setup_tracing
 from app.exceptions.handlers import register_exception_handlers
 from app.core.logging_config import get_logger
-from app.routers import authorization, role, permission, system, membership, user
+from app.routers import authorization, role, permission, system, membership, user, sync
 from fastapi_pagination import add_pagination
 from app.db import db_manager
 from app.middleware.rbac_middleware import RBACMiddleware
@@ -113,6 +113,7 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
     app.include_router(membership.router)
     app.include_router(system.router)
     app.include_router(user.router)
+    app.include_router(sync.router)
 
     app.include_router(get_livez_readyz_router())
 
