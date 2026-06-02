@@ -77,8 +77,6 @@ class UserRepository:
         return db_user
 
     def onboard_user(self, user: UserOnboard) -> User:
-        print("onboarding user")
-        print(user.model_dump())
         db_user = User(**user.model_dump())
         self.db.add(db_user)
         self.db.commit()
