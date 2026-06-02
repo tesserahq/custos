@@ -162,7 +162,7 @@ def create_role(role_data: RoleCreate, db: Session = Depends(get_db)) -> Role:
     except ValueError as e:
         # Handle validation errors (e.g., duplicate name)
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         # Handle unexpected errors
         raise HTTPException(status_code=500, detail="Failed to create role")
 
@@ -297,6 +297,6 @@ def create_role_permission(
     except ValueError as e:
         # Handle validation errors (e.g., duplicate object+action+role_id)
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         # Handle unexpected errors
         raise HTTPException(status_code=500, detail="Failed to create permission")

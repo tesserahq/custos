@@ -6,7 +6,6 @@ from app.repositories.membership_repository import MembershipRepository
 from app.repositories.casbin_repository import get_casbin_repository
 from app.schemas.user import User, PermissionCheckRequest, PermissionCheckResponse
 from app.schemas.membership import Membership
-from uuid import UUID
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from app.routers.utils.dependencies import get_user_by_id

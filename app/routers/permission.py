@@ -67,7 +67,7 @@ def update_permission(
             raise HTTPException(status_code=404, detail=error_message)
         else:
             raise HTTPException(status_code=400, detail=error_message)
-    except Exception as e:
+    except Exception:
         # Handle unexpected errors
         raise HTTPException(status_code=500, detail="Failed to update permission")
 
@@ -96,6 +96,6 @@ def delete_permission(
             raise HTTPException(status_code=404, detail=error_message)
         else:
             raise HTTPException(status_code=400, detail=error_message)
-    except Exception as e:
+    except Exception:
         # Handle unexpected errors
         raise HTTPException(status_code=500, detail="Failed to delete permission")

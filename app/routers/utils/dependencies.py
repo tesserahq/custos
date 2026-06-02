@@ -8,7 +8,6 @@ from app.repositories.membership_repository import MembershipRepository
 from app.repositories.user_repository import UserRepository
 from app.models.role import Role
 from app.models.permission import Permission
-from app.models.user import User
 from app.schemas.membership import Membership
 from app.schemas.user import User as UserSchema
 

@@ -47,7 +47,7 @@ class CasbinRepository:
 
             self.logger.debug("Casbin enforcer initialized successfully")
 
-        except Exception as e:
+        except Exception:
             raise
 
     def authorize(

@@ -4,7 +4,6 @@ from starlette.responses import JSONResponse
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 from app.repositories.casbin_repository import get_casbin_repository
-from app.models.user import User
 from app.core.logging_config import get_logger
 from typing import List, Optional
 import re

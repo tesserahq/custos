@@ -1,5 +1,4 @@
 from unittest.mock import Mock, patch
-from uuid import UUID
 from app.commands.memberships.create_membership_command import CreateMembershipCommand
 from app.repositories.membership_repository import MembershipRepository
 from app.models.membership import Membership as MembershipModel

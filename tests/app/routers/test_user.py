@@ -152,7 +152,6 @@ class TestUserRouter:
     ):
         """Test that users are ordered by updated_at descending."""
         from datetime import datetime, timezone
-        from app.models.user import User
 
         # Update the second user to have a more recent updated_at
         setup_another_user.updated_at = datetime.now(timezone.utc)
