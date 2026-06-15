@@ -14,10 +14,10 @@
     "identifier": "vaulta-admin",
     "description": "RBAC admin role with full permissions to manage Vaulta and more",
     "permissions": [
-      { "object": "vaulta.analytic_config", "action": "read" },
-      { "object": "vaulta.analytic_config", "action": "create" },
-      { "object": "vaulta.analytic_config", "action": "update" },
-      { "object": "vaulta.analytic_config", "action": "delete" },
+      { "object": "vaulta.analysis_config", "action": "read" },
+      { "object": "vaulta.analysis_config", "action": "create" },
+      { "object": "vaulta.analysis_config", "action": "update" },
+      { "object": "vaulta.analysis_config", "action": "delete" },
 
       { "object": "vaulta.client", "action": "read" },
       { "object": "vaulta.client", "action": "create" },
