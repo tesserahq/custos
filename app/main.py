@@ -14,11 +14,11 @@ from app.routers import authorization, role, permission, system, membership, use
 from fastapi_pagination import add_pagination
 from app.db import db_manager
 from app.middleware.rbac_middleware import RBACMiddleware
-from app.utils.metrics import PrometheusMiddleware, metrics
 from tessera_sdk.server.health import get_livez_readyz_router
 from tessera_sdk.server.dependencies.auth import get_current_user
 from fastapi.openapi.utils import get_openapi
 from app.models.user import User
+from prometheus_fastapi_instrumentator import Instrumentator
 
 SKIP_AUTH_PATHS = ["/livez", "/readyz", "/metrics"]
 SKIP_ONBOARDING_PATHS = ["/authorization/authorize"]
@@ -90,10 +90,6 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
             user_service_factory=user_service_factory,
         )
 
-        # Setting metrics middleware
-        app.add_middleware(PrometheusMiddleware, app_name=settings.app_name)
-        app.add_route("/metrics", metrics)
-
     else:
         logger.debug("Main: No authentication middleware")
         if auth_middleware:
@@ -133,6 +129,9 @@ settings = get_settings()
 if settings.otel_enabled:
     tracer_provider = setup_tracing()  # Or use env/config
     FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider)
+    Instrumentator(
+        excluded_handlers=["^/$", "/livez", "/readyz", "/metrics", "none"],
+    ).instrument(app).expose(app)
 
 
 @app.get("/")
