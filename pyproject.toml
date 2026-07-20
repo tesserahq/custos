@@ -49,7 +49,7 @@ pyjwt = "^2.10.1"
 rollbar = "^1.3.0"
 pycasbin = "^2.6.1"
 casbin-sqlalchemy-adapter = "^1.4.0"
-cryptography = "^48.0.0"
+cryptography = "^49.0.0"
 PyYAML = "^6.0.1"
 # tessera-sdk = { path = "../tessera-sdk-py/", develop = true }
 tessera-sdk = { git = "https://github.com/tesserahq/tessera-sdk-py.git", branch = "main" }
