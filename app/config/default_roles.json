@@ -194,7 +194,10 @@
 
       { "object": "sendly.provider.delivery_event", "action": "create" },
 
-      { "object": "sendly.provider", "action": "read" }
+      { "object": "sendly.provider", "action": "read" },
+
+      { "object": "sendly.broadcast", "action": "create" },
+      { "object": "sendly.broadcast", "action": "read" }
     ]
   },
   {
@@ -254,6 +257,37 @@
       { "object": "modela.system_prompt", "action": "create" },
       { "object": "modela.system_prompt", "action": "update" },
       { "object": "modela.system_prompt", "action": "delete" }
+    ]
+  },
+  {
+    "name": "Looply Admin",
+    "identifier": "looply-admin",
+    "description": "Looply admin role with full permissions to manage Looply and more",
+    "permissions": [
+      { "object": "looply.campaign", "action": "read" },
+      { "object": "looply.campaign", "action": "create" },
+      { "object": "looply.campaign", "action": "update" },
+      { "object": "looply.campaign", "action": "delete" },
+
+      { "object": "looply.contact", "action": "read" },
+      { "object": "looply.contact", "action": "create" },
+      { "object": "looply.contact", "action": "update" },
+      { "object": "looply.contact", "action": "delete" },
+
+      { "object": "looply.contact_list", "action": "read" },
+      { "object": "looply.contact_list", "action": "create" },
+      { "object": "looply.contact_list", "action": "update" },
+      { "object": "looply.contact_list", "action": "delete" },
+
+      { "object": "looply.waiting_list", "action": "read" },
+      { "object": "looply.waiting_list", "action": "create" },
+      { "object": "looply.waiting_list", "action": "update" },
+      { "object": "looply.waiting_list", "action": "delete" },
+
+      { "object": "looply.contact_interaction", "action": "read" },
+      { "object": "looply.contact_interaction", "action": "create" },
+      { "object": "looply.contact_interaction", "action": "update" },
+      { "object": "looply.contact_interaction", "action": "delete" }
     ]
   }
 ]

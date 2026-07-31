@@ -19,6 +19,7 @@ from tessera_sdk.infra.m2m_token import M2MTokenClient
 from app.config import get_settings
 from app.schemas.user import UserOnboard
 from app.repositories.casbin_repository import get_casbin_repository
+from tessera_sdk.infra import AuthTokenProvider
 
 
 class CreateMembershipCommand:
@@ -220,5 +221,4 @@ class CreateMembershipCommand:
         """
         Get an M2M token.
         """
-        # TODO: We could change this to use Identies system accounts instead.
-        return M2MTokenClient().get_token_sync().access_token
+        return AuthTokenProvider().get_token()
