@@ -1,12 +1,15 @@
 [
   {
-    "name": "Eventa Admin",
-    "identifier": "eventa-admin",
-    "description": "RBAC admin role with full permissions to manage Eventa and more",
+    "name": "Togly Admin",
+    "identifier": "togly-admin",
+    "description": "RBAC admin role with full permissions to manage Togly and more",
     "permissions": [
-      { "object": "eventa.event", "action": "read" },
+      { "object": "togly.feature_admin", "action": "read" },
+      { "object": "togly.feature_admin", "action": "create" },
+      { "object": "togly.feature_admin", "action": "update" },
+      { "object": "togly.feature_admin", "action": "delete" },
 
-      { "object": "eventa.system.settings", "action": "read" }
+      { "object": "togly.feature_check", "action": "read" }
     ]
   },
   {
@@ -23,6 +26,16 @@
       { "object": "vaulta.client", "action": "create" },
       { "object": "vaulta.client", "action": "update" },
       { "object": "vaulta.client", "action": "delete" }
+    ]
+  },
+  {
+    "name": "Eventa Admin",
+    "identifier": "eventa-admin",
+    "description": "RBAC admin role with full permissions to manage Eventa and more",
+    "permissions": [
+      { "object": "eventa.event", "action": "read" },
+
+      { "object": "eventa.system.settings", "action": "read" }
     ]
   },
   {
@@ -205,6 +218,8 @@
     "identifier": "conversa-admin",
     "description": "Conversa admin role with full permissions to manage Conversa and more",
     "permissions": [
+      { "object": "conversa.chat", "action": "create" },
+
       { "object": "conversa.system_prompt", "action": "read" },
       { "object": "conversa.system_prompt", "action": "create" },
       { "object": "conversa.system_prompt", "action": "update" },
@@ -234,10 +249,19 @@
     "identifier": "modela-admin",
     "description": "Modela admin role with full permissions to manage Modela and more",
     "permissions": [
+      { "object": "modela.provider", "action": "update" },
+
+      { "object": "modela.tool", "action": "read" },
+
       { "object": "modela.model_config", "action": "read" },
       { "object": "modela.model_config", "action": "create" },
       { "object": "modela.model_config", "action": "update" },
       { "object": "modela.model_config", "action": "delete" },
+
+      { "object": "modela.knowledge_document", "action": "read" },
+      { "object": "modela.knowledge_document", "action": "create" },
+      { "object": "modela.knowledge_document", "action": "update" },
+      { "object": "modela.knowledge_document", "action": "delete" },
 
       { "object": "modela.completion", "action": "create" },
 
@@ -264,6 +288,33 @@
     "identifier": "looply-admin",
     "description": "Looply admin role with full permissions to manage Looply and more",
     "permissions": [
+      { "object": "looply.stats", "action": "read" },
+
+      { "object": "looply.segment", "action": "read" },
+      { "object": "looply.segment", "action": "create" },
+      { "object": "looply.segment", "action": "update" },
+      { "object": "looply.segment", "action": "delete" },
+
+      { "object": "looply.tag", "action": "read" },
+      { "object": "looply.tag", "action": "create" },
+      { "object": "looply.tag", "action": "update" },
+      { "object": "looply.tag", "action": "delete" },
+
+      { "object": "looply.custom_event", "action": "read" },
+
+      { "object": "looply.event_mapping", "action": "read" },
+      { "object": "looply.event_mapping", "action": "create" },
+      { "object": "looply.event_mapping", "action": "delete" },
+
+      { "object": "looply.custom_field", "action": "read" },
+      { "object": "looply.custom_field", "action": "update" },
+      { "object": "looply.custom_field", "action": "delete" },
+
+      { "object": "looply.custom_field", "action": "read" },
+      { "object": "looply.custom_field", "action": "create" },
+      { "object": "looply.custom_field", "action": "update" },
+      { "object": "looply.custom_field", "action": "delete" },
+
       { "object": "looply.campaign", "action": "read" },
       { "object": "looply.campaign", "action": "create" },
       { "object": "looply.campaign", "action": "update" },

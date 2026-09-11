@@ -3,8 +3,9 @@ from uuid import uuid4
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserUpdate, UserOnboard
 from app.repositories.user_repository import UserRepository
+from app.exceptions.user_conflict_error import UserConflictError
 
 
 @pytest.fixture
@@ -141,6 +142,38 @@ def test_user_not_found_cases(db: Session):
 
     # Delete non-existent user
     assert user_repository.delete_user(non_existent_id) is False
+
+
+def test_onboard_user_creates_new_user(db: Session):
+    user_onboard = UserOnboard(
+        email="onboarded@example.com",
+        first_name="On",
+        last_name="Boarded",
+        external_id="google-oauth2|111",
+    )
+
+    user = UserRepository(db).onboard_user(user_onboard)
+
+    assert user.id is not None
+    assert user.email == "onboarded@example.com"
+    assert user.external_id == "google-oauth2|111"
+
+
+def test_onboard_user_rejects_conflicting_email(db: Session, sample_user):
+    # sample_user already exists with sample_user.email and no external_id set.
+    conflicting = UserOnboard(
+        id=uuid4(),
+        email=sample_user.email,
+        first_name=sample_user.first_name,
+        last_name=sample_user.last_name,
+        external_id="google-oauth2|different-identity",
+    )
+
+    with pytest.raises(UserConflictError):
+        UserRepository(db).onboard_user(conflicting)
+
+    # No duplicate row was created.
+    assert UserRepository(db).get_users_query(q=sample_user.email).count() == 1
 
 
 # Test search method with dynamic filters
