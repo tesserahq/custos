@@ -84,11 +84,10 @@ class CasbinRepository:
             # Build the action
             act = action
 
-            # For multi-tenancy, use domain as the fourth parameter
-            if domain:
-                result = self.enforcer.enforce(subject, domain, obj, act)
-            else:
-                result = self.enforcer.enforce(subject, obj, act)
+            # The model always expects a domain (r = sub, dom, obj, act);
+            # missing domain means "global" scope.
+            domain = domain or GLOBAL_DOMAIN
+            result = self.enforcer.enforce(subject, domain, obj, act)
 
             self.logger.info(
                 "Authorization check",
@@ -126,26 +125,20 @@ class CasbinRepository:
         Returns:
             bool: True if successful, False otherwise
         """
-        if domain:
-            # Check if role is already assigned
-            user_roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
-            if role in user_roles:
-                self.logger.debug(
-                    f"Role {role} already assigned to user {user_id} in domain {domain}"
-                )
-                return True
+        # The model always expects a domain (g = _, _, _); missing domain
+        # means "global" scope. Always writing through the domain-scoped API
+        # keeps every grouping-policy row the same width.
+        domain = domain or GLOBAL_DOMAIN
 
-            # For multi-tenancy, use domain-based role assignment
-            success = self.enforcer.add_role_for_user_in_domain(user_id, role, domain)
-        else:
-            # Check if role is already assigned
-            user_roles = self.enforcer.get_roles_for_user(user_id)
-            if role in user_roles:
-                self.logger.debug(f"Role {role} already assigned to user {user_id}")
-                return True
+        # Check if role is already assigned
+        user_roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
+        if role in user_roles:
+            self.logger.debug(
+                f"Role {role} already assigned to user {user_id} in domain {domain}"
+            )
+            return True
 
-            # For global roles
-            success = self.enforcer.add_role_for_user(user_id, role)
+        success = self.enforcer.add_role_for_user_in_domain(user_id, role, domain)
 
         return success
 
@@ -163,12 +156,8 @@ class CasbinRepository:
         Returns:
             bool: True if successful, False otherwise
         """
-        if domain:
-            success = self.enforcer.delete_roles_for_user_in_domain(
-                user_id, role, domain
-            )
-        else:
-            success = self.enforcer.delete_role_for_user(user_id, role)
+        domain = domain or GLOBAL_DOMAIN
+        success = self.enforcer.delete_roles_for_user_in_domain(user_id, role, domain)
 
         return success
 
@@ -183,10 +172,8 @@ class CasbinRepository:
         Returns:
             List[str]: List of role names
         """
-        if domain:
-            roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
-        else:
-            roles = self.enforcer.get_roles_for_user(user_id)
+        domain = domain or GLOBAL_DOMAIN
+        roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
 
         return roles
 
@@ -204,13 +191,9 @@ class CasbinRepository:
         Returns:
             List[Tuple[str, ...]]: List of permission tuples
         """
-        if domain:
-            # Use implicit permissions to include those inherited via roles
-            permissions = self.enforcer.get_implicit_permissions_for_user(
-                user_id, domain
-            )
-        else:
-            permissions = self.enforcer.get_implicit_permissions_for_user(user_id)
+        domain = domain or GLOBAL_DOMAIN
+        # Use implicit permissions to include those inherited via roles
+        permissions = self.enforcer.get_implicit_permissions_for_user(user_id, domain)
 
         # Filter by resource if specified
         if resource:
@@ -234,29 +217,18 @@ class CasbinRepository:
         Returns:
             bool: True if successful, False otherwise
         """
-        if domain:
-            # Check if policy already exists
-            policy_exists = self.enforcer.has_policy(subject, domain, obj, action)
-            if policy_exists:
-                self.logger.debug(
-                    f"Policy already exists: {subject} -> {obj} -> {action} in domain {domain}"
-                )
-                return True
+        domain = domain or GLOBAL_DOMAIN
 
-            # For domain-based model, use add_named_policy to specify the policy type
-            success = self.enforcer.add_named_policy(
-                "p", [subject, domain, obj, action]
+        # Check if policy already exists
+        policy_exists = self.enforcer.has_policy(subject, domain, obj, action)
+        if policy_exists:
+            self.logger.debug(
+                f"Policy already exists: {subject} -> {obj} -> {action} in domain {domain}"
             )
-        else:
-            # Check if policy already exists
-            policy_exists = self.enforcer.has_policy(subject, obj, action)
-            if policy_exists:
-                self.logger.debug(
-                    f"Policy already exists: {subject} -> {obj} -> {action}"
-                )
-                return True
+            return True
 
-            success = self.enforcer.add_policy(subject, obj, action)
+        # For domain-based model, use add_named_policy to specify the policy type
+        success = self.enforcer.add_named_policy("p", [subject, domain, obj, action])
 
         return success
 
@@ -275,10 +247,8 @@ class CasbinRepository:
         Returns:
             bool: True if successful, False otherwise
         """
-        if domain:
-            success = self.enforcer.remove_policy(subject, domain, obj, action)
-        else:
-            success = self.enforcer.remove_policy(subject, obj, action)
+        domain = domain or GLOBAL_DOMAIN
+        success = self.enforcer.remove_policy(subject, domain, obj, action)
 
         return success
 
@@ -322,10 +292,8 @@ class CasbinRepository:
         Returns:
             List[str]: List of user IDs that have the specified role
         """
-        if domain:
-            users = self.enforcer.get_users_for_role_in_domain(role, domain)
-        else:
-            users = self.enforcer.get_users_for_role(role)
+        domain = domain or GLOBAL_DOMAIN
+        users = self.enforcer.get_users_for_role_in_domain(role, domain)
 
         return users
 
