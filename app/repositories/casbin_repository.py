@@ -10,6 +10,16 @@ from functools import lru_cache
 GLOBAL_DOMAIN = "*"
 
 
+def normalize_domain(domain: Optional[str]) -> str:
+    """Map a missing/empty domain to the global wildcard domain.
+
+    The model requires a fixed number of fields on every g/p row
+    (g = _, _, _ and p = sub, dom, obj, act), so "no domain" must always be
+    written and read as the same value rather than being omitted.
+    """
+    return domain or GLOBAL_DOMAIN
+
+
 @lru_cache()
 def get_casbin_repository():
     return CasbinRepository()
@@ -84,9 +94,7 @@ class CasbinRepository:
             # Build the action
             act = action
 
-            # The model always expects a domain (r = sub, dom, obj, act);
-            # missing domain means "global" scope.
-            domain = domain or GLOBAL_DOMAIN
+            domain = normalize_domain(domain)
             result = self.enforcer.enforce(subject, domain, obj, act)
 
             self.logger.info(
@@ -125,10 +133,7 @@ class CasbinRepository:
         Returns:
             bool: True if successful, False otherwise
         """
-        # The model always expects a domain (g = _, _, _); missing domain
-        # means "global" scope. Always writing through the domain-scoped API
-        # keeps every grouping-policy row the same width.
-        domain = domain or GLOBAL_DOMAIN
+        domain = normalize_domain(domain)
 
         # Check if role is already assigned
         user_roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
@@ -156,7 +161,7 @@ class CasbinRepository:
         Returns:
             bool: True if successful, False otherwise
         """
-        domain = domain or GLOBAL_DOMAIN
+        domain = normalize_domain(domain)
         success = self.enforcer.delete_roles_for_user_in_domain(user_id, role, domain)
 
         return success
@@ -172,7 +177,7 @@ class CasbinRepository:
         Returns:
             List[str]: List of role names
         """
-        domain = domain or GLOBAL_DOMAIN
+        domain = normalize_domain(domain)
         roles = self.enforcer.get_roles_for_user_in_domain(user_id, domain)
 
         return roles
@@ -191,7 +196,7 @@ class CasbinRepository:
         Returns:
             List[Tuple[str, ...]]: List of permission tuples
         """
-        domain = domain or GLOBAL_DOMAIN
+        domain = normalize_domain(domain)
         # Use implicit permissions to include those inherited via roles
         permissions = self.enforcer.get_implicit_permissions_for_user(user_id, domain)
 
@@ -217,7 +222,7 @@ class CasbinRepository:
         Returns:
             bool: True if successful, False otherwise
         """
-        domain = domain or GLOBAL_DOMAIN
+        domain = normalize_domain(domain)
 
         # Check if policy already exists
         policy_exists = self.enforcer.has_policy(subject, domain, obj, action)
@@ -247,7 +252,7 @@ class CasbinRepository:
         Returns:
             bool: True if successful, False otherwise
         """
-        domain = domain or GLOBAL_DOMAIN
+        domain = normalize_domain(domain)
         success = self.enforcer.remove_policy(subject, domain, obj, action)
 
         return success
@@ -292,7 +297,7 @@ class CasbinRepository:
         Returns:
             List[str]: List of user IDs that have the specified role
         """
-        domain = domain or GLOBAL_DOMAIN
+        domain = normalize_domain(domain)
         users = self.enforcer.get_users_for_role_in_domain(role, domain)
 
         return users

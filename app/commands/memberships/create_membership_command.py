@@ -18,7 +18,7 @@ from tessera_sdk.clients.identies import IdentiesClient
 from tessera_sdk.infra.m2m_token import M2MTokenClient
 from app.config import get_settings
 from app.schemas.user import UserOnboard
-from app.repositories.casbin_repository import get_casbin_repository, GLOBAL_DOMAIN
+from app.repositories.casbin_repository import get_casbin_repository, normalize_domain
 from tessera_sdk.infra import AuthTokenProvider
 
 
@@ -70,7 +70,7 @@ class CreateMembershipCommand:
         """
         # Normalize domain so DB memberships and Casbin g rows never disagree
         # on whether "no domain" was given (both must always store "*").
-        domain = domain or GLOBAL_DOMAIN
+        domain = normalize_domain(domain)
 
         # Use the role identifier for Casbin
         role_identifier = str(role.identifier)
