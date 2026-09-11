@@ -4,6 +4,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, Query
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserOnboard
+from app.exceptions.user_conflict_error import UserConflictError
 from datetime import datetime, timezone
 
 from app.utils.db.filtering import apply_filters
@@ -77,6 +78,19 @@ class UserRepository:
         return db_user
 
     def onboard_user(self, user: UserOnboard) -> User:
+        if user.email:
+            existing = self.get_user_by_email(user.email)
+            if existing and (
+                str(existing.id) != str(user.id)
+                or existing.external_id != user.external_id
+            ):
+                raise UserConflictError(
+                    f"Cannot onboard user with email {user.email}: an existing user "
+                    f"{existing.id} (external_id={existing.external_id}) already has "
+                    f"this email, but onboarding was requested with id={user.id} "
+                    f"external_id={user.external_id}"
+                )
+
         db_user = User(**user.model_dump())
         self.db.add(db_user)
         self.db.commit()

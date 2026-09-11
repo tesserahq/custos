@@ -25,7 +25,9 @@ class TestCreateMembershipCommand:
             assert isinstance(membership, MembershipModel)
             assert membership.user_id == setup_user.id
             assert membership.role_id == setup_role.id
-            assert membership.domain is None
+            # A missing domain is normalized to the global wildcard domain so
+            # DB memberships and Casbin g rows never disagree on "no domain".
+            assert membership.domain == "*"
             assert membership.id is not None
             assert membership.created_at is not None
             assert membership.updated_at is not None
@@ -43,7 +45,7 @@ class TestCreateMembershipCommand:
             mock_assign_role.assert_called_once_with(
                 user_id=user_id,
                 role=str(setup_role.identifier),
-                domain=None,
+                domain="*",
                 resource=None,
             )
 
@@ -89,8 +91,11 @@ class TestCreateMembershipCommand:
         membership_repository = MembershipRepository(db)
         from app.schemas.membership import MembershipCreate
 
+        # Created with domain="*" to match the normalized domain that
+        # command.execute() below will look up (a missing domain is always
+        # normalized to the global wildcard domain).
         existing_membership = membership_repository.create_membership(
-            MembershipCreate(user_id=setup_user.id, role_id=setup_role.id)
+            MembershipCreate(user_id=setup_user.id, role_id=setup_role.id, domain="*")
         )
 
         command = CreateMembershipCommand(db, nats_publisher=None)
@@ -249,6 +254,6 @@ class TestCreateMembershipCommand:
             mock_assign_role.assert_called_once_with(
                 user_id=str(user_id_uuid),  # Command converts UUID to string for casbin
                 role=str(setup_role.identifier),
-                domain=None,
+                domain="*",
                 resource=None,
             )
