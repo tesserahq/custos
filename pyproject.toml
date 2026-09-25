@@ -54,7 +54,7 @@ PyYAML = "^6.0.1"
 # tessera-sdk = { path = "../tessera-sdk-py/", develop = true }
 tessera-sdk = { git = "https://github.com/tesserahq/tessera-sdk-py.git", branch = "main" }
 fastapi-pagination = "^0.15.16"
-uvicorn = "0.52.4"
+uvicorn = "0.54.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.0"
