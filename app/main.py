@@ -12,7 +12,6 @@ from app.exceptions.handlers import register_exception_handlers
 from app.core.logging_config import get_logger
 from app.routers import authorization, role, permission, system, membership, user, sync
 from fastapi_pagination import add_pagination
-from app.db import db_manager
 from app.middleware.rbac_middleware import RBACMiddleware
 from tessera_sdk.server.health import get_livez_readyz_router
 from tessera_sdk.server.dependencies.auth import get_current_user
@@ -71,11 +70,10 @@ def create_app(testing: bool = False, auth_middleware=None) -> FastAPI:
         from tessera_sdk.server.middleware.user_onboarding import (
             UserOnboardingMiddleware,
         )
-        from tessera_sdk.infra.service_factory import create_service_factory
-        from app.repositories.user_repository import UserRepository
+        from app.services.sdk_user_service import create_sdk_user_service
 
-        # Create service factory for UserRepository
-        user_service_factory = create_service_factory(UserRepository, db_manager)
+        # Each SDK call runs in its own managed session.
+        user_service_factory = create_sdk_user_service
 
         app.add_middleware(RBACMiddleware, skip_paths=SKIP_RBAC_PATHS)
 

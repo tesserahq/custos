@@ -1,0 +1,43 @@
+{
+  "transaction_lifecycle": {
+    "commands/permission/create_permission_command.py::execute::rollback": 2,
+    "commands/permission/delete_permission_command.py::execute::rollback": 1,
+    "commands/permission/update_permission_command.py::execute::rollback": 1,
+    "commands/role/create_role_command.py::execute::rollback": 2,
+    "commands/role/create_roles_batch_command.py::execute::commit": 1,
+    "commands/role/create_roles_batch_command.py::execute::rollback": 3,
+    "commands/role/delete_role_command.py::execute::rollback": 1,
+    "commands/role/update_role_command.py::execute::rollback": 1,
+    "repositories/membership_repository.py::create_membership::commit": 1,
+    "repositories/membership_repository.py::delete_membership::commit": 1,
+    "repositories/membership_repository.py::delete_membership_by_user_and_role::commit": 1,
+    "repositories/membership_repository.py::update_membership::commit": 1,
+    "repositories/permission_repository.py::create_permission::commit": 1,
+    "repositories/permission_repository.py::delete_permission::commit": 1,
+    "repositories/permission_repository.py::update_permission::commit": 1,
+    "repositories/role_repository.py::create_role::commit": 1,
+    "repositories/role_repository.py::delete_role::commit": 1,
+    "repositories/role_repository.py::update_role::commit": 1,
+    "repositories/user_repository.py::create_user::commit": 1,
+    "repositories/user_repository.py::delete_user::commit": 1,
+    "repositories/user_repository.py::onboard_user::commit": 1,
+    "repositories/user_repository.py::update_user::commit": 1,
+    "repositories/user_repository.py::verify_user::commit": 1
+  },
+  "session_construction": {},
+  "bare_exception_in_commands": {
+    "commands/permission/create_permission_command.py::execute::raise Exception": 2,
+    "commands/permission/delete_permission_command.py::execute::raise Exception": 1,
+    "commands/permission/update_permission_command.py::execute::raise Exception": 1,
+    "commands/policy/add_permission_policy_command.py::execute::raise Exception": 1,
+    "commands/policy/delete_permission_policy_command.py::execute::raise Exception": 1,
+    "commands/policy/delete_role_policy_command.py::execute::raise Exception": 1,
+    "commands/policy/sync_role_policy_command.py::execute::raise Exception": 1,
+    "commands/role/create_role_command.py::execute::raise Exception": 2,
+    "commands/role/create_roles_batch_command.py::execute::raise Exception": 2,
+    "commands/role/delete_role_command.py::execute::raise Exception": 1,
+    "commands/role/update_role_command.py::execute::raise Exception": 1
+  },
+  "identity_map": {},
+  "unsynchronized_dml": {}
+}

@@ -15,10 +15,10 @@ from tessera_sdk.infra.events.nats_router import NatsEventPublisher
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import User
 from tessera_sdk.clients.identies import IdentiesClient
-from tessera_sdk.infra.m2m_token import M2MTokenClient
 from app.config import get_settings
 from app.schemas.user import UserOnboard
 from app.repositories.casbin_repository import get_casbin_repository, normalize_domain
+from app.db import on_commit
 from tessera_sdk.infra import AuthTokenProvider
 
 
@@ -169,12 +169,18 @@ class CreateMembershipCommand:
         """
         event = build_membership_created_event(role, user, domain, resource, created_by)
         if self.nats_publisher is not None:
-            try:
-                self.nats_publisher.publish_sync(event, event.event_type)
-            except Exception:  # pragma: no cover - defensive logging
-                self.logger.exception(
-                    "Failed to publish membership-created event to NATS"
-                )
+            publisher = self.nats_publisher
+
+            def publish() -> None:
+                try:
+                    publisher.publish_sync(event, event.event_type)
+                except Exception:  # pragma: no cover - defensive logging
+                    self.logger.exception(
+                        "Failed to publish membership-created event to NATS"
+                    )
+
+            # Dispatch only after the transaction commits; dropped on rollback.
+            on_commit(publish)
 
     def fetch_user(
         self,

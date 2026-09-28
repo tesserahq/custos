@@ -16,6 +16,7 @@ from app.events.role_events import build_roles_batch_created_event
 from tessera_sdk.infra.events.nats_router import NatsEventPublisher  # type: ignore
 from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.repositories.casbin_repository import GLOBAL_DOMAIN
+from app.db import on_commit
 
 
 class CreateRolesBatchCommand:
@@ -185,8 +186,19 @@ class CreateRolesBatchCommand:
         """
         try:
             event = build_roles_batch_created_event(created_roles, created_permissions)
-            if self.nats_publisher is not None:
-                self.nats_publisher.publish_sync(event, event.event_type)
-
         except Exception:  # pragma: no cover - defensive logging
-            self.logger.exception("Failed to publish roles batch-created event to NATS")
+            self.logger.exception("Failed to build roles batch-created event")
+            return
+        if self.nats_publisher is not None:
+            publisher = self.nats_publisher
+
+            def publish() -> None:
+                try:
+                    publisher.publish_sync(event, event.event_type)
+                except Exception:  # pragma: no cover - defensive logging
+                    self.logger.exception(
+                        "Failed to publish roles batch-created event to NATS"
+                    )
+
+            # Dispatch only after the transaction commits; dropped on rollback.
+            on_commit(publish)

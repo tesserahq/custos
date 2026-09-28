@@ -13,6 +13,7 @@ from tessera_sdk.infra.events.nats_router import NatsEventPublisher
 from app.repositories.casbin_repository import get_casbin_repository
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
+from app.db import on_commit
 
 
 class DeleteMembershipCommand:
@@ -130,9 +131,15 @@ class DeleteMembershipCommand:
         """
         event = build_membership_deleted_event(role, user, domain, resource, deleted_by)
         if self.nats_publisher is not None:
-            try:
-                self.nats_publisher.publish_sync(event, event.event_type)
-            except Exception:  # pragma: no cover - defensive logging
-                self.logger.exception(
-                    "Failed to publish membership-deleted event to NATS"
-                )
+            publisher = self.nats_publisher
+
+            def publish() -> None:
+                try:
+                    publisher.publish_sync(event, event.event_type)
+                except Exception:  # pragma: no cover - defensive logging
+                    self.logger.exception(
+                        "Failed to publish membership-deleted event to NATS"
+                    )
+
+            # Dispatch only after the transaction commits; dropped on rollback.
+            on_commit(publish)

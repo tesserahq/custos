@@ -1,9 +1,8 @@
 """System router for setup and maintenance endpoints."""
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Body
-from sqlalchemy.orm import Session
-from app.db import get_db
+from fastapi import APIRouter, HTTPException, Body
+from app.db import DbSession
 from app.schemas.system import SetupRequest, SetupResponse
 from app.commands.setup.setup_command import SetupCommand
 from app.schemas.role import Role
@@ -14,9 +13,7 @@ logger = get_logger()
 
 
 @router.post("/setup", response_model=SetupResponse, status_code=201)
-def setup_system(
-    request: Optional[SetupRequest] = Body(None), db: Session = Depends(get_db)
-) -> SetupResponse:
+def setup_system(db: DbSession, request: Optional[SetupRequest] = Body(None)) -> SetupResponse:
     """
     Import roles and permissions from JSON configuration file.
 

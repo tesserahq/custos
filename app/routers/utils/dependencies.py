@@ -1,7 +1,6 @@
 from uuid import UUID
-from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.db import get_db
+from fastapi import HTTPException
+from app.db import DbSession
 from app.repositories.role_repository import RoleRepository
 from app.repositories.permission_repository import PermissionRepository
 from app.repositories.membership_repository import MembershipRepository
@@ -14,7 +13,7 @@ from app.schemas.user import User as UserSchema
 
 def get_role_by_id(
     role_id: str,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> Role:
     """FastAPI dependency to get a role by ID or identifier.
 
@@ -49,7 +48,7 @@ def get_role_by_id(
 
 def get_permission_by_id(
     permission_id: UUID,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> Permission:
     """FastAPI dependency to get a permission by ID.
 
@@ -71,7 +70,7 @@ def get_permission_by_id(
 
 def get_membership_by_id(
     membership_id: UUID,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> Membership:
     """FastAPI dependency to get a membership by ID.
 
@@ -93,7 +92,7 @@ def get_membership_by_id(
 
 def get_user_by_id(
     user_id: UUID,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> UserSchema:
     """FastAPI dependency to get a user by ID.
 

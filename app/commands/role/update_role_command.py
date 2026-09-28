@@ -9,6 +9,7 @@ from app.models.role import Role
 from app.schemas.role import RoleUpdate
 from app.repositories.role_repository import RoleRepository
 from app.events.role_events import build_role_updated_event
+from app.db import on_commit
 from tessera_sdk.infra.events.nats_router import NatsEventPublisher
 
 
@@ -86,7 +87,13 @@ class UpdateRoleCommand:
         """
         event = build_role_updated_event(role)
         if self.nats_publisher is not None:
-            try:
-                self.nats_publisher.publish_sync(event, event.event_type)
-            except Exception:  # pragma: no cover - defensive logging
-                self.logger.exception("Failed to publish role-updated event to NATS")
+            publisher = self.nats_publisher
+
+            def publish() -> None:
+                try:
+                    publisher.publish_sync(event, event.event_type)
+                except Exception:  # pragma: no cover - defensive logging
+                    self.logger.exception("Failed to publish role-updated event to NATS")
+
+            # Dispatch only after the transaction commits; dropped on rollback.
+            on_commit(publish)
