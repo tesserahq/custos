@@ -1,10 +1,12 @@
 import os
+from contextlib import contextmanager
 from typing import Optional, List, Tuple
 import casbin
 from casbin_sqlalchemy_adapter import Adapter
 from sqlalchemy import create_engine
 from app.config import get_settings
 from app.core.logging_config import get_logger
+from app.db import current_session, on_commit
 from functools import lru_cache
 
 GLOBAL_DOMAIN = "*"
@@ -20,13 +22,41 @@ def normalize_domain(domain: Optional[str]) -> str:
     return domain or GLOBAL_DOMAIN
 
 
+class ManagedSessionAdapter(Adapter):
+    """Casbin adapter that stores rules in the current managed session.
+
+    Inside an execution (request, task) casbin_rule rows are written by the
+    execution's session, so they commit or roll back together with the
+    memberships, roles and permissions they belong to. Outside one (startup
+    policy load, scripts) the adapter uses its own session and commits.
+    """
+
+    @contextmanager
+    def _session_scope(self):
+        session = current_session()
+        if session is None:
+            with super()._session_scope() as own_session:
+                yield own_session
+        else:
+            yield session
+
+
 @lru_cache()
 def get_casbin_repository():
     return CasbinRepository()
 
 
 class CasbinRepository:
-    """Repository for handling authorization using Casbin."""
+    """Repository for handling authorization using Casbin.
+
+    Rules live in two places: the casbin_rule table and the enforcer's
+    in-memory model, which answers every authorization check. Writes go to
+    the table through the adapter, in the current transaction, and are
+    applied to the in-memory model only after that transaction commits
+    (auto-save is off, so enforcer mutations are memory-only). A rolled-back
+    grant therefore never becomes effective, and a failed write raises in the
+    request that made it.
+    """
 
     def __init__(self):
         self.settings = get_settings()
@@ -41,7 +71,7 @@ class CasbinRepository:
             engine = create_engine(self.settings.database_url)
 
             # Create Casbin adapter
-            adapter = Adapter(engine)
+            self.adapter = ManagedSessionAdapter(engine)
 
             # Get the path to the Casbin model configuration
             model_path = os.path.join(
@@ -49,8 +79,10 @@ class CasbinRepository:
             )
 
             # Create enforcer
-            self.enforcer = casbin.Enforcer(model_path, adapter)
-            self.enforcer.enable_auto_save(True)
+            self.enforcer = casbin.Enforcer(model_path, self.adapter)
+            # Storage writes go through _store_rule/_delete_rules, so enforcer
+            # mutations only update the in-memory model.
+            self.enforcer.enable_auto_save(False)
 
             # Load policies
             self.enforcer.load_policy()
@@ -59,6 +91,25 @@ class CasbinRepository:
 
         except Exception:
             raise
+
+    def _rule_stored(self, ptype: str, rule: List[str]) -> bool:
+        with self.adapter._session_scope() as session:
+            query = session.query(self.adapter._db_class).filter_by(ptype=ptype)
+            for index, value in enumerate(rule):
+                query = query.filter_by(**{f"v{index}": value})
+            return session.query(query.exists()).scalar()
+
+    def _store_rule(self, ptype: str, rule: List[str]) -> None:
+        """Insert ``rule`` into casbin_rule unless this transaction already
+        has it (the in-memory model only reflects committed rules)."""
+        if not self._rule_stored(ptype, rule):
+            self.adapter.add_policy(ptype[0], ptype, rule)
+
+    def _delete_rules(self, ptype: str, field_index: int, *values: str) -> bool:
+        """Delete the matching casbin_rule rows; True if any existed."""
+        return self.adapter.remove_filtered_policy(
+            ptype[0], ptype, field_index, *values
+        )
 
     def authorize(
         self,
@@ -143,9 +194,11 @@ class CasbinRepository:
             )
             return True
 
-        success = self.enforcer.add_role_for_user_in_domain(user_id, role, domain)
+        rule = [str(user_id), role, domain]
+        self._store_rule("g", rule)
+        on_commit(lambda: self.enforcer.add_grouping_policy(*rule))
 
-        return success
+        return True
 
     def remove_role(
         self, user_id: str, role: str, domain: Optional[str] = None
@@ -162,9 +215,12 @@ class CasbinRepository:
             bool: True if successful, False otherwise
         """
         domain = normalize_domain(domain)
-        success = self.enforcer.delete_roles_for_user_in_domain(user_id, role, domain)
+        rule = [str(user_id), role, domain]
+        assigned = self.enforcer.has_grouping_policy(*rule)
+        stored = self._delete_rules("g", 0, *rule)
+        on_commit(lambda: self.enforcer.remove_grouping_policy(*rule))
 
-        return success
+        return assigned or stored
 
     def get_user_roles(self, user_id: str, domain: Optional[str] = None) -> List[str]:
         """
@@ -232,10 +288,11 @@ class CasbinRepository:
             )
             return True
 
-        # For domain-based model, use add_named_policy to specify the policy type
-        success = self.enforcer.add_named_policy("p", [subject, domain, obj, action])
+        rule = [subject, domain, obj, action]
+        self._store_rule("p", rule)
+        on_commit(lambda: self.enforcer.add_named_policy("p", rule))
 
-        return success
+        return True
 
     def remove_policy(
         self, subject: str, obj: str, action: str, domain: Optional[str] = None
@@ -253,9 +310,12 @@ class CasbinRepository:
             bool: True if successful, False otherwise
         """
         domain = normalize_domain(domain)
-        success = self.enforcer.remove_policy(subject, domain, obj, action)
+        rule = [subject, domain, obj, action]
+        existed = self.enforcer.has_policy(*rule)
+        stored = self._delete_rules("p", 0, *rule)
+        on_commit(lambda: self.enforcer.remove_policy(*rule))
 
-        return success
+        return existed or stored
 
     def remove_all_policies_for_role(self, role_identifier: str) -> int:
         """
@@ -271,20 +331,11 @@ class CasbinRepository:
         # Policies are stored as [subject, domain, obj, action] where subject is role_identifier
         all_policies = self.enforcer.get_filtered_policy(0, role_identifier)
 
-        if not all_policies:
-            return 0
+        # Remove all policies where subject (index 0) matches role_identifier
+        self._delete_rules("p", 0, role_identifier)
+        on_commit(lambda: self.enforcer.remove_filtered_policy(0, role_identifier))
 
-        # Remove all policies for this role using remove_filtered_policy
-        # This removes all policies where subject (index 0) matches role_identifier
-        removed = self.enforcer.remove_filtered_policy(0, role_identifier)
-
-        if removed:
-            return len(all_policies)
-        else:
-            self.logger.warning(
-                f"Failed to remove policies for role '{role_identifier}'"
-            )
-            return 0
+        return len(all_policies)
 
     def get_users_for_role(self, role: str, domain: Optional[str] = None) -> List[str]:
         """

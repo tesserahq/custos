@@ -45,38 +45,27 @@ class UpdateRoleCommand:
         Raises:
             ValueError: If role doesn't exist or name already exists
         """
-        try:
-            # Check if role exists
-            existing_role = self.role_repository.get_role(role_id)
-            if not existing_role:
-                raise ValueError(f"Role with id {role_id} not found")
+        # Check if role exists
+        existing_role = self.role_repository.get_role(role_id)
+        if not existing_role:
+            raise ValueError(f"Role with id {role_id} not found")
 
-            # If name is being updated, check if new name already exists
-            if role_data.name is not None and role_data.name != existing_role.name:
-                name_conflict = self.role_repository.get_role_by_name(role_data.name)
-                if name_conflict:
-                    raise ValueError(
-                        f"Role with name '{role_data.name}' already exists"
-                    )
+        # If name is being updated, check if new name already exists
+        if role_data.name is not None and role_data.name != existing_role.name:
+            name_conflict = self.role_repository.get_role_by_name(role_data.name)
+            if name_conflict:
+                raise ValueError(f"Role with name '{role_data.name}' already exists")
 
-            # Update role
-            updated_role = self.role_repository.update_role(role_id, role_data)
+        # Update role
+        updated_role = self.role_repository.update_role(role_id, role_data)
 
-            if not updated_role:
-                raise ValueError(f"Failed to update role with id {role_id}")
+        if not updated_role:
+            raise ValueError(f"Failed to update role with id {role_id}")
 
-            # Publish role updated event if publisher is available
-            self._publish_role_updated_event(updated_role)
+        # Publish role updated event if publisher is available
+        self._publish_role_updated_event(updated_role)
 
-            return updated_role
-
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
-        except Exception as e:
-            # Rollback the transaction if something goes wrong
-            self.db.rollback()
-            raise Exception(f"Failed to update role: {str(e)}")
+        return updated_role
 
     def _publish_role_updated_event(self, role: Role) -> None:
         """

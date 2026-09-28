@@ -44,52 +44,42 @@ class DeletePermissionPolicyCommand:
         Raises:
             ValueError: If permission does not exist
         """
-        try:
-            # Get the permission
-            permission = self.permission_repository.get_permission(permission_id)
-            if not permission:
-                raise ValueError(f"Permission with id '{permission_id}' not found")
+        # Get the permission
+        permission = self.permission_repository.get_permission(permission_id)
+        if not permission:
+            raise ValueError(f"Permission with id '{permission_id}' not found")
 
-            # Get the role associated with the permission
-            if not permission.role:
-                raise ValueError(
-                    f"Permission with id '{permission_id}' has no associated role"
-                )
-
-            role = permission.role
-
-            # Remove policy: subject=role.identifier, domain=domain, obj=permission.object, action=permission.action
-            policy_removed = self.casbin_repository.remove_policy(
-                subject=role.identifier,
-                obj=permission.object,
-                action=permission.action,
-                domain=domain,
+        # Get the role associated with the permission
+        if not permission.role:
+            raise ValueError(
+                f"Permission with id '{permission_id}' has no associated role"
             )
 
-            if policy_removed:
-                self.logger.debug(
-                    f"Policy removed: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
-                )
-            else:
-                self.logger.warning(
-                    f"Failed to remove policy: {role.name} -> {permission.object} -> {permission.action} in domain {domain}. "
-                    "Policy may not exist."
-                )
+        role = permission.role
 
-            return {
-                "success": policy_removed,
-                "permission_id": str(permission_id),
-                "role_name": role.name,
-                "object": permission.object,
-                "action": permission.action,
-                "policy_removed": policy_removed,
-            }
+        # Remove policy: subject=role.identifier, domain=domain, obj=permission.object, action=permission.action
+        policy_removed = self.casbin_repository.remove_policy(
+            subject=role.identifier,
+            obj=permission.object,
+            action=permission.action,
+            domain=domain,
+        )
 
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
-        except Exception as e:
-            self.logger.error(
-                f"Failed to remove policy for permission {permission_id} in domain {domain}: {e}"
+        if policy_removed:
+            self.logger.debug(
+                f"Policy removed: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
             )
-            raise Exception(f"Failed to remove policy: {str(e)}")
+        else:
+            self.logger.warning(
+                f"Failed to remove policy: {role.name} -> {permission.object} -> {permission.action} in domain {domain}. "
+                "Policy may not exist."
+            )
+
+        return {
+            "success": policy_removed,
+            "permission_id": str(permission_id),
+            "role_name": role.name,
+            "object": permission.object,
+            "action": permission.action,
+            "policy_removed": policy_removed,
+        }

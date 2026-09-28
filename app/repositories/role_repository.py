@@ -34,7 +34,7 @@ class RoleRepository:
     def create_role(self, role: RoleCreate) -> Role:
         db_role = Role(**role.model_dump())
         self.db.add(db_role)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(db_role)
         return db_role
 
@@ -59,7 +59,7 @@ class RoleRepository:
             update_data = role.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(db_role, key, value)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(db_role)
         return db_role
 
@@ -67,7 +67,7 @@ class RoleRepository:
         db_role = self.db.query(Role).filter(Role.id == role_id).first()
         if db_role:
             self.db.delete(db_role)
-            self.db.commit()
+            self.db.flush()
             return True
         return False
 

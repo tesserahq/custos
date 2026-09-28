@@ -73,7 +73,7 @@ class UserRepository:
     def create_user(self, user: UserCreate) -> User:
         db_user = User(**user.model_dump())
         self.db.add(db_user)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(db_user)
         return db_user
 
@@ -93,7 +93,7 @@ class UserRepository:
 
         db_user = User(**user.model_dump())
         self.db.add(db_user)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(db_user)
         return db_user
 
@@ -103,7 +103,7 @@ class UserRepository:
             update_data = user.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(db_user, key, value)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(db_user)
         return db_user
 
@@ -111,7 +111,7 @@ class UserRepository:
         db_user = self.db.query(User).filter(User.id == user_id).first()
         if db_user:
             self.db.delete(db_user)
-            self.db.commit()
+            self.db.flush()
             return True
         return False
 
@@ -120,7 +120,7 @@ class UserRepository:
         if db_user:
             db_user.verified = True
             db_user.verified_at = datetime.now(timezone.utc)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(db_user)
         return db_user
 

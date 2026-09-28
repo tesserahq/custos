@@ -77,8 +77,8 @@ class TestCreateRoleCommand:
         assert role.id is not None
         assert role.name == role_data.name
 
-    def test_execute_rollback_on_error(self, db, faker):
-        """Test that exceptions are properly handled and error message is set."""
+    def test_execute_error_propagates(self, db, faker):
+        """Unexpected errors propagate unchanged; the entry point rolls back."""
         role_data = RoleCreate(
             name=faker.word().capitalize() + "Role",
             identifier=faker.uuid4(),
@@ -96,7 +96,7 @@ class TestCreateRoleCommand:
             with pytest.raises(Exception) as exc_info:
                 command.execute(role_data)
 
-            assert "Failed to create role" in str(exc_info.value)
+            assert str(exc_info.value) == "Database error"
 
     def test_execute_value_error_not_rolled_back(self, db, setup_role, faker):
         """Test that ValueError exceptions allow the transaction to continue."""

@@ -98,7 +98,7 @@ class PermissionRepository:
     def create_permission(self, permission: PermissionCreate) -> Permission:
         db_permission = Permission(**permission.model_dump())
         self.db.add(db_permission)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(db_permission)
         return db_permission
 
@@ -127,7 +127,7 @@ class PermissionRepository:
             update_data = permission.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(db_permission, key, value)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(db_permission)
         return db_permission
 
@@ -137,7 +137,7 @@ class PermissionRepository:
         )
         if db_permission:
             self.db.delete(db_permission)
-            self.db.commit()
+            self.db.flush()
             return True
         return False
 

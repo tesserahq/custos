@@ -44,42 +44,32 @@ class AddPermissionPolicyCommand:
         Raises:
             ValueError: If permission does not exist
         """
-        try:
-            # Get the permission
-            permission = self.permission_repository.get_permission(permission_id)
-            if not permission:
-                raise ValueError(f"Permission with id '{permission_id}' not found")
+        # Get the permission
+        permission = self.permission_repository.get_permission(permission_id)
+        if not permission:
+            raise ValueError(f"Permission with id '{permission_id}' not found")
 
-            # Get the role associated with the permission
-            if not permission.role:
-                raise ValueError(
-                    f"Permission with id '{permission_id}' has no associated role"
-                )
-
-            role = permission.role
-
-            # Add policy: subject=role.identifier, domain=domain, obj=permission.object, action=permission.action
-            policy_added = self.casbin_repository.add_policy(
-                subject=role.identifier,
-                obj=permission.object,
-                action=permission.action,
-                domain=domain,
+        # Get the role associated with the permission
+        if not permission.role:
+            raise ValueError(
+                f"Permission with id '{permission_id}' has no associated role"
             )
 
-            return {
-                "success": policy_added,
-                "permission_id": str(permission_id),
-                "role_name": role.name,
-                "object": permission.object,
-                "action": permission.action,
-                "policy_added": policy_added,
-            }
+        role = permission.role
 
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
-        except Exception as e:
-            self.logger.error(
-                f"Failed to create policy for permission {permission_id} in domain {domain}: {e}"
-            )
-            raise Exception(f"Failed to create policy: {str(e)}")
+        # Add policy: subject=role.identifier, domain=domain, obj=permission.object, action=permission.action
+        policy_added = self.casbin_repository.add_policy(
+            subject=role.identifier,
+            obj=permission.object,
+            action=permission.action,
+            domain=domain,
+        )
+
+        return {
+            "success": policy_added,
+            "permission_id": str(permission_id),
+            "role_name": role.name,
+            "object": permission.object,
+            "action": permission.action,
+            "policy_added": policy_added,
+        }

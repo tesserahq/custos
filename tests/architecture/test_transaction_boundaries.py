@@ -2,9 +2,8 @@
 tessera_sdk.testing.transaction_guards (see docs/managed-transactions.md in
 tessera-sdk-py).
 
-Rules with violations recorded in ``transaction_baseline.json`` may not
-regress; a rule with no entry is fully enforced. Regenerate the baseline with
-``UPDATE_TRANSACTION_BASELINE=1`` only after removing violations.
+Every rule is fully enforced: there is no baseline file, so any violation
+fails.
 """
 
 from pathlib import Path
