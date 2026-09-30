@@ -94,7 +94,9 @@ class CreateRoleCommand:
                 try:
                     publisher.publish_sync(event, event.event_type)
                 except Exception:  # pragma: no cover - defensive logging
-                    self.logger.exception("Failed to publish role-created event to NATS")
+                    self.logger.exception(
+                        "Failed to publish role-created event to NATS"
+                    )
 
             # Dispatch only after the transaction commits; dropped on rollback.
             on_commit(publish)

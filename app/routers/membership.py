@@ -24,7 +24,11 @@ def get_membership(
 
 
 @router.delete("/{membership_id}", status_code=204)
-def delete_membership(request: Request, db: DbSession, membership: Membership = Depends(get_membership_by_id)) -> None:
+def delete_membership(
+    request: Request,
+    db: DbSession,
+    membership: Membership = Depends(get_membership_by_id),
+) -> None:
     """
     Delete a membership by ID.
 

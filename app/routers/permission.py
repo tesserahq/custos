@@ -15,9 +15,12 @@ logger = get_logger()
 
 
 @router.get("", response_model=Page[Permission])
-def list_permissions(db: DbSession, q: str | None = Query(
+def list_permissions(
+    db: DbSession,
+    q: str | None = Query(
         default=None, description="Search by permission object or action"
-    )) -> Page[Permission]:
+    ),
+) -> Page[Permission]:
     """
     List all permissions with pagination.
 
@@ -41,7 +44,11 @@ def get_permission(
 
 
 @router.put("/{permission_id}", response_model=Permission)
-def update_permission(permission_data: PermissionUpdate, db: DbSession, permission: Permission = Depends(get_permission_by_id)) -> Permission:
+def update_permission(
+    permission_data: PermissionUpdate,
+    db: DbSession,
+    permission: Permission = Depends(get_permission_by_id),
+) -> Permission:
     """
     Update an existing permission.
 
@@ -65,7 +72,9 @@ def update_permission(permission_data: PermissionUpdate, db: DbSession, permissi
 
 
 @router.delete("/{permission_id}", status_code=204)
-def delete_permission(db: DbSession, permission: Permission = Depends(get_permission_by_id)) -> None:
+def delete_permission(
+    db: DbSession, permission: Permission = Depends(get_permission_by_id)
+) -> None:
     """
     Delete a permission by ID.
 

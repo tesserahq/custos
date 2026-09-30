@@ -15,9 +15,12 @@ logger = get_logger()
 
 
 @router.get("/", response_model=Page[User])
-def list_users(db: DbSession, q: str | None = Query(
+def list_users(
+    db: DbSession,
+    q: str | None = Query(
         default=None, description="Search by first_name, last_name, or email"
-    )) -> Page[User]:
+    ),
+) -> Page[User]:
     """
     List all users with pagination.
 
@@ -39,7 +42,9 @@ def get_user(user: User = Depends(get_user_by_id)) -> User:
 
 
 @router.get("/{user_id}/memberships", response_model=Page[Membership])
-def list_user_memberships(db: DbSession, user: User = Depends(get_user_by_id)) -> Page[Membership]:
+def list_user_memberships(
+    db: DbSession, user: User = Depends(get_user_by_id)
+) -> Page[Membership]:
     """
     List all memberships for a specific user with pagination.
 

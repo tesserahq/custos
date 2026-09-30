@@ -13,7 +13,9 @@ logger = get_logger()
 
 
 @router.post("/setup", response_model=SetupResponse, status_code=201)
-def setup_system(db: DbSession, request: Optional[SetupRequest] = Body(None)) -> SetupResponse:
+def setup_system(
+    db: DbSession, request: Optional[SetupRequest] = Body(None)
+) -> SetupResponse:
     """
     Import roles and permissions from JSON configuration file.
 

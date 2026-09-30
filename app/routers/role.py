@@ -36,7 +36,12 @@ logger = get_logger()
 
 
 @router.post("/{role_id}/memberships", response_model=Membership, status_code=201)
-async def create_role_membership(request: Request, binding_request: MembershipRequest, db: DbSession, role: RoleModel = Depends(get_role_by_id)) -> Membership:
+async def create_role_membership(
+    request: Request,
+    binding_request: MembershipRequest,
+    db: DbSession,
+    role: RoleModel = Depends(get_role_by_id),
+) -> Membership:
     """
     Create a role binding.
 
@@ -91,7 +96,9 @@ def create_roles_batch(
 
 
 @router.post("/{role_id}/policies", response_model=RoleBindResponse)
-def bind_role(bind_data: RoleBindRequest, db: DbSession, role: Role = Depends(get_role_by_id)) -> RoleBindResponse:
+def bind_role(
+    bind_data: RoleBindRequest, db: DbSession, role: Role = Depends(get_role_by_id)
+) -> RoleBindResponse:
     """
     Bind a role to a domain by creating policies for all permissions associated with the role.
 
@@ -158,7 +165,9 @@ def create_role(role_data: RoleCreate, db: DbSession) -> Role:
 
 
 @router.put("/{role_id}", response_model=Role)
-def update_role(role_data: RoleUpdate, db: DbSession, role: Role = Depends(get_role_by_id)) -> Role:
+def update_role(
+    role_data: RoleUpdate, db: DbSession, role: Role = Depends(get_role_by_id)
+) -> Role:
     """
     Update an existing role.
 
@@ -195,9 +204,13 @@ def delete_role(db: DbSession, role: Role = Depends(get_role_by_id)) -> None:
 
 
 @router.get("/{role_id}/permissions", response_model=Page[Permission])
-def list_role_permissions(db: DbSession, q: str | None = Query(
+def list_role_permissions(
+    db: DbSession,
+    q: str | None = Query(
         default=None, description="Search by permission object or action"
-    ), role: Role = Depends(get_role_by_id)) -> Page[Permission]:
+    ),
+    role: Role = Depends(get_role_by_id),
+) -> Page[Permission]:
     """
     List all permissions for a specific role with pagination.
 
@@ -210,7 +223,9 @@ def list_role_permissions(db: DbSession, q: str | None = Query(
 
 
 @router.get("/{role_id}/memberships", response_model=Page[Membership])
-def list_role_memberships(db: DbSession, role: Role = Depends(get_role_by_id)) -> Page[Membership]:
+def list_role_memberships(
+    db: DbSession, role: Role = Depends(get_role_by_id)
+) -> Page[Membership]:
     """
     List all memberships for a specific role with pagination.
 
@@ -223,7 +238,11 @@ def list_role_memberships(db: DbSession, role: Role = Depends(get_role_by_id)) -
 
 
 @router.delete("/{role_id}/memberships", status_code=204)
-def delete_role_membership(body: DeleteMembershipRequest, db: DbSession, role: RoleModel = Depends(get_role_by_id)) -> None:
+def delete_role_membership(
+    body: DeleteMembershipRequest,
+    db: DbSession,
+    role: RoleModel = Depends(get_role_by_id),
+) -> None:
     """
     Delete a membership by role, user_id, and domain.
 
@@ -246,7 +265,11 @@ def delete_role_membership(body: DeleteMembershipRequest, db: DbSession, role: R
 
 
 @router.post("/{role_id}/permissions", response_model=Permission, status_code=201)
-def create_role_permission(permission_data: PermissionCreateRequest, db: DbSession, role: Role = Depends(get_role_by_id)) -> Permission:
+def create_role_permission(
+    permission_data: PermissionCreateRequest,
+    db: DbSession,
+    role: Role = Depends(get_role_by_id),
+) -> Permission:
     """
     Create a new permission for a specific role.
 
