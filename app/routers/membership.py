@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
-from sqlalchemy.orm import Session
-from app.db import get_db
+from app.db import DbSession
 from app.repositories.role_repository import RoleRepository
 from app.schemas.membership import Membership
 from app.core.logging_config import get_logger
@@ -27,8 +26,8 @@ def get_membership(
 @router.delete("/{membership_id}", status_code=204)
 def delete_membership(
     request: Request,
+    db: DbSession,
     membership: Membership = Depends(get_membership_by_id),
-    db: Session = Depends(get_db),
 ) -> None:
     """
     Delete a membership by ID.

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
-from sqlalchemy.orm import Session
-from app.db import get_db
+from app.db import DbSession
 from app.models.user import User
 from uuid import UUID
 from app.repositories.role_repository import RoleRepository
@@ -40,8 +39,8 @@ logger = get_logger()
 async def create_role_membership(
     request: Request,
     binding_request: MembershipRequest,
+    db: DbSession,
     role: RoleModel = Depends(get_role_by_id),
-    db: Session = Depends(get_db),
 ) -> Membership:
     """
     Create a role binding.
@@ -69,7 +68,7 @@ async def create_role_membership(
 @router.post("/batch", response_model=list[Role], status_code=201)
 def create_roles_batch(
     request: RoleBatchRequest,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> list[Role]:
     """
     Create multiple roles with their permissions in a single batch operation.
@@ -98,9 +97,7 @@ def create_roles_batch(
 
 @router.post("/{role_id}/policies", response_model=RoleBindResponse)
 def bind_role(
-    bind_data: RoleBindRequest,
-    role: Role = Depends(get_role_by_id),
-    db: Session = Depends(get_db),
+    bind_data: RoleBindRequest, db: DbSession, role: Role = Depends(get_role_by_id)
 ) -> RoleBindResponse:
     """
     Bind a role to a domain by creating policies for all permissions associated with the role.
@@ -127,7 +124,7 @@ def bind_role(
 
 
 @router.get("/", response_model=Page[Role])
-def list_roles(db: Session = Depends(get_db)) -> Page[Role]:
+def list_roles(db: DbSession) -> Page[Role]:
     """
     List all roles with pagination.
 
@@ -149,7 +146,7 @@ def get_role(role: Role = Depends(get_role_by_id)) -> Role:
 
 
 @router.post("/", response_model=Role, status_code=201)
-def create_role(role_data: RoleCreate, db: Session = Depends(get_db)) -> Role:
+def create_role(role_data: RoleCreate, db: DbSession) -> Role:
     """
     Create a new role.
 
@@ -169,9 +166,7 @@ def create_role(role_data: RoleCreate, db: Session = Depends(get_db)) -> Role:
 
 @router.put("/{role_id}", response_model=Role)
 def update_role(
-    role_data: RoleUpdate,
-    role: Role = Depends(get_role_by_id),
-    db: Session = Depends(get_db),
+    role_data: RoleUpdate, db: DbSession, role: Role = Depends(get_role_by_id)
 ) -> Role:
     """
     Update an existing role.
@@ -196,9 +191,7 @@ def update_role(
 
 
 @router.delete("/{role_id}", status_code=204)
-def delete_role(
-    role: Role = Depends(get_role_by_id), db: Session = Depends(get_db)
-) -> None:
+def delete_role(db: DbSession, role: Role = Depends(get_role_by_id)) -> None:
     """
     Delete a role by ID.
 
@@ -212,11 +205,11 @@ def delete_role(
 
 @router.get("/{role_id}/permissions", response_model=Page[Permission])
 def list_role_permissions(
+    db: DbSession,
     q: str | None = Query(
         default=None, description="Search by permission object or action"
     ),
     role: Role = Depends(get_role_by_id),
-    db: Session = Depends(get_db),
 ) -> Page[Permission]:
     """
     List all permissions for a specific role with pagination.
@@ -231,7 +224,7 @@ def list_role_permissions(
 
 @router.get("/{role_id}/memberships", response_model=Page[Membership])
 def list_role_memberships(
-    role: Role = Depends(get_role_by_id), db: Session = Depends(get_db)
+    db: DbSession, role: Role = Depends(get_role_by_id)
 ) -> Page[Membership]:
     """
     List all memberships for a specific role with pagination.
@@ -247,8 +240,8 @@ def list_role_memberships(
 @router.delete("/{role_id}/memberships", status_code=204)
 def delete_role_membership(
     body: DeleteMembershipRequest,
+    db: DbSession,
     role: RoleModel = Depends(get_role_by_id),
-    db: Session = Depends(get_db),
 ) -> None:
     """
     Delete a membership by role, user_id, and domain.
@@ -274,8 +267,8 @@ def delete_role_membership(
 @router.post("/{role_id}/permissions", response_model=Permission, status_code=201)
 def create_role_permission(
     permission_data: PermissionCreateRequest,
+    db: DbSession,
     role: Role = Depends(get_role_by_id),
-    db: Session = Depends(get_db),
 ) -> Permission:
     """
     Create a new permission for a specific role.

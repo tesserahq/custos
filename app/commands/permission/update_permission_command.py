@@ -9,6 +9,7 @@ from app.models.permission import Permission
 from app.schemas.permission import PermissionUpdate
 from app.repositories.permission_repository import PermissionRepository
 from app.events.permission_events import build_permission_updated_event
+from app.db import on_commit
 from tessera_sdk.infra.events.nats_router import NatsEventPublisher
 
 
@@ -118,9 +119,15 @@ class UpdatePermissionCommand:
         """
         event = build_permission_updated_event(permission)
         if self.nats_publisher is not None:
-            try:
-                self.nats_publisher.publish_sync(event, event.event_type)
-            except Exception:  # pragma: no cover - defensive logging
-                self.logger.exception(
-                    "Failed to publish permission-updated event to NATS"
-                )
+            publisher = self.nats_publisher
+
+            def publish() -> None:
+                try:
+                    publisher.publish_sync(event, event.event_type)
+                except Exception:  # pragma: no cover - defensive logging
+                    self.logger.exception(
+                        "Failed to publish permission-updated event to NATS"
+                    )
+
+            # Dispatch only after the transaction commits; dropped on rollback.
+            on_commit(publish)

@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter
 
-from app.db import get_db
+from app.db import DbSession
 from app.schemas.sync import (
     SyncCheckRequest,
     SyncCheckResponse,
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/sync", tags=["Sync"])
 @router.post("/check", response_model=SyncCheckResponse)
 def check_sync(
     request: SyncCheckRequest,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> SyncCheckResponse:
     """
     Compare DB memberships against Casbin role bindings for a user.
@@ -33,7 +32,7 @@ def check_sync(
 @router.post("/fix", response_model=SyncFixResponse)
 def fix_sync(
     request: SyncFixRequest,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> SyncFixResponse:
     """
     Reconcile Casbin role bindings to match DB memberships (DB is source of truth).

@@ -15,6 +15,7 @@ from app.events.membership_events import (
 from tessera_sdk.infra.events.nats_router import NatsEventPublisher
 from app.commands.sync.check_membership_sync_command import CheckMembershipSyncCommand
 from app.schemas.sync import CasbinBinding, SyncFixResponse
+from app.db import on_commit
 
 
 class FixMembershipSyncCommand:
@@ -75,10 +76,18 @@ class FixMembershipSyncCommand:
         return self._publish(event)
 
     def _publish(self, event) -> int:
-        if self.nats_publisher is not None:
+        """Queue ``event`` for publication after commit; returns the number
+        queued (reported as ``events_published``)."""
+        if self.nats_publisher is None:
+            return 0
+        publisher = self.nats_publisher
+
+        def publish() -> None:
             try:
-                self.nats_publisher.publish_sync(event, event.event_type)
-                return 1
+                publisher.publish_sync(event, event.event_type)
             except Exception:
                 self.logger.exception("Failed to publish sync event to NATS")
-        return 0
+
+        # Dispatch only after the transaction commits; dropped on rollback.
+        on_commit(publish)
+        return 1

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from app.db import get_db
+from app.db import DbSession
 from app.repositories.user_repository import UserRepository
 from app.repositories.membership_repository import MembershipRepository
 from app.repositories.casbin_repository import get_casbin_repository
@@ -17,10 +16,10 @@ logger = get_logger()
 
 @router.get("/", response_model=Page[User])
 def list_users(
+    db: DbSession,
     q: str | None = Query(
         default=None, description="Search by first_name, last_name, or email"
     ),
-    db: Session = Depends(get_db),
 ) -> Page[User]:
     """
     List all users with pagination.
@@ -44,7 +43,7 @@ def get_user(user: User = Depends(get_user_by_id)) -> User:
 
 @router.get("/{user_id}/memberships", response_model=Page[Membership])
 def list_user_memberships(
-    user: User = Depends(get_user_by_id), db: Session = Depends(get_db)
+    db: DbSession, user: User = Depends(get_user_by_id)
 ) -> Page[Membership]:
     """
     List all memberships for a specific user with pagination.
