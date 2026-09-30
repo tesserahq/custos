@@ -43,66 +43,56 @@ class SyncRolePolicyCommand:
         Raises:
             ValueError: If role does not exist
         """
-        try:
-            # Get the role
-            role = self.role_repository.get_role(role_id)
-            if not role:
-                raise ValueError(f"Role with id '{role_id}' not found")
+        # Get the role
+        role = self.role_repository.get_role(role_id)
+        if not role:
+            raise ValueError(f"Role with id '{role_id}' not found")
 
-            # Get all permissions for the role
-            permissions = role.permissions
-            if not permissions:
-                self.logger.warning(
-                    f"Role '{role.name}' (id: {role_id}) has no permissions to create policies for"
-                )
-                return {
-                    "success": True,
-                    "role_name": role.name,
-                    "total_permissions": 0,
-                    "policies_added": 0,
-                    "policies_failed": 0,
-                }
-
-            # Add policies for each permission
-            policies_added = 0
-            policies_failed = 0
-
-            for permission in permissions:
-                # Add policy: subject=role.name, domain=domain, obj=permission.object, action=permission.action
-                if self.casbin_repository.add_policy(
-                    subject=role.identifier,
-                    obj=permission.object,
-                    action=permission.action,
-                    domain=domain,
-                ):
-                    policies_added += 1
-                    self.logger.debug(
-                        f"Policy added: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
-                    )
-
-                else:
-                    policies_failed += 1
-                    self.logger.warning(
-                        f"Failed to add policy: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
-                    )
-
-            # Consider it successful if at least 80% of policies were added
-            # This allows for some duplicates while ensuring most policies are created
-            success = policies_added >= len(permissions) * 0.8
-
+        # Get all permissions for the role
+        permissions = role.permissions
+        if not permissions:
+            self.logger.warning(
+                f"Role '{role.name}' (id: {role_id}) has no permissions to create policies for"
+            )
             return {
-                "success": success,
+                "success": True,
                 "role_name": role.name,
-                "total_permissions": len(permissions),
-                "policies_added": policies_added,
-                "policies_failed": policies_failed,
+                "total_permissions": 0,
+                "policies_added": 0,
+                "policies_failed": 0,
             }
 
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
-        except Exception as e:
-            self.logger.error(
-                f"Failed to create policies for role {role_id} in domain {domain}: {e}"
-            )
-            raise Exception(f"Failed to create policies: {str(e)}")
+        # Add policies for each permission
+        policies_added = 0
+        policies_failed = 0
+
+        for permission in permissions:
+            # Add policy: subject=role.name, domain=domain, obj=permission.object, action=permission.action
+            if self.casbin_repository.add_policy(
+                subject=role.identifier,
+                obj=permission.object,
+                action=permission.action,
+                domain=domain,
+            ):
+                policies_added += 1
+                self.logger.debug(
+                    f"Policy added: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
+                )
+
+            else:
+                policies_failed += 1
+                self.logger.warning(
+                    f"Failed to add policy: {role.name} -> {permission.object} -> {permission.action} in domain {domain}"
+                )
+
+        # Consider it successful if at least 80% of policies were added
+        # This allows for some duplicates while ensuring most policies are created
+        success = policies_added >= len(permissions) * 0.8
+
+        return {
+            "success": success,
+            "role_name": role.name,
+            "total_permissions": len(permissions),
+            "policies_added": policies_added,
+            "policies_failed": policies_failed,
+        }

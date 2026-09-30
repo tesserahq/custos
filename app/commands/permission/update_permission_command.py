@@ -47,68 +47,55 @@ class UpdatePermissionCommand:
         Raises:
             ValueError: If permission doesn't exist or duplicate object+action+role_id combination
         """
-        try:
-            # Check if permission exists
-            existing_permission = self.permission_repository.get_permission(
-                permission_id
-            )
-            if not existing_permission:
-                raise ValueError(f"Permission with id {permission_id} not found")
+        # Check if permission exists
+        existing_permission = self.permission_repository.get_permission(permission_id)
+        if not existing_permission:
+            raise ValueError(f"Permission with id {permission_id} not found")
 
-            # If object, action, or role_id is being updated, check for duplicates
-            object_val = (
-                permission_data.object
-                if permission_data.object is not None
-                else existing_permission.object
-            )
-            action_val = (
-                permission_data.action
-                if permission_data.action is not None
-                else existing_permission.action
-            )
-            role_id_val = (
-                permission_data.role_id
-                if permission_data.role_id is not None
-                else existing_permission.role_id
-            )
+        # If object, action, or role_id is being updated, check for duplicates
+        object_val = (
+            permission_data.object
+            if permission_data.object is not None
+            else existing_permission.object
+        )
+        action_val = (
+            permission_data.action
+            if permission_data.action is not None
+            else existing_permission.action
+        )
+        role_id_val = (
+            permission_data.role_id
+            if permission_data.role_id is not None
+            else existing_permission.role_id
+        )
 
-            # Check if the new combination would create a duplicate
-            if (
-                permission_data.object is not None
-                or permission_data.action is not None
-                or permission_data.role_id is not None
-            ):
-                duplicate = (
-                    self.permission_repository.get_permission_by_object_and_action(
-                        object_val, action_val, role_id_val
-                    )
+        # Check if the new combination would create a duplicate
+        if (
+            permission_data.object is not None
+            or permission_data.action is not None
+            or permission_data.role_id is not None
+        ):
+            duplicate = self.permission_repository.get_permission_by_object_and_action(
+                object_val, action_val, role_id_val
+            )
+            if duplicate and duplicate.id != permission_id:
+                raise ValueError(
+                    f"Permission with object '{object_val}', "
+                    f"action '{action_val}', and role_id '{role_id_val}' already exists"
                 )
-                if duplicate and duplicate.id != permission_id:
-                    raise ValueError(
-                        f"Permission with object '{object_val}', "
-                        f"action '{action_val}', and role_id '{role_id_val}' already exists"
-                    )
 
-            # Update permission
-            updated_permission = self.permission_repository.update_permission(
-                permission_id, permission_data
-            )
+        # Update permission
+        updated_permission = self.permission_repository.update_permission(
+            permission_id, permission_data
+        )
 
-            if not updated_permission:
-                raise ValueError(f"Failed to update permission with id {permission_id}")
+        if not updated_permission:
+            raise ValueError(f"Failed to update permission with id {permission_id}")
 
-            # Publish permission updated event if publisher is available
-            self._publish_permission_updated_event(updated_permission)
+        # Publish permission updated event if publisher is available
+        self._publish_permission_updated_event(updated_permission)
 
-            return updated_permission
-
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
-        except Exception as e:
-            # Rollback the transaction if something goes wrong
-            self.db.rollback()
-            raise Exception(f"Failed to update permission: {str(e)}")
+        return updated_permission
 
     def _publish_permission_updated_event(self, permission: Permission) -> None:
         """

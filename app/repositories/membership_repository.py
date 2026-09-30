@@ -128,7 +128,7 @@ class MembershipRepository:
         """Create a new membership."""
         db_membership = Membership(**membership.model_dump())
         self.db.add(db_membership)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(db_membership)
         return db_membership
 
@@ -158,7 +158,7 @@ class MembershipRepository:
             update_data = membership.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(db_membership, key, value)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(db_membership)
         return db_membership
 
@@ -169,7 +169,7 @@ class MembershipRepository:
         )
         if db_membership:
             self.db.delete(db_membership)
-            self.db.commit()
+            self.db.flush()
             return True
         return False
 
@@ -185,7 +185,7 @@ class MembershipRepository:
         )
         if db_membership:
             self.db.delete(db_membership)
-            self.db.commit()
+            self.db.flush()
             return True
         return False
 

@@ -9,7 +9,7 @@ from app.models.role import Role
 from app.repositories.role_repository import RoleRepository
 from app.commands.policy import DeleteRolePolicyCommand
 from app.events.role_events import build_role_deleted_event
-from app.db import on_commit
+from app.db import on_commit, savepoint
 from tessera_sdk.infra.events.nats_router import NatsEventPublisher
 
 
@@ -44,43 +44,36 @@ class DeleteRoleCommand:
         Raises:
             ValueError: If role doesn't exist
         """
-        try:
-            # Get the role before deleting it (for event publishing and policy removal)
-            role = self.role_repository.get_role(role_id)
-            if not role:
-                raise ValueError(f"Role with id {role_id} not found")
+        # Get the role before deleting it (for event publishing and policy removal)
+        role = self.role_repository.get_role(role_id)
+        if not role:
+            raise ValueError(f"Role with id {role_id} not found")
 
-            # Remove all policies for the role from Casbin before deleting
-            try:
+        # Remove all policies for the role from Casbin before deleting. Best
+        # effort: a failure is rolled back to the savepoint.
+        try:
+            with savepoint(self.db):
                 delete_policy_command = DeleteRolePolicyCommand(self.db)
                 delete_policy_command.execute(role_id)
-            except Exception as e:
-                # Log the error but don't fail the role deletion
-                # The policies may not exist or may have already been removed
-                self.logger.warning(
-                    f"Failed to remove policies for role {role_id}: {e}. "
-                    "Role will still be deleted from database."
-                )
-
-            # Delete role
-            success = self.role_repository.delete_role(role_id)
-
-            if not success:
-                raise ValueError(f"Failed to delete role with id {role_id}")
-
-            # Publish role deleted event if publisher is available
-            # Note: We publish the event after deletion, using the role data we fetched before deletion
-            self._publish_role_deleted_event(role)
-
-            return success
-
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
         except Exception as e:
-            # Rollback the transaction if something goes wrong
-            self.db.rollback()
-            raise Exception(f"Failed to delete role: {str(e)}")
+            # Log the error but don't fail the role deletion
+            # The policies may not exist or may have already been removed
+            self.logger.warning(
+                f"Failed to remove policies for role {role_id}: {e}. "
+                "Role will still be deleted from database."
+            )
+
+        # Delete role
+        success = self.role_repository.delete_role(role_id)
+
+        if not success:
+            raise ValueError(f"Failed to delete role with id {role_id}")
+
+        # Publish role deleted event if publisher is available
+        # Note: We publish the event after deletion, using the role data we fetched before deletion
+        self._publish_role_deleted_event(role)
+
+        return success
 
     def _publish_role_deleted_event(self, role: Role) -> None:
         """
