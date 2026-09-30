@@ -13,6 +13,7 @@ from app.commands.policy.sync_role_policy_command import SyncRolePolicyCommand
 from app.commands.memberships.create_membership_command import CreateMembershipCommand
 from app.repositories.user_repository import UserRepository
 from app.config import get_settings
+from app.db import savepoint
 from tessera_sdk.infra.events.nats_router import NatsEventPublisher  # type: ignore
 
 
@@ -133,12 +134,14 @@ class SetupCommand:
         policy_command = SyncRolePolicyCommand(self.db)
 
         for role in created_roles:
-            # Bind the role (create policies)
+            # Bind the role (create policies). Best effort: a failure is
+            # rolled back to the savepoint.
             try:
                 from uuid import UUID
 
                 role_id: UUID = role.id  # type: ignore[assignment]
-                policy_command.execute(role_id, domain)
+                with savepoint(self.db):
+                    policy_command.execute(role_id, domain)
 
             except Exception as e:
                 self.logger.warning(

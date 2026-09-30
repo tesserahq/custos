@@ -233,8 +233,8 @@ class TestSyncRolePolicyCommand:
         assert all(p[1] == domain1 for p in policies1)
         assert all(p[1] == domain2 for p in policies2)
 
-    def test_execute_exception_handling(self, db, setup_role, faker):
-        """Test that exceptions are properly handled."""
+    def test_execute_exception_propagates(self, db, setup_role, faker):
+        """Unexpected errors propagate unchanged; the entry point rolls back."""
         domain = faker.word().lower()
         permissions = [
             Permission(object="users", action="read", role_id=setup_role.id),
@@ -252,7 +252,7 @@ class TestSyncRolePolicyCommand:
             with pytest.raises(Exception) as exc_info:
                 command.execute(setup_role.id, domain)
 
-            assert "Failed to create policies" in str(exc_info.value)
+            assert str(exc_info.value) == "Database error"
 
     def test_execute_value_error_not_caught(self, db, faker):
         """Test that ValueError is re-raised without wrapping."""

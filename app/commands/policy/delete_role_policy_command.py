@@ -40,37 +40,29 @@ class DeleteRolePolicyCommand:
         Raises:
             ValueError: If role does not exist
         """
-        try:
-            # Get the role
-            role = self.role_repository.get_role(role_id)
-            if not role:
-                raise ValueError(f"Role with id '{role_id}' not found")
+        # Get the role
+        role = self.role_repository.get_role(role_id)
+        if not role:
+            raise ValueError(f"Role with id '{role_id}' not found")
 
-            role_identifier = str(role.identifier)
+        role_identifier = str(role.identifier)
 
-            # Remove all policies for this role across all domains
-            policies_removed = self.casbin_repository.remove_all_policies_for_role(
-                role_identifier
+        # Remove all policies for this role across all domains
+        policies_removed = self.casbin_repository.remove_all_policies_for_role(
+            role_identifier
+        )
+
+        if policies_removed > 0:
+            self.logger.debug(
+                f"Removed {policies_removed} policies for role '{role.name}' (identifier: {role_identifier})"
+            )
+        else:
+            self.logger.debug(
+                f"No policies found for role '{role.name}' (identifier: {role_identifier})"
             )
 
-            if policies_removed > 0:
-                self.logger.debug(
-                    f"Removed {policies_removed} policies for role '{role.name}' (identifier: {role_identifier})"
-                )
-            else:
-                self.logger.debug(
-                    f"No policies found for role '{role.name}' (identifier: {role_identifier})"
-                )
-
-            return {
-                "success": True,
-                "role_name": role.name,
-                "policies_removed": policies_removed,
-            }
-
-        except ValueError:
-            # Re-raise ValueError as-is (these are expected validation errors)
-            raise
-        except Exception as e:
-            self.logger.error(f"Failed to remove policies for role {role_id}: {e}")
-            raise Exception(f"Failed to remove policies: {str(e)}")
+        return {
+            "success": True,
+            "role_name": role.name,
+            "policies_removed": policies_removed,
+        }
