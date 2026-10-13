@@ -114,3 +114,10 @@ def test_something(client, db):
 - **Repositories** never contain business logic — only DB queries. Access DB only through repositories, never via the raw `db` session in commands.
 - **Casbin** is a singleton: `get_casbin_repository()` is `@lru_cache()`'d. The default domain for global permissions is `"*"`.
 - **Events** are published via NATS using `NatsEventPublisher.publish_sync()`. Event builders live in `app/events/`.
+
+## Database migrations
+
+- Migrations run only in the API's `start.sh`. During a deploy, old and new containers overlap (the API rolls; workers deploy separately), so every migration must work with the previous release's code.
+- One release: additive changes (nullable column or one with a server default, table, index).
+- Two releases: dropping or renaming a column or table, adding `NOT NULL`, or changing a type. Release 1 stops reading and writing it; a later release runs the migration.
+- See [Database migrations](https://github.com/mylinden-tech/infra/blob/main/docs/linden-continuous-delivery.md#database-migrations) and mylinden-tech/infra#260.
