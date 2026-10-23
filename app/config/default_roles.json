@@ -25,7 +25,9 @@
       { "object": "vaulta.client", "action": "read" },
       { "object": "vaulta.client", "action": "create" },
       { "object": "vaulta.client", "action": "update" },
-      { "object": "vaulta.client", "action": "delete" }
+      { "object": "vaulta.client", "action": "delete" },
+      { "object": "vaulta.asset", "action": "create" },
+      { "object": "vaulta.asset", "action": "publish" }
     ]
   },
   {
@@ -210,7 +212,9 @@
       { "object": "sendly.provider", "action": "read" },
 
       { "object": "sendly.broadcast", "action": "create" },
-      { "object": "sendly.broadcast", "action": "read" }
+      { "object": "sendly.broadcast", "action": "read" },
+      { "object": "vaulta.asset", "action": "create" },
+      { "object": "vaulta.asset", "action": "publish" }
     ]
   },
   {
@@ -338,7 +342,9 @@
       { "object": "looply.contact_interaction", "action": "read" },
       { "object": "looply.contact_interaction", "action": "create" },
       { "object": "looply.contact_interaction", "action": "update" },
-      { "object": "looply.contact_interaction", "action": "delete" }
+      { "object": "looply.contact_interaction", "action": "delete" },
+      { "object": "vaulta.asset", "action": "create" },
+      { "object": "vaulta.asset", "action": "publish" }
     ]
   }
 ]
