@@ -36,7 +36,7 @@ logger = get_logger()
 
 
 @router.post("/{role_id}/memberships", response_model=Membership, status_code=201)
-async def create_role_membership(
+def create_role_membership(
     request: Request,
     binding_request: MembershipRequest,
     db: DbSession,
