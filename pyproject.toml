@@ -21,7 +21,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.14,<3.15"
-fastapi = "^0.163.2"
+fastapi = "^0.165.0"
 python-dotenv = "^1.2.3"
 gunicorn = "26.2.0"
 faker = "40.54.0"
@@ -31,9 +31,9 @@ asyncpg = "^0.32.0"
 psycopg2-binary = "^2.9.10"
 alembic = "^1.20.1"
 
-pydantic = {extras = ["email"], version = "^2.14.3"}
+pydantic = {extras = ["email"], version = "^2.14.4"}
 black = "^26.10.1"
-ruff = "0.17.5"
+ruff = "0.17.6"
 pydantic-settings = "^2.16.3"
 python-jose = "^3.3.0"
 
